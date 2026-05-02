@@ -834,33 +834,116 @@
 </footer>
 
 <script>
-  // Product data — edit this to add/remove/change products
-  // When you get your Shopify API token, this will be replaced with live data
-  const products = [
-    { name: "Marbled Dawn Earrings", price: 38, category: "Earrings", shopifyUrl: "https://mtudcn-dy.myshopify.com" },
-    { name: "Terrazzo Hoop Set", price: 42, category: "Earrings", shopifyUrl: "https://mtudcn-dy.myshopify.com" },
-    { name: "Ivory Petal Necklace", price: 56, category: "Necklaces", shopifyUrl: "https://mtudcn-dy.myshopify.com" },
-    { name: "Soft Cloud Studs", price: 28, category: "Earrings", shopifyUrl: "https://mtudcn-dy.myshopify.com" },
-    { name: "Pebble Stack Ring", price: 34, category: "Rings", shopifyUrl: "https://mtudcn-dy.myshopify.com" },
-    { name: "Linen Drop Pendant", price: 48, category: "Necklaces", shopifyUrl: "https://mtudcn-dy.myshopify.com" },
-    { name: "Whisper Cuff", price: 52, category: "Bracelets", shopifyUrl: "https://mtudcn-dy.myshopify.com" },
-    { name: "Smoke Geometric Studs", price: 32, category: "Earrings", shopifyUrl: "https://mtudcn-dy.myshopify.com" },
-  ];
+  // ============================================
+  // SHOPIFY STOREFRONT API - LIVE CONNECTION
+  // ============================================
+  const SHOPIFY_STORE = 'mtudcn-dy.myshopify.com';
+  const SHOPIFY_TOKEN = '861afc7223b28d374e9f6754e3eb5538';
+
+  let products = [];
+
+  // Fetch real products from Shopify
+  async function fetchProducts() {
+    const grid = document.getElementById('products-grid');
+    grid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:60px 0; color:#78716c;">Loading products...</div>';
+
+    try {
+      const query = `{
+        products(first: 50) {
+          edges {
+            node {
+              id
+              title
+              handle
+              description
+              productType
+              priceRange {
+                minVariantPrice {
+                  amount
+                  currencyCode
+                }
+              }
+              images(first: 4) {
+                edges {
+                  node {
+                    url
+                    altText
+                  }
+                }
+              }
+              variants(first: 1) {
+                edges {
+                  node {
+                    id
+                  }
+                }
+              }
+            }
+          }
+        }
+      }`;
+
+      const response = await fetch(`https://${SHOPIFY_STORE}/api/2024-01/graphql.json`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Shopify-Storefront-Access-Token': SHOPIFY_TOKEN,
+        },
+        body: JSON.stringify({ query }),
+      });
+
+      const data = await response.json();
+
+      if (data.data && data.data.products && data.data.products.edges) {
+        products = data.data.products.edges.map(({ node }) => ({
+          id: node.id,
+          name: node.title,
+          handle: node.handle,
+          description: node.description,
+          price: parseFloat(node.priceRange.minVariantPrice.amount),
+          category: node.productType || 'Jewelry',
+          image: node.images.edges[0] ? node.images.edges[0].node.url : null,
+          variantId: node.variants.edges[0] ? node.variants.edges[0].node.id : null,
+          shopifyUrl: `https://${SHOPIFY_STORE}/products/${node.handle}`,
+        }));
+
+        // Update the product count
+        const countEl = document.querySelector('.shop-tag');
+        if (countEl) countEl.textContent = `The Collection (${products.length})`;
+
+        renderProducts('All');
+      } else {
+        console.error('No products found or API error:', data);
+        grid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:60px 0; color:#78716c;">Could not load products. Check your Shopify API settings.</div>';
+      }
+    } catch (error) {
+      console.error('Error fetching from Shopify:', error);
+      grid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:60px 0; color:#78716c;">Error connecting to Shopify. Please try again later.</div>';
+    }
+  }
 
   function renderProducts(filter) {
     const grid = document.getElementById('products-grid');
     const filtered = filter === 'All' ? products : products.filter(p => p.category === filter);
+
+    if (filtered.length === 0) {
+      grid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:60px 0; color:#78716c;">No products in this category yet.</div>';
+      return;
+    }
     
     grid.innerHTML = filtered.map(product => `
       <div class="product-card" onclick="window.location.href='${product.shopifyUrl}'">
         <div class="product-img">
-          <div class="product-img-placeholder"><div></div></div>
+          ${product.image 
+            ? `<img src="${product.image}" alt="${product.name}" style="width:100%;height:100%;object-fit:cover;">`
+            : '<div class="product-img-placeholder"><div></div></div>'
+          }
           <button class="product-wishlist">♡</button>
           <button class="product-img-overlay">Shop Now</button>
         </div>
         <p class="product-category">${product.category}</p>
         <p class="product-name">${product.name}</p>
-        <p class="product-price">$${product.price}</p>
+        <p class="product-price">$${product.price.toFixed(2)}</p>
       </div>
     `).join('');
   }
@@ -871,8 +954,8 @@
     renderProducts(category);
   }
 
-  // Initial render
-  renderProducts('All');
+  // Load products from Shopify when page loads
+  fetchProducts();
 </script>
 
 </body>
