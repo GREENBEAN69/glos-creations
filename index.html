@@ -839,94 +839,112 @@
   // ============================================
   const SHOPIFY_STORE = 'mtudcn-dy.myshopify.com';
   const SHOPIFY_TOKEN = '861afc7223b28d374e9f6754e3eb5538';
+  const API_VERSIONS = ['2025-01', '2024-10', '2024-07', '2024-04', '2024-01'];
 
   let products = [];
 
-  // Fetch real products from Shopify
   async function fetchProducts() {
     const grid = document.getElementById('products-grid');
     grid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:60px 0; color:#78716c;">Loading products...</div>';
 
-    try {
-      const query = `{
-        products(first: 50) {
-          edges {
-            node {
-              id
-              title
-              handle
-              description
-              productType
-              priceRange {
-                minVariantPrice {
-                  amount
-                  currencyCode
+    const query = `{
+      products(first: 50) {
+        edges {
+          node {
+            id
+            title
+            handle
+            description
+            productType
+            priceRange {
+              minVariantPrice {
+                amount
+                currencyCode
+              }
+            }
+            images(first: 4) {
+              edges {
+                node {
+                  url
+                  altText
                 }
               }
-              images(first: 4) {
-                edges {
-                  node {
-                    url
-                    altText
-                  }
-                }
-              }
-              variants(first: 1) {
-                edges {
-                  node {
-                    id
-                  }
+            }
+            variants(first: 1) {
+              edges {
+                node {
+                  id
                 }
               }
             }
           }
         }
-      }`;
-
-      const response = await fetch(`https://${SHOPIFY_STORE}/api/2026-04/graphql.json`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Shopify-Storefront-Access-Token': SHOPIFY_TOKEN,
-        },
-        body: JSON.stringify({ query }),
-      });
-
-      const data = await response.json();
-      console.log('Shopify API response:', JSON.stringify(data));
-
-      if (data.errors) {
-        console.error('Shopify API errors:', data.errors);
-        grid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:60px 0; color:#78716c;">API Error: ' + data.errors[0].message + '</div>';
-        return;
       }
+    }`;
 
-      if (data.data && data.data.products && data.data.products.edges) {
-        products = data.data.products.edges.map(({ node }) => ({
-          id: node.id,
-          name: node.title,
-          handle: node.handle,
-          description: node.description,
-          price: parseFloat(node.priceRange.minVariantPrice.amount),
-          category: node.productType || 'Jewelry',
-          image: node.images.edges[0] ? node.images.edges[0].node.url : null,
-          variantId: node.variants.edges[0] ? node.variants.edges[0].node.id : null,
-          shopifyUrl: `https://${SHOPIFY_STORE}/products/${node.handle}`,
-        }));
+    // Try each API version until one works
+    for (const version of API_VERSIONS) {
+      try {
+        console.log('Trying API version:', version);
+        const response = await fetch(`https://${SHOPIFY_STORE}/api/${version}/graphql.json`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Shopify-Storefront-Access-Token': SHOPIFY_TOKEN,
+          },
+          body: JSON.stringify({ query }),
+        });
 
-        // Update the product count
-        const countEl = document.querySelector('.shop-tag');
-        if (countEl) countEl.textContent = `The Collection (${products.length})`;
+        console.log('Response status:', response.status);
 
-        renderProducts('All');
-      } else {
-        console.error('No products found or API error:', data);
-        grid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:60px 0; color:#78716c;">Could not load products. Check your Shopify API settings.</div>';
+        if (response.status === 401) {
+          console.log('401 on version', version, '- trying next...');
+          continue;
+        }
+
+        const data = await response.json();
+        console.log('Shopify API response:', JSON.stringify(data).substring(0, 500));
+
+        if (data.errors) {
+          console.error('API errors:', data.errors);
+          continue;
+        }
+
+        if (data.data && data.data.products && data.data.products.edges) {
+          products = data.data.products.edges.map(({ node }) => ({
+            id: node.id,
+            name: node.title,
+            handle: node.handle,
+            description: node.description,
+            price: parseFloat(node.priceRange.minVariantPrice.amount),
+            category: node.productType || 'Jewelry',
+            image: node.images.edges[0] ? node.images.edges[0].node.url : null,
+            variantId: node.variants.edges[0] ? node.variants.edges[0].node.id : null,
+            shopifyUrl: `https://${SHOPIFY_STORE}/products/${node.handle}`,
+          }));
+
+          const countEl = document.querySelector('.shop-tag');
+          if (countEl) countEl.textContent = `The Collection (${products.length})`;
+
+          console.log('SUCCESS! Loaded', products.length, 'products with API version', version);
+          renderProducts('All');
+          return;
+        }
+      } catch (error) {
+        console.error('Error with version', version, ':', error);
+        continue;
       }
-    } catch (error) {
-      console.error('Error fetching from Shopify:', error);
-      grid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:60px 0; color:#78716c;">Error connecting to Shopify. Please try again later.</div>';
     }
+
+    // If all versions failed, show helpful error
+    grid.innerHTML = `
+      <div style="grid-column: 1/-1; text-align:center; padding:60px 0; color:#78716c;">
+        <p style="margin-bottom:16px;">Could not connect to Shopify.</p>
+        <p style="font-size:14px;">Common fixes:</p>
+        <p style="font-size:14px;">1. Make sure your Shopify store has a paid plan (not just free trial)</p>
+        <p style="font-size:14px;">2. Remove password protection in Online Store → Preferences</p>
+        <p style="font-size:14px;">3. Make sure store address is filled in under Settings → General</p>
+      </div>`;
   }
 
   function renderProducts(filter) {
