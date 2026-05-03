@@ -350,6 +350,208 @@
   .newsletter-form button { background: var(--stone-50); color: var(--stone-900); padding: 13px 24px; font-family: var(--font-body); font-size: 10.5px; letter-spacing: 0.18em; text-transform: uppercase; border: none; transition: background 0.2s; white-space: nowrap; }
   .newsletter-form button:hover { background: var(--stone-200); }
 
+  /* Product Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 300;
+    opacity: 0;
+    transition: opacity 0.3s;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  .modal-overlay.open { display: flex; opacity: 1; align-items: center; justify-content: center; }
+  .modal {
+    background: var(--stone-50);
+    border-radius: 20px;
+    max-width: 900px;
+    width: 92%;
+    max-height: 90vh;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    animation: modalIn 0.3s ease;
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.95) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(4px);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    transition: background 0.2s;
+  }
+  .modal-close:hover { background: white; }
+  .modal-close svg { width: 18px; height: 18px; stroke: var(--stone-700); fill: none; stroke-width: 1.5; }
+  .modal-image {
+    background: var(--stone-100);
+    border-radius: 20px 0 0 20px;
+    overflow: hidden;
+    position: relative;
+    min-height: 400px;
+  }
+  .modal-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .modal-image-nav {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+  }
+  .modal-img-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.4);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .modal-img-dot.active {
+    background: white;
+    width: 20px;
+    border-radius: 4px;
+  }
+  .modal-info {
+    padding: 40px 36px;
+    display: flex;
+    flex-direction: column;
+  }
+  .modal-category {
+    font-family: var(--font-body);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--stone-400);
+    margin-bottom: 8px;
+  }
+  .modal-title {
+    font-size: 32px;
+    font-weight: 300;
+    font-style: italic;
+    color: var(--stone-900);
+    margin-bottom: 8px;
+    line-height: 1.2;
+  }
+  .modal-price {
+    font-family: var(--font-body);
+    font-size: 20px;
+    color: var(--stone-700);
+    margin-bottom: 24px;
+    font-weight: 400;
+  }
+  .modal-divider {
+    height: 1px;
+    background: var(--stone-200);
+    margin-bottom: 24px;
+  }
+  .modal-desc-label {
+    font-family: var(--font-body);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--stone-400);
+    margin-bottom: 10px;
+  }
+  .modal-desc {
+    font-size: 15px;
+    color: var(--stone-600);
+    line-height: 1.7;
+    margin-bottom: 32px;
+    flex: 1;
+  }
+  .modal-qty-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .modal-qty-label {
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--stone-500);
+  }
+  .modal-qty-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid var(--stone-300);
+    border-radius: 8px;
+    padding: 4px 8px;
+  }
+  .modal-qty-btn {
+    width: 30px;
+    height: 30px;
+    border: none;
+    background: transparent;
+    font-size: 16px;
+    color: var(--stone-700);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+  }
+  .modal-qty-btn:hover { color: var(--stone-900); }
+  .modal-qty-num {
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--stone-800);
+    min-width: 24px;
+    text-align: center;
+  }
+  .modal-add-btn {
+    width: 100%;
+    background: var(--stone-900);
+    color: white;
+    padding: 16px;
+    border: none;
+    border-radius: 12px;
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    transition: background 0.2s;
+  }
+  .modal-add-btn:hover { background: var(--stone-700); }
+
+  @media (max-width: 768px) {
+    .modal {
+      grid-template-columns: 1fr;
+      max-height: 95vh;
+    }
+    .modal-image {
+      border-radius: 20px 20px 0 0;
+      min-height: 280px;
+      max-height: 350px;
+    }
+    .modal-info { padding: 24px 20px 32px; }
+    .modal-title { font-size: 26px; }
+  }
+
   /* Cart Drawer */
   .cart-overlay {
     display: none;
@@ -576,6 +778,7 @@
   /* Responsive */
   @media (max-width: 1024px) { .products-grid { grid-template-columns: repeat(3, 1fr); } }
   @media (max-width: 768px) {
+    .carousel-slide::after { display: none; }
     .nav-links { display: none; }
     .mobile-menu-btn { display: block; }
     .nav-inner { padding: 0 20px; grid-template-columns: auto 1fr auto; }
@@ -718,6 +921,34 @@
   </div>
 </section>
 
+<!-- Product Modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="product-modal">
+    <button class="modal-close" onclick="closeModal()">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="modal-image" id="modal-image"></div>
+    <div class="modal-info">
+      <p class="modal-category" id="modal-category"></p>
+      <h3 class="modal-title" id="modal-title"></h3>
+      <p class="modal-price" id="modal-price"></p>
+      <p id="modal-stock" style="font-family:var(--font-body);font-size:12px;letter-spacing:0.1em;margin-bottom:20px;"></p>
+      <div class="modal-divider"></div>
+      <p class="modal-desc-label">Description</p>
+      <p class="modal-desc" id="modal-desc"></p>
+      <div class="modal-qty-row">
+        <span class="modal-qty-label">Quantity</span>
+        <div class="modal-qty-controls">
+          <button class="modal-qty-btn" onclick="changeModalQty(-1)">−</button>
+          <span class="modal-qty-num" id="modal-qty">1</span>
+          <button class="modal-qty-btn" onclick="changeModalQty(1)">+</button>
+        </div>
+      </div>
+      <button class="modal-add-btn" id="modal-add-btn" onclick="addModalToCart()">Add to Cart</button>
+    </div>
+  </div>
+</div>
+
 <!-- Cart Overlay -->
 <div class="cart-overlay" id="cart-overlay" onclick="toggleCart()"></div>
 
@@ -823,6 +1054,16 @@
   }
 
   function addToCart(product) {
+    // Check stock
+    var currentInCart = 0;
+    for (var j = 0; j < cart.length; j++) {
+      if (cart[j].variantId === product.variantId) { currentInCart = cart[j].qty; break; }
+    }
+    if (currentInCart >= product.stock) {
+      showToastMsg('Sorry, only ' + product.stock + ' available');
+      return;
+    }
+
     var existing = null;
     for (var i = 0; i < cart.length; i++) {
       if (cart[i].variantId === product.variantId) { existing = cart[i]; break; }
@@ -830,7 +1071,7 @@
     if (existing) {
       existing.qty += 1;
     } else {
-      cart.push({ name: product.name, price: product.price, image: product.image, variantId: product.variantId, qty: 1 });
+      cart.push({ name: product.name, price: product.price, image: product.image, variantId: product.variantId, qty: 1, stock: product.stock });
     }
     updateCartUI();
     showToast();
@@ -842,6 +1083,10 @@
   }
 
   function updateQty(index, delta) {
+    if (delta > 0 && cart[index].qty >= cart[index].stock) {
+      showToastMsg('Sorry, only ' + cart[index].stock + ' available');
+      return;
+    }
     cart[index].qty += delta;
     if (cart[index].qty <= 0) cart.splice(index, 1);
     updateCartUI();
@@ -897,9 +1142,14 @@
   }
 
   function showToast() {
+    showToastMsg('Added to cart ✓');
+  }
+
+  function showToastMsg(msg) {
     var toast = document.getElementById('added-toast');
+    toast.textContent = msg;
     toast.classList.add('show');
-    setTimeout(function() { toast.classList.remove('show'); }, 2000);
+    setTimeout(function() { toast.classList.remove('show'); }, 2500);
   }
 
   async function goToCheckout() {
@@ -1044,7 +1294,7 @@
     var grid = document.getElementById('products-grid');
     grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--stone-400);font-family:var(--font-body);font-size:13px;">Loading products...</div>';
 
-    var query = '{ products(first: 50) { edges { node { id title handle description productType priceRange { minVariantPrice { amount currencyCode } } images(first: 4) { edges { node { url altText } } } variants(first: 1) { edges { node { id } } } } } } }';
+    var query = '{ products(first: 50) { edges { node { id title handle description productType priceRange { minVariantPrice { amount currencyCode } } images(first: 6) { edges { node { url altText } } } variants(first: 1) { edges { node { id availableForSale quantityAvailable } } } } } } }';
     var data = await shopifyFetch(query);
 
     if (data && data.data && data.data.products && data.data.products.edges) {
@@ -1058,7 +1308,10 @@
           price: parseFloat(node.priceRange.minVariantPrice.amount),
           category: node.productType || 'Jewelry',
           image: node.images.edges[0] ? node.images.edges[0].node.url : null,
+          images: node.images.edges.map(function(e) { return e.node.url; }),
           variantId: node.variants.edges[0] ? node.variants.edges[0].node.id : null,
+          available: node.variants.edges[0] ? node.variants.edges[0].node.availableForSale : false,
+          stock: node.variants.edges[0] && node.variants.edges[0].node.quantityAvailable !== null ? node.variants.edges[0].node.quantityAvailable : 999,
         };
       });
       document.querySelector('.shop-tag').textContent = 'The Collection (' + products.length + ')';
@@ -1078,7 +1331,8 @@
     var html = '';
     for (var i = 0; i < filtered.length; i++) {
       var p = filtered[i];
-      html += '<div class="product-card">';
+      var pIndex = products.indexOf(p);
+      html += '<div class="product-card" onclick="openModal(' + pIndex + ')">';
       html += '<div class="product-img-wrap">';
       if (p.image) {
         html += '<img src="' + p.image + '" alt="' + p.name + '" loading="lazy">';
@@ -1086,8 +1340,11 @@
         html += '<div class="product-placeholder"><div class="product-placeholder-circle"></div></div>';
       }
       html += '<button class="product-wish" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></button>';
-      // Use a data attribute to reference the product index
-      html += '<button class="product-overlay" onclick="event.stopPropagation(); addToCart(products[' + products.indexOf(p) + '])">Add to Cart</button>';
+      if (p.stock <= 0 || !p.available) {
+        html += '<button class="product-overlay" onclick="event.stopPropagation()" style="background:var(--stone-500);transform:translateY(0);">Sold Out</button>';
+      } else {
+        html += '<button class="product-overlay" onclick="event.stopPropagation(); addToCart(products[' + pIndex + '])">Add to Cart</button>';
+      }
       html += '</div>';
       html += '<p class="product-type">' + p.category + '</p>';
       html += '<p class="product-name">' + p.name + '</p>';
@@ -1096,6 +1353,122 @@
     }
     grid.innerHTML = html;
   }
+
+  // ============================================
+  // PRODUCT MODAL
+  // ============================================
+  var modalProduct = null;
+  var modalQty = 1;
+  var modalImageIndex = 0;
+  var modalImages = [];
+
+  function openModal(productIndex) {
+    modalProduct = products[productIndex];
+    modalQty = 1;
+    modalImageIndex = 0;
+
+    document.getElementById('modal-category').textContent = modalProduct.category;
+    document.getElementById('modal-title').textContent = modalProduct.name;
+    document.getElementById('modal-price').textContent = '$' + modalProduct.price.toFixed(2);
+    document.getElementById('modal-desc').textContent = modalProduct.description || 'Beautiful handcrafted polymer clay jewelry. Each piece is unique and made with love.';
+    document.getElementById('modal-qty').textContent = '1';
+
+    // Stock status
+    var stockEl = document.getElementById('modal-stock');
+    if (modalProduct.stock <= 0 || !modalProduct.available) {
+      stockEl.textContent = 'Sold Out';
+      stockEl.style.color = '#b45309';
+      document.getElementById('modal-add-btn').textContent = 'Sold Out';
+      document.getElementById('modal-add-btn').disabled = true;
+    } else if (modalProduct.stock <= 5) {
+      stockEl.textContent = 'Only ' + modalProduct.stock + ' left!';
+      stockEl.style.color = '#b45309';
+      document.getElementById('modal-add-btn').textContent = 'Add to Cart';
+      document.getElementById('modal-add-btn').disabled = false;
+    } else {
+      stockEl.textContent = 'In Stock';
+      stockEl.style.color = '#6d9e6d';
+      document.getElementById('modal-add-btn').textContent = 'Add to Cart';
+      document.getElementById('modal-add-btn').disabled = false;
+    }
+
+    // Get all images for this product
+    modalImages = modalProduct.images || (modalProduct.image ? [modalProduct.image] : []);
+    renderModalImage();
+
+    document.getElementById('modal-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function renderModalImage() {
+    var container = document.getElementById('modal-image');
+    var html = '';
+    if (modalImages.length > 0) {
+      html += '<img src="' + modalImages[modalImageIndex] + '" alt="' + modalProduct.name + '">';
+      if (modalImages.length > 1) {
+        html += '<div class="modal-image-nav">';
+        for (var i = 0; i < modalImages.length; i++) {
+          html += '<button class="modal-img-dot' + (i === modalImageIndex ? ' active' : '') + '" onclick="changeModalImage(' + i + ')"></button>';
+        }
+        html += '</div>';
+      }
+    } else {
+      html += '<div style="display:flex;align-items:center;justify-content:center;height:100%;"><div style="width:120px;height:120px;border-radius:50%;background:var(--stone-200);opacity:0.5;"></div></div>';
+    }
+    container.innerHTML = html;
+  }
+
+  function changeModalImage(index) {
+    modalImageIndex = index;
+    renderModalImage();
+  }
+
+  function changeModalQty(delta) {
+    var currentInCart = 0;
+    for (var i = 0; i < cart.length; i++) {
+      if (cart[i].variantId === modalProduct.variantId) { currentInCart = cart[i].qty; break; }
+    }
+    var maxCanAdd = modalProduct.stock - currentInCart;
+    var newQty = modalQty + delta;
+    if (newQty > maxCanAdd) {
+      showToastMsg('Sorry, only ' + modalProduct.stock + ' available' + (currentInCart > 0 ? ' (' + currentInCart + ' in cart)' : ''));
+      return;
+    }
+    modalQty = Math.max(1, newQty);
+    document.getElementById('modal-qty').textContent = modalQty;
+  }
+
+  function addModalToCart() {
+    for (var i = 0; i < modalQty; i++) {
+      addToCart(modalProduct);
+    }
+    // Reset qty display since addToCart handles incrementing
+    if (modalQty > 1) {
+      // Adjust since addToCart adds 1 each time but we want the total qty
+      var found = null;
+      for (var j = 0; j < cart.length; j++) {
+        if (cart[j].variantId === modalProduct.variantId) { found = cart[j]; break; }
+      }
+      if (found) {
+        found.qty = found.qty - modalQty + modalQty; // Already correct from loop
+      }
+      updateCartUI();
+    }
+    closeModal();
+  }
+
+  // Close modal with Escape key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeModal();
+      if (document.getElementById('cart-drawer').classList.contains('open')) toggleCart();
+    }
+  });
 
   function filterProducts(category, btn) {
     var btns = document.querySelectorAll('.filter-btn');
