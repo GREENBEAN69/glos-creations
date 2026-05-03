@@ -1281,7 +1281,31 @@
       </div>
       <button class="login-btn" id="login-btn" onclick="loginCustomer()">Log In</button>
       <p class="login-error" id="login-error"></p>
+      <p style="text-align:center;margin-top:12px;"><a onclick="showForgotForm()" style="font-family:var(--font-body);font-size:12px;color:var(--stone-500);border-bottom:1px solid var(--stone-300);cursor:pointer;">Forgot password?</a></p>
       <p class="login-toggle">Don't have an account? <a onclick="showRegisterForm()">Create one</a></p>
+    </div>
+
+    <!-- Forgot Password Form -->
+    <div id="forgot-form" style="display:none;">
+      <h3 class="login-title">Reset password</h3>
+      <p class="login-subtitle">Enter your email and we'll send you a password reset link.</p>
+      <div class="login-field">
+        <label class="login-label">Email</label>
+        <input class="login-input" type="email" id="forgot-email" placeholder="your@email.com">
+      </div>
+      <button class="login-btn" id="forgot-btn" onclick="resetPassword()">Send Reset Link</button>
+      <p class="login-error" id="forgot-error"></p>
+      <div id="forgot-success" style="display:none;margin-top:16px;">
+        <div style="background:#ecfdf5;border-radius:12px;padding:16px;margin-bottom:16px;">
+          <p style="font-family:var(--font-body);font-size:13px;color:#166534;font-weight:500;margin-bottom:6px;">Reset link sent!</p>
+          <p style="font-family:var(--font-body);font-size:12px;color:#166534;line-height:1.6;">Check your email and click the reset link. After setting your new password, come back here to log in.</p>
+        </div>
+        <button class="login-btn" onclick="showLoginForm()">Back to Log In</button>
+      </div>
+      <p class="login-toggle">Remember your password? <a onclick="showLoginForm()">Log in</a></p>
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--stone-200);">
+        <p style="font-family:var(--font-body);font-size:12px;color:var(--stone-400);text-align:center;">Or <a onclick="showRegisterForm()" style="color:var(--stone-700);border-bottom:1px solid var(--stone-300);cursor:pointer;">create a new account</a> · <a href="mailto:sales@gloscreations316.com?subject=Account Help" style="color:var(--stone-700);border-bottom:1px solid var(--stone-300);">contact support</a></p>
+      </div>
     </div>
 
     <!-- Register Form -->
@@ -1703,6 +1727,7 @@
   function showLoginForm() {
     document.getElementById('login-form').style.display = 'block';
     document.getElementById('register-form').style.display = 'none';
+    document.getElementById('forgot-form').style.display = 'none';
     document.getElementById('account-view').style.display = 'none';
     document.getElementById('login-error').style.display = 'none';
   }
@@ -1710,18 +1735,69 @@
   function showRegisterForm() {
     document.getElementById('login-form').style.display = 'none';
     document.getElementById('register-form').style.display = 'block';
+    document.getElementById('forgot-form').style.display = 'none';
     document.getElementById('account-view').style.display = 'none';
     document.getElementById('register-error').style.display = 'none';
+  }
+
+  function showForgotForm() {
+    document.getElementById('login-form').style.display = 'none';
+    document.getElementById('register-form').style.display = 'none';
+    document.getElementById('forgot-form').style.display = 'block';
+    document.getElementById('account-view').style.display = 'none';
+    document.getElementById('forgot-error').style.display = 'none';
+    document.getElementById('forgot-success').style.display = 'none';
+  }
+
+  async function resetPassword() {
+    var email = document.getElementById('forgot-email').value.trim();
+    var btn = document.getElementById('forgot-btn');
+    var errEl = document.getElementById('forgot-error');
+    var successEl = document.getElementById('forgot-success');
+
+    if (!email) {
+      errEl.textContent = 'Please enter your email address.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    btn.textContent = 'Sending...';
+    btn.disabled = true;
+    errEl.style.display = 'none';
+    successEl.style.display = 'none';
+
+    var query = 'mutation { customerRecover(email: "' + email.replace(/"/g, '\\"') + '") { customerUserErrors { message } } }';
+    var data = await shopifyFetch(query);
+
+    if (data && data.data && data.data.customerRecover) {
+      var errors = data.data.customerRecover.customerUserErrors;
+      if (errors && errors.length > 0) {
+        errEl.textContent = errors[0].message;
+        errEl.style.display = 'block';
+      } else {
+        successEl.textContent = 'Reset link sent! Check your email (including spam folder).';
+        successEl.style.display = 'block';
+      }
+    } else {
+      // Show success anyway - don't reveal if email exists or not for security
+      successEl.textContent = 'If an account exists with that email, a reset link has been sent.';
+      successEl.style.display = 'block';
+    }
+
+    btn.textContent = 'Send Reset Link';
+    btn.disabled = false;
   }
 
   function showAccountView() {
     document.getElementById('login-form').style.display = 'none';
     document.getElementById('register-form').style.display = 'none';
+    document.getElementById('forgot-form').style.display = 'none';
     document.getElementById('account-view').style.display = 'block';
     document.getElementById('account-greeting').textContent = 'Hi, ' + customerName + '!';
     switchAcctTab('orders', document.querySelector('.acct-tab'));
     fetchOrders();
     fetchAddresses();
+    fetchWishlistFromShopify();
     renderWishlist();
   }
 
@@ -1919,22 +1995,56 @@
   }
 
   // ============================================
-  // WISHLIST (stored locally)
+  // WISHLIST (saved to Shopify customer metafield)
   // ============================================
   var wishlist = [];
 
   function loadWishlist() {
+    // Load from session cache first for speed
     try {
-      var saved = localStorage.getItem('gc_wishlist');
+      var saved = sessionStorage.getItem('gc_wishlist');
       if (saved) wishlist = JSON.parse(saved);
     } catch(e) { wishlist = []; }
+    // Then sync from Shopify if logged in
+    if (customerToken) fetchWishlistFromShopify();
   }
 
   function saveWishlist() {
-    try { localStorage.setItem('gc_wishlist', JSON.stringify(wishlist)); } catch(e) {}
+    try { sessionStorage.setItem('gc_wishlist', JSON.stringify(wishlist)); } catch(e) {}
+    if (customerToken) saveWishlistToShopify();
+  }
+
+  async function fetchWishlistFromShopify() {
+    if (!customerToken) return;
+    var query = '{ customer(customerAccessToken: "' + customerToken + '") { metafield(namespace: "custom", key: "wishlist") { value } } }';
+    var data = await shopifyFetch(query);
+    if (data && data.data && data.data.customer && data.data.customer.metafield) {
+      try {
+        wishlist = JSON.parse(data.data.customer.metafield.value);
+        sessionStorage.setItem('gc_wishlist', JSON.stringify(wishlist));
+        // Re-render products to show correct heart states
+        var activeFilter = document.querySelector('.filter-btn.active');
+        if (activeFilter) renderProducts(activeFilter.textContent);
+        renderWishlist();
+      } catch(e) {}
+    }
+  }
+
+  async function saveWishlistToShopify() {
+    if (!customerToken) return;
+    var wishlistJson = JSON.stringify(wishlist).replace(/"/g, '\\"');
+    var query = 'mutation { customerUpdate(customerAccessToken: "' + customerToken + '", customer: { metafields: [{ namespace: "custom", key: "wishlist", type: "json", value: "' + wishlistJson + '" }] }) { customer { id } customerUserErrors { message } } }';
+    await shopifyFetch(query);
   }
 
   function toggleWishlist(productIndex) {
+    // Require login
+    if (!customerToken) {
+      openLoginModal();
+      showToastMsg('Please log in to save items');
+      return;
+    }
+
     var p = products[productIndex];
     var idx = -1;
     for (var i = 0; i < wishlist.length; i++) {
@@ -1962,6 +2072,9 @@
     wishlist.splice(index, 1);
     saveWishlist();
     renderWishlist();
+    // Re-render product cards to update heart states
+    var activeFilter = document.querySelector('.filter-btn.active');
+    if (activeFilter) renderProducts(activeFilter.textContent);
   }
 
   function renderWishlist() {
@@ -2067,12 +2180,17 @@
   function logoutCustomer() {
     customerToken = null;
     customerName = '';
+    wishlist = [];
     try {
       sessionStorage.removeItem('gc_token');
       sessionStorage.removeItem('gc_name');
       sessionStorage.removeItem('gc_email');
+      sessionStorage.removeItem('gc_wishlist');
     } catch(e) {}
     updateNavLogin();
+    // Re-render products to clear heart states
+    var activeFilter = document.querySelector('.filter-btn.active');
+    if (activeFilter) renderProducts(activeFilter.textContent);
     showToastMsg('You\'ve been logged out');
   }
 
@@ -2096,6 +2214,7 @@
         customerName = savedName || 'there';
         updateNavLogin();
         fetchCustomerInfo().then(function() { updateNavLogin(); });
+        loadWishlist();
       }
     } catch(e) {}
   }
@@ -2239,7 +2358,7 @@
       } else {
         html += '<div class="product-placeholder"><div class="product-placeholder-circle"></div></div>';
       }
-      html += '<button class="product-wish" onclick="event.stopPropagation();toggleWishlist(' + pIndex + ')" style="' + (isInWishlist(p.variantId) ? 'opacity:1;' : '') + '"><svg viewBox="0 0 24 24"' + (isInWishlist(p.variantId) ? ' fill="var(--stone-700)"' : '') + '><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></button>';
+      html += '<button class="product-wish" onclick="event.stopPropagation();toggleWishlist(' + pIndex + ')" style="' + (isInWishlist(p.variantId) ? 'opacity:1;' : '') + '"><svg viewBox="0 0 24 24" style="' + (isInWishlist(p.variantId) ? 'stroke:#e11d48;fill:#e11d48;' : '') + '"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></button>';
       if (p.stock <= 0 || !p.available) {
         html += '<button class="product-overlay" onclick="event.stopPropagation()" style="background:var(--stone-500);transform:translateY(0);">Sold Out</button>';
       } else {
