@@ -1218,7 +1218,7 @@
         <span class="cart-badge" id="wish-badge" style="background:#e11d48;">0</span>
       </button>
       <button class="nav-logout" id="nav-logout" onclick="logoutCustomer()" style="display:none;">Log out</button>
-      <a href="https://www.instagram.com/gloscreations31_6" target="_blank" class="nav-icon" title="Follow us on Instagram" style="margin-right:4px;min-width:32px;min-height:32px;display:flex;align-items:center;justify-content:center;">
+      <a href="#" onclick="openInstagram();return false;"  class="nav-icon" title="Follow us on Instagram" style="margin-right:4px;min-width:32px;min-height:32px;display:flex;align-items:center;justify-content:center;">
         <svg viewBox="0 0 24 24" style="stroke:#d62976;width:20px;height:20px;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="#d62976" stroke="none"/></svg>
       </a>
       <button class="nav-icon" id="nav-account-btn" title="My Account" onclick="openLoginModal()" style="margin-right:8px;">
@@ -1234,7 +1234,7 @@
     <a href="#shop" onclick="document.getElementById('mobile-nav').classList.remove('show')">Shop</a>
     <a href="#about" onclick="document.getElementById('mobile-nav').classList.remove('show')">About</a>
     <a href="#contact" onclick="document.getElementById('mobile-nav').classList.remove('show')">Contact</a>
-    <a href="https://www.instagram.com/gloscreations31_6" target="_blank" style="display:flex;align-items:center;gap:8px;">
+    <a href="#" onclick="openInstagram();return false;"  style="display:flex;align-items:center;gap:8px;">
       <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#d62976;fill:none;stroke-width:1.5;"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="#d62976" stroke="none"/></svg>
       Follow us on Instagram
     </a>
@@ -1602,7 +1602,7 @@
       <div class="footer-col">
         <p class="footer-col-title">Connect</p>
         <div class="footer-social">
-          <a href="https://www.instagram.com/gloscreations31_6" target="_blank" title="Instagram"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg></a>
+          <a href="#" onclick="openInstagram();return false;"  title="Instagram"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg></a>
           <a href="mailto:sales@gloscreations316.com" title="Email"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></a>
         </div>
       </div>
@@ -2920,6 +2920,22 @@
         '<p>Polymer clay jewelry is a handcrafted artisan product. While durable for everyday wear, it is not indestructible. Normal wear and tear, including minor surface scratches, are expected over time and are not covered under any warranty. By purchasing and wearing our jewelry, you acknowledge and accept these care guidelines.</p>'
     }
   };
+
+  function openInstagram() {
+    var username = 'gloscreations31_6';
+    var webUrl = 'https://www.instagram.com/' + username;
+    // On mobile, try to open the app first
+    var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      window.location.href = 'instagram://user?username=' + username;
+      // If app doesn't open within 1 second, open in browser
+      setTimeout(function() {
+        window.open(webUrl, '_blank');
+      }, 1000);
+    } else {
+      window.open(webUrl, '_blank');
+    }
+  }
 
   function openPolicy(type) {
     var policy = policies[type];
