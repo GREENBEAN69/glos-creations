@@ -45,7 +45,55 @@
     font-size: 10.5px;
     letter-spacing: 0.2em;
     text-transform: uppercase;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
   }
+  .announcement-track {
+    display: flex;
+    transition: transform 0.5s ease;
+  }
+  .announcement-slide {
+    min-width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .announcement-slide a {
+    color: var(--stone-200);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .announcement-slide a:hover { color: white; }
+  .announcement-slide svg {
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.5;
+    flex-shrink: 0;
+  }
+  .announcement-dots {
+    position: absolute;
+    bottom: 3px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 4px;
+  }
+  .announcement-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+  .announcement-dot.active { background: rgba(255,255,255,0.8); }
 
   /* Nav */
   .nav {
@@ -1197,7 +1245,21 @@
 </head>
 <body>
 
-<div class="announcement">Free shipping on orders over $50 (continental US) · Handmade with love</div>
+<div class="announcement">
+  <div class="announcement-track" id="announce-track">
+    <div class="announcement-slide">Free shipping on orders over $50 (continental US) · Handmade with love</div>
+    <div class="announcement-slide">
+      <a href="#" onclick="openInstagram();return false;">
+        <svg viewBox="0 0 24 24" style="stroke:#d62976;"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="#d62976" stroke="none"/></svg>
+        Follow us on Instagram @gloscreations31_6
+      </a>
+    </div>
+  </div>
+  <div class="announcement-dots">
+    <button class="announcement-dot active" onclick="goToAnnounce(0)"></button>
+    <button class="announcement-dot" onclick="goToAnnounce(1)"></button>
+  </div>
+</div>
 
 <nav class="nav">
   <div class="nav-inner">
@@ -1579,8 +1641,9 @@
   <div class="footer-inner">
     <div class="footer-grid">
       <div>
-        <p class="footer-brand">Glo's Creations 3:16</p>
-        <p class="footer-brand-desc">Handmade polymer clay jewelry, designed and sculpted with care.</p>
+        <img src="https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/logo.png" alt="Glo's Creation" style="max-width:240px;margin-bottom:12px;">
+        <p style="font-style:italic;font-size:14px;color:var(--stone-500);line-height:1.6;margin-bottom:6px;">"Be strong and courageous. Do not be afraid or terrified because of them, for the LORD your God goes with you; He will never leave you nor forsake you."</p>
+        <p style="font-family:var(--font-body);font-size:11px;color:var(--stone-400);letter-spacing:0.1em;">— Deuteronomy 31:6</p>
       </div>
       <div class="footer-col">
         <p class="footer-col-title">Shop</p>
@@ -2783,7 +2846,7 @@
     container.innerHTML = html;
   }
 
-  function handleSubscribe() {
+  async function handleSubscribe() {
     var input = document.getElementById('email-input');
     var msg = document.getElementById('subscribe-msg');
     var email = input.value.trim();
@@ -2793,10 +2856,51 @@
       msg.style.color = '#b45309';
       return;
     }
-    msg.textContent = 'Thank you for subscribing!';
+
+    msg.textContent = 'Subscribing...';
     msg.style.display = 'block';
-    msg.style.color = '#6d9e6d';
-    input.value = '';
+    msg.style.color = 'var(--stone-400)';
+
+    // Create customer in Shopify with email marketing consent
+    var query = 'mutation { customerCreate(input: { email: "' + email.replace(/"/g, '\\"') + '", emailMarketingConsent: { marketingState: SUBSCRIBED, marketingOptInLevel: SINGLE_OPT_IN } }) { customer { id email } customerUserErrors { message field } } }';
+
+    var data = await shopifyFetch(query);
+
+    if (data && data.data && data.data.customerCreate) {
+      var result = data.data.customerCreate;
+      if (result.customer) {
+        msg.textContent = 'You\'re in! Watch your inbox for new drops and exclusive offers.';
+        msg.style.color = '#6d9e6d';
+        input.value = '';
+
+        // Also send notification email to you
+        sendSubscribeNotification(email);
+      } else if (result.customerUserErrors && result.customerUserErrors.length > 0) {
+        var errMsg = result.customerUserErrors[0].message || '';
+        if (errMsg.toLowerCase().indexOf('taken') !== -1 || errMsg.toLowerCase().indexOf('already') !== -1) {
+          msg.textContent = 'You\'re already subscribed! Thank you for your support.';
+          msg.style.color = '#6d9e6d';
+          input.value = '';
+        } else {
+          msg.textContent = errMsg || 'Something went wrong. Please try again.';
+          msg.style.color = '#b45309';
+        }
+      }
+    } else {
+      msg.textContent = 'Something went wrong. Please try again.';
+      msg.style.color = '#b45309';
+    }
+  }
+
+  function sendSubscribeNotification(email) {
+    // Use a simple mailto link approach - opens nothing visible
+    // The real notification will come from Shopify's "New customer" notification
+    // But we can also use a hidden form submission to a free service
+
+    // For now, Shopify handles the notification automatically
+    // when a new customer is created - make sure "New customer" 
+    // notification is enabled in Shopify Settings → Notifications
+    console.log('New subscriber:', email, '- Shopify will send notification');
   }
 
   // ============================================
@@ -2920,6 +3024,34 @@
         '<p>Polymer clay jewelry is a handcrafted artisan product. While durable for everyday wear, it is not indestructible. Normal wear and tear, including minor surface scratches, are expected over time and are not covered under any warranty. By purchasing and wearing our jewelry, you acknowledge and accept these care guidelines.</p>'
     }
   };
+
+  // ============================================
+  // ANNOUNCEMENT BAR ROTATION
+  // ============================================
+  var announceIndex = 0;
+  var announceTotal = 2;
+  var announceTimer = null;
+
+  function goToAnnounce(index) {
+    announceIndex = index;
+    var track = document.getElementById('announce-track');
+    track.style.transform = 'translateX(-' + (announceIndex * 100) + '%)';
+    var dots = document.querySelectorAll('.announcement-dot');
+    for (var i = 0; i < dots.length; i++) dots[i].classList.remove('active');
+    if (dots[announceIndex]) dots[announceIndex].classList.add('active');
+    resetAnnounceTimer();
+  }
+
+  function nextAnnounce() {
+    goToAnnounce((announceIndex + 1) % announceTotal);
+  }
+
+  function resetAnnounceTimer() {
+    if (announceTimer) clearInterval(announceTimer);
+    announceTimer = setInterval(nextAnnounce, 5000);
+  }
+
+  resetAnnounceTimer();
 
   function openInstagram() {
     var username = 'gloscreations31_6';
