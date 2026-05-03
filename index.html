@@ -135,9 +135,9 @@
   /* Carousel */
   .carousel {
     position: relative;
-    aspect-ratio: 1/1;
+    aspect-ratio: 5/6;
     overflow: hidden;
-    background: var(--stone-100);
+    background: var(--stone-50);
     border-radius: 24px;
     box-shadow: 0 8px 40px rgba(0,0,0,0.08);
   }
@@ -156,12 +156,13 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: center 15%;
   }
   .carousel-slide::after {
     content: '';
     position: absolute;
     inset: 0;
-    box-shadow: inset 0 0 120px 60px rgba(250,250,249,0.85);
+    box-shadow: inset 0 0 60px 20px rgba(250,250,249,0.4);
     pointer-events: none;
     z-index: 1;
   }
@@ -170,47 +171,50 @@
     bottom: 0;
     left: 0;
     right: 0;
-    background: linear-gradient(transparent 0%, rgba(28,25,23,0.3) 30%, rgba(28,25,23,0.8));
-    backdrop-filter: blur(2px);
-    padding: 48px 28px 28px;
-    color: white;
+    background: var(--stone-50);
+    padding: 14px 24px;
+    color: var(--stone-900);
+    z-index: 2;
   }
   .carousel-slide-tag {
     font-family: var(--font-body);
     font-size: 9px;
     letter-spacing: 0.2em;
     text-transform: uppercase;
-    color: rgba(255,255,255,0.7);
-    margin-bottom: 6px;
+    color: var(--stone-400);
+    margin-bottom: 4px;
   }
   .carousel-slide-name {
-    font-size: 22px;
+    font-size: 18px;
     font-style: italic;
-    font-weight: 300;
-    margin-bottom: 4px;
+    font-weight: 400;
+    margin-bottom: 2px;
+    color: var(--stone-900);
   }
   .carousel-slide-price {
     font-family: var(--font-body);
     font-size: 14px;
-    color: rgba(255,255,255,0.85);
-    margin-bottom: 12px;
+    color: var(--stone-600);
+    margin-bottom: 0;
+    display: inline;
   }
   .carousel-slide-btn {
     display: inline-block;
     font-family: var(--font-body);
-    font-size: 9.5px;
+    font-size: 9px;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: white;
-    border: 1px solid rgba(255,255,255,0.5);
-    padding: 9px 22px;
-    border-radius: 24px;
-    transition: background 0.2s, border-color 0.2s;
-    background: transparent;
+    color: var(--stone-50);
+    background: var(--stone-900);
+    padding: 8px 18px;
+    border-radius: 20px;
+    transition: background 0.2s;
+    border: none;
+    float: right;
+    margin-top: -2px;
   }
   .carousel-slide-btn:hover {
-    background: rgba(255,255,255,0.2);
-    border-color: white;
+    background: var(--stone-700);
   }
   .carousel-arrow {
     position: absolute;
@@ -243,22 +247,23 @@
   .carousel-next { right: 12px; }
   .carousel-dots {
     position: absolute;
-    bottom: 12px;
+    bottom: 68px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
     gap: 8px;
-    z-index: 2;
+    z-index: 3;
   }
   .carousel-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: rgba(255,255,255,0.35);
+    background: rgba(255,255,255,0.5);
     border: none;
     padding: 0;
     transition: all 0.3s;
     cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
   }
   .carousel-dot.active {
     background: white;
@@ -1153,6 +1158,10 @@
     </div>
     <div class="nav-right">
       <span class="nav-user-name" id="nav-user" style="display:none;">Hi, <span id="nav-user-name"></span></span>
+      <button class="nav-icon" id="nav-wishlist-btn" onclick="openLoginModal();setTimeout(function(){switchAcctTab('wishlist',document.querySelectorAll('.acct-tab')[2])},100);" title="My Wishlist" style="display:none;margin-right:4px;position:relative;">
+        <svg viewBox="0 0 24 24" style="stroke:#e11d48;"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+        <span class="cart-badge" id="wish-badge" style="background:#e11d48;">0</span>
+      </button>
       <button class="nav-logout" id="nav-logout" onclick="logoutCustomer()" style="display:none;">Log out</button>
       <button class="nav-icon" id="nav-account-btn" title="My Account" onclick="openLoginModal()" style="margin-right:8px;">
         <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -1585,6 +1594,31 @@
     updateCartUI();
   }
 
+  function saveForLater(index) {
+    if (!customerToken) {
+      showToastMsg('Please log in to save items');
+      removeFromCart(index);
+      openLoginModal();
+      return;
+    }
+    var item = cart[index];
+    // Check if already in wishlist
+    var alreadyIn = false;
+    for (var i = 0; i < wishlist.length; i++) {
+      if (wishlist[i].variantId === item.variantId) { alreadyIn = true; break; }
+    }
+    if (!alreadyIn) {
+      wishlist.push({ name: item.name, price: item.price, image: item.image, variantId: item.variantId, category: '' });
+      saveWishlist();
+    }
+    cart.splice(index, 1);
+    updateCartUI();
+    // Re-render products to show heart
+    var activeFilter = document.querySelector('.filter-btn.active');
+    if (activeFilter) renderProducts(activeFilter.textContent);
+    showToastMsg('Saved to wishlist ♡');
+  }
+
   function updateQty(index, delta) {
     if (delta > 0 && cart[index].qty >= cart[index].stock) {
       showToastMsg('Sorry, only ' + cart[index].stock + ' available');
@@ -1638,8 +1672,12 @@
       html += '<button class="cart-qty-btn" onclick="updateQty(' + j + ', -1)">−</button>';
       html += '<span class="cart-qty-num">' + item.qty + '</span>';
       html += '<button class="cart-qty-btn" onclick="updateQty(' + j + ', 1)">+</button>';
+      html += '</div>';
+      html += '<div style="display:flex;gap:12px;margin-top:8px;">';
       html += '<button class="cart-item-remove" onclick="removeFromCart(' + j + ')">Remove</button>';
-      html += '</div></div></div>';
+      html += '<button class="cart-item-remove" onclick="saveForLater(' + j + ')">Save for Later ♡</button>';
+      html += '</div>';
+      html += '</div></div>';
     }
     container.innerHTML = html;
   }
@@ -1797,7 +1835,7 @@
     switchAcctTab('orders', document.querySelector('.acct-tab'));
     fetchOrders();
     fetchAddresses();
-    fetchWishlistFromShopify();
+    loadWishlist();
     renderWishlist();
   }
 
@@ -1837,6 +1875,7 @@
           sessionStorage.setItem('gc_token', customerToken);
         } catch(e) {}
         await fetchCustomerInfo();
+        loadWishlist();
         updateNavLogin();
         showAccountView();
         showToastMsg('Welcome back, ' + customerName + '!');
@@ -1995,46 +2034,35 @@
   }
 
   // ============================================
-  // WISHLIST (saved to Shopify customer metafield)
+  // WISHLIST (saved per customer in localStorage)
   // ============================================
   var wishlist = [];
 
-  function loadWishlist() {
-    // Load from session cache first for speed
+  function getWishlistKey() {
     try {
-      var saved = sessionStorage.getItem('gc_wishlist');
-      if (saved) wishlist = JSON.parse(saved);
-    } catch(e) { wishlist = []; }
-    // Then sync from Shopify if logged in
-    if (customerToken) fetchWishlistFromShopify();
+      var email = sessionStorage.getItem('gc_email');
+      if (email) return 'gc_wish_' + email;
+    } catch(e) {}
+    return null;
   }
 
-  function saveWishlist() {
-    try { sessionStorage.setItem('gc_wishlist', JSON.stringify(wishlist)); } catch(e) {}
-    if (customerToken) saveWishlistToShopify();
-  }
-
-  async function fetchWishlistFromShopify() {
-    if (!customerToken) return;
-    var query = '{ customer(customerAccessToken: "' + customerToken + '") { metafield(namespace: "custom", key: "wishlist") { value } } }';
-    var data = await shopifyFetch(query);
-    if (data && data.data && data.data.customer && data.data.customer.metafield) {
+  function loadWishlist() {
+    wishlist = [];
+    var key = getWishlistKey();
+    if (key) {
       try {
-        wishlist = JSON.parse(data.data.customer.metafield.value);
-        sessionStorage.setItem('gc_wishlist', JSON.stringify(wishlist));
-        // Re-render products to show correct heart states
-        var activeFilter = document.querySelector('.filter-btn.active');
-        if (activeFilter) renderProducts(activeFilter.textContent);
-        renderWishlist();
-      } catch(e) {}
+        var saved = localStorage.getItem(key);
+        if (saved) wishlist = JSON.parse(saved);
+      } catch(e) { wishlist = []; }
     }
   }
 
-  async function saveWishlistToShopify() {
-    if (!customerToken) return;
-    var wishlistJson = JSON.stringify(wishlist).replace(/"/g, '\\"');
-    var query = 'mutation { customerUpdate(customerAccessToken: "' + customerToken + '", customer: { metafields: [{ namespace: "custom", key: "wishlist", type: "json", value: "' + wishlistJson + '" }] }) { customer { id } customerUserErrors { message } } }';
-    await shopifyFetch(query);
+  function saveWishlist() {
+    var key = getWishlistKey();
+    if (key) {
+      try { localStorage.setItem(key, JSON.stringify(wishlist)); } catch(e) {}
+    }
+    updateWishBadge();
   }
 
   function toggleWishlist(productIndex) {
@@ -2185,10 +2213,8 @@
       sessionStorage.removeItem('gc_token');
       sessionStorage.removeItem('gc_name');
       sessionStorage.removeItem('gc_email');
-      sessionStorage.removeItem('gc_wishlist');
     } catch(e) {}
     updateNavLogin();
-    // Re-render products to clear heart states
     var activeFilter = document.querySelector('.filter-btn.active');
     if (activeFilter) renderProducts(activeFilter.textContent);
     showToastMsg('You\'ve been logged out');
@@ -2199,9 +2225,22 @@
       document.getElementById('nav-user').style.display = 'inline';
       document.getElementById('nav-user-name').textContent = customerName;
       document.getElementById('nav-logout').style.display = 'inline';
+      document.getElementById('nav-wishlist-btn').style.display = 'flex';
+      updateWishBadge();
     } else {
       document.getElementById('nav-user').style.display = 'none';
       document.getElementById('nav-logout').style.display = 'none';
+      document.getElementById('nav-wishlist-btn').style.display = 'none';
+    }
+  }
+
+  function updateWishBadge() {
+    var badge = document.getElementById('wish-badge');
+    if (wishlist.length > 0) {
+      badge.textContent = wishlist.length;
+      badge.classList.add('show');
+    } else {
+      badge.classList.remove('show');
     }
   }
 
