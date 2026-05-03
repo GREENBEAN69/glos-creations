@@ -350,6 +350,340 @@
   .newsletter-form button { background: var(--stone-50); color: var(--stone-900); padding: 13px 24px; font-family: var(--font-body); font-size: 10.5px; letter-spacing: 0.18em; text-transform: uppercase; border: none; transition: background 0.2s; white-space: nowrap; }
   .newsletter-form button:hover { background: var(--stone-200); }
 
+  /* Login Modal */
+  .login-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 250;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  .login-overlay.open { display: flex; align-items: center; justify-content: center; }
+  .login-modal {
+    background: var(--stone-50);
+    border-radius: 20px;
+    max-width: 560px;
+    width: 92%;
+    padding: 36px 32px;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    animation: modalIn 0.3s ease;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .login-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--stone-100);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .login-close:hover { background: var(--stone-200); }
+  .login-close svg { width: 18px; height: 18px; stroke: var(--stone-700); fill: none; stroke-width: 1.5; }
+  .login-title {
+    font-size: 28px;
+    font-weight: 300;
+    font-style: italic;
+    margin-bottom: 8px;
+    color: var(--stone-900);
+  }
+  .login-subtitle {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--stone-500);
+    margin-bottom: 28px;
+  }
+  .login-field {
+    margin-bottom: 16px;
+  }
+  .login-label {
+    display: block;
+    font-family: var(--font-body);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--stone-500);
+    margin-bottom: 6px;
+  }
+  .login-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--stone-300);
+    border-radius: 10px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--stone-900);
+    background: white;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .login-input:focus { border-color: var(--stone-700); }
+  .login-btn {
+    width: 100%;
+    background: var(--stone-900);
+    color: white;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-top: 8px;
+    transition: background 0.2s;
+  }
+  .login-btn:hover { background: var(--stone-700); }
+  .login-btn:disabled { background: var(--stone-400); cursor: not-allowed; }
+  .login-error {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: #b45309;
+    margin-top: 12px;
+    display: none;
+  }
+  .login-toggle {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--stone-500);
+    text-align: center;
+    margin-top: 20px;
+  }
+  .login-toggle a {
+    color: var(--stone-800);
+    border-bottom: 1px solid var(--stone-300);
+    cursor: pointer;
+  }
+  .login-toggle a:hover { color: var(--stone-900); border-color: var(--stone-900); }
+  .nav-user-name {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--stone-600);
+    margin-right: 8px;
+    white-space: nowrap;
+  }
+  .nav-user-name span {
+    color: var(--stone-900);
+    font-weight: 500;
+  }
+  .nav-logout {
+    background: none;
+    border: none;
+    font-family: var(--font-body);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--stone-400);
+    margin-right: 12px;
+    transition: color 0.2s;
+    padding: 4px;
+  }
+  .nav-logout:hover { color: var(--stone-900); }
+
+  .order-card {
+    border: 1px solid var(--stone-200);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    transition: border-color 0.2s;
+  }
+  .order-card:hover { border-color: var(--stone-400); }
+  .order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .order-number {
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--stone-800);
+  }
+  .order-status {
+    font-family: var(--font-body);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 12px;
+    background: var(--stone-100);
+    color: var(--stone-600);
+  }
+  .order-status.fulfilled { background: #ecfdf5; color: #166534; }
+  .order-status.unfulfilled { background: #fef9c3; color: #854d0e; }
+  .order-date {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--stone-400);
+    margin-bottom: 10px;
+  }
+  .order-items {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+  .order-item-thumb {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--stone-100);
+  }
+  .order-item-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .order-total {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--stone-700);
+    display: flex;
+    justify-content: space-between;
+  }
+  .order-total span:last-child { font-weight: 500; color: var(--stone-900); }
+  .orders-empty {
+    text-align: center;
+    padding: 32px 0;
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--stone-400);
+  }
+  .orders-loading {
+    text-align: center;
+    padding: 32px 0;
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--stone-400);
+  }
+
+  /* Account Tabs */
+  .acct-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--stone-200);
+    margin-bottom: 20px;
+    margin-top: 4px;
+  }
+  .acct-tab {
+    flex: 1;
+    padding: 10px 4px;
+    font-family: var(--font-body);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--stone-400);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    text-align: center;
+    transition: color 0.2s, border-color 0.2s;
+    white-space: nowrap;
+  }
+  .acct-tab:hover { color: var(--stone-700); }
+  .acct-tab.active { color: var(--stone-900); border-bottom-color: var(--stone-900); }
+  .acct-panel { display: none; }
+  .acct-panel.active { display: block; }
+
+  /* Profile */
+  .profile-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--stone-100);
+  }
+  .profile-label {
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--stone-400);
+  }
+  .profile-value {
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--stone-800);
+  }
+
+  /* Wishlist */
+  .wish-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .wish-card {
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--stone-100);
+    cursor: pointer;
+    transition: transform 0.2s;
+    position: relative;
+  }
+  .wish-card:hover { transform: translateY(-2px); }
+  .wish-card img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+  .wish-card-info { padding: 8px 10px; }
+  .wish-card-name { font-size: 12px; font-style: italic; color: var(--stone-800); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wish-card-price { font-family: var(--font-body); font-size: 11px; color: var(--stone-500); }
+  .wish-remove {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.85);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: var(--stone-600);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .wish-card:hover .wish-remove { opacity: 1; }
+
+  /* Addresses */
+  .addr-card {
+    border: 1px solid var(--stone-200);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 10px;
+    position: relative;
+  }
+  .addr-card p { font-family: var(--font-body); font-size: 13px; color: var(--stone-700); line-height: 1.6; }
+  .addr-default {
+    font-family: var(--font-body);
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #166534;
+    background: #ecfdf5;
+    padding: 3px 10px;
+    border-radius: 10px;
+    display: inline-block;
+    margin-bottom: 8px;
+  }
+  .addr-actions { display: flex; gap: 12px; margin-top: 10px; }
+  .addr-actions button {
+    background: none;
+    border: none;
+    font-family: var(--font-body);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--stone-400);
+    padding: 0;
+    transition: color 0.2s;
+  }
+  .addr-actions button:hover { color: var(--stone-900); }
+
   /* Product Modal */
   .modal-overlay {
     display: none;
@@ -818,6 +1152,11 @@
       </div>
     </div>
     <div class="nav-right">
+      <span class="nav-user-name" id="nav-user" style="display:none;">Hi, <span id="nav-user-name"></span></span>
+      <button class="nav-logout" id="nav-logout" onclick="logoutCustomer()" style="display:none;">Log out</button>
+      <button class="nav-icon" id="nav-account-btn" title="My Account" onclick="openLoginModal()" style="margin-right:8px;">
+        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </button>
       <button class="nav-icon" title="Cart" onclick="toggleCart()" style="position:relative;">
         <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
         <span class="cart-badge" id="cart-badge">0</span>
@@ -920,6 +1259,146 @@
     <p id="subscribe-msg" style="margin-top:12px;font-family:var(--font-body);font-size:12px;display:none;"></p>
   </div>
 </section>
+
+<!-- Login Modal -->
+<div class="login-overlay" id="login-overlay" onclick="if(event.target===this)closeLoginModal()">
+  <div class="login-modal">
+    <button class="login-close" onclick="closeLoginModal()">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+
+    <!-- Login Form -->
+    <div id="login-form">
+      <h3 class="login-title">Welcome back</h3>
+      <p class="login-subtitle">Log in to view your orders and track shipments.</p>
+      <div class="login-field">
+        <label class="login-label">Email</label>
+        <input class="login-input" type="email" id="login-email" placeholder="your@email.com">
+      </div>
+      <div class="login-field">
+        <label class="login-label">Password</label>
+        <input class="login-input" type="password" id="login-password" placeholder="Your password">
+      </div>
+      <button class="login-btn" id="login-btn" onclick="loginCustomer()">Log In</button>
+      <p class="login-error" id="login-error"></p>
+      <p class="login-toggle">Don't have an account? <a onclick="showRegisterForm()">Create one</a></p>
+    </div>
+
+    <!-- Register Form -->
+    <div id="register-form" style="display:none;">
+      <h3 class="login-title">Create account</h3>
+      <p class="login-subtitle">Join to track orders and get early access to new drops.</p>
+      <div class="login-field">
+        <label class="login-label">First Name</label>
+        <input class="login-input" type="text" id="register-first" placeholder="First name">
+      </div>
+      <div class="login-field">
+        <label class="login-label">Last Name</label>
+        <input class="login-input" type="text" id="register-last" placeholder="Last name">
+      </div>
+      <div class="login-field">
+        <label class="login-label">Email</label>
+        <input class="login-input" type="email" id="register-email" placeholder="your@email.com">
+      </div>
+      <div class="login-field">
+        <label class="login-label">Password</label>
+        <input class="login-input" type="password" id="register-password" placeholder="Min 6 characters">
+      </div>
+      <button class="login-btn" id="register-btn" onclick="registerCustomer()">Create Account</button>
+      <p class="login-error" id="register-error"></p>
+      <p class="login-toggle">Already have an account? <a onclick="showLoginForm()">Log in</a></p>
+    </div>
+
+    <!-- Account View -->
+    <div id="account-view" style="display:none;">
+      <h3 class="login-title" id="account-greeting"></h3>
+      <p class="login-subtitle" id="account-email-display"></p>
+
+      <div class="acct-tabs">
+        <button class="acct-tab active" onclick="switchAcctTab('orders', this)">Orders</button>
+        <button class="acct-tab" onclick="switchAcctTab('profile', this)">Profile</button>
+        <button class="acct-tab" onclick="switchAcctTab('wishlist', this)">Wishlist</button>
+        <button class="acct-tab" onclick="switchAcctTab('addresses', this)">Addresses</button>
+      </div>
+
+      <!-- Orders Tab -->
+      <div class="acct-panel active" id="panel-orders">
+        <div id="orders-list" style="max-height:360px;overflow-y:auto;"></div>
+      </div>
+
+      <!-- Profile Tab -->
+      <div class="acct-panel" id="panel-profile">
+        <div class="profile-row">
+          <span class="profile-label">First Name</span>
+          <span class="profile-value" id="prof-first">—</span>
+        </div>
+        <div class="profile-row">
+          <span class="profile-label">Last Name</span>
+          <span class="profile-value" id="prof-last">—</span>
+        </div>
+        <div class="profile-row">
+          <span class="profile-label">Email</span>
+          <span class="profile-value" id="prof-email">—</span>
+        </div>
+        <div class="profile-row">
+          <span class="profile-label">Phone</span>
+          <span class="profile-value" id="prof-phone">Not set</span>
+        </div>
+        <div class="profile-row" style="border-bottom:none;">
+          <span class="profile-label">Member Since</span>
+          <span class="profile-value" id="prof-since">—</span>
+        </div>
+      </div>
+
+      <!-- Wishlist Tab -->
+      <div class="acct-panel" id="panel-wishlist">
+        <div class="wish-grid" id="wishlist-grid">
+          <div class="orders-empty" style="grid-column:1/-1;">Your wishlist is empty. Click the ♡ on any product to save it here.</div>
+        </div>
+      </div>
+
+      <!-- Addresses Tab -->
+      <div class="acct-panel" id="panel-addresses">
+        <div id="addresses-list"></div>
+        <button class="login-btn" onclick="showAddressForm()" style="margin-top:12px;background:transparent;color:var(--stone-700);border:1px solid var(--stone-300);">+ Add New Address</button>
+        <div id="address-form-wrap" style="display:none;margin-top:16px;">
+          <div class="login-field">
+            <label class="login-label">Address Line 1</label>
+            <input class="login-input" type="text" id="addr-line1" placeholder="123 Main St">
+          </div>
+          <div class="login-field">
+            <label class="login-label">Address Line 2</label>
+            <input class="login-input" type="text" id="addr-line2" placeholder="Apt, suite, etc. (optional)">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="login-field">
+              <label class="login-label">City</label>
+              <input class="login-input" type="text" id="addr-city" placeholder="City">
+            </div>
+            <div class="login-field">
+              <label class="login-label">State</label>
+              <input class="login-input" type="text" id="addr-state" placeholder="GA">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="login-field">
+              <label class="login-label">ZIP Code</label>
+              <input class="login-input" type="text" id="addr-zip" placeholder="30301">
+            </div>
+            <div class="login-field">
+              <label class="login-label">Country</label>
+              <input class="login-input" type="text" id="addr-country" placeholder="US" value="US">
+            </div>
+          </div>
+          <button class="login-btn" onclick="saveAddress()">Save Address</button>
+          <p class="login-error" id="addr-error"></p>
+        </div>
+      </div>
+
+      <button class="login-btn" onclick="logoutCustomer();closeLoginModal();" style="background:transparent;color:var(--stone-700);border:1px solid var(--stone-300);margin-top:20px;">Log Out</button>
+    </div>
+  </div>
+</div>
 
 <!-- Product Modal -->
 <div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
@@ -1201,6 +1680,427 @@
   }
 
   // ============================================
+  // CUSTOMER ACCOUNT SYSTEM
+  // ============================================
+  var customerToken = null;
+  var customerName = '';
+
+  function openLoginModal() {
+    if (customerToken) {
+      showAccountView();
+    } else {
+      showLoginForm();
+    }
+    document.getElementById('login-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLoginModal() {
+    document.getElementById('login-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function showLoginForm() {
+    document.getElementById('login-form').style.display = 'block';
+    document.getElementById('register-form').style.display = 'none';
+    document.getElementById('account-view').style.display = 'none';
+    document.getElementById('login-error').style.display = 'none';
+  }
+
+  function showRegisterForm() {
+    document.getElementById('login-form').style.display = 'none';
+    document.getElementById('register-form').style.display = 'block';
+    document.getElementById('account-view').style.display = 'none';
+    document.getElementById('register-error').style.display = 'none';
+  }
+
+  function showAccountView() {
+    document.getElementById('login-form').style.display = 'none';
+    document.getElementById('register-form').style.display = 'none';
+    document.getElementById('account-view').style.display = 'block';
+    document.getElementById('account-greeting').textContent = 'Hi, ' + customerName + '!';
+    switchAcctTab('orders', document.querySelector('.acct-tab'));
+    fetchOrders();
+    fetchAddresses();
+    renderWishlist();
+  }
+
+  function switchAcctTab(tab, btn) {
+    var tabs = document.querySelectorAll('.acct-tab');
+    for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
+    btn.classList.add('active');
+    var panels = document.querySelectorAll('.acct-panel');
+    for (var j = 0; j < panels.length; j++) panels[j].classList.remove('active');
+    document.getElementById('panel-' + tab).classList.add('active');
+  }
+
+  async function loginCustomer() {
+    var email = document.getElementById('login-email').value.trim();
+    var password = document.getElementById('login-password').value;
+    var btn = document.getElementById('login-btn');
+    var errEl = document.getElementById('login-error');
+
+    if (!email || !password) {
+      errEl.textContent = 'Please enter your email and password.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    btn.textContent = 'Logging in...';
+    btn.disabled = true;
+    errEl.style.display = 'none';
+
+    var query = 'mutation { customerAccessTokenCreate(input: { email: "' + email.replace(/"/g, '\\"') + '", password: "' + password.replace(/"/g, '\\"') + '" }) { customerAccessToken { accessToken expiresAt } customerUserErrors { code message } } }';
+    var data = await shopifyFetch(query);
+
+    if (data && data.data && data.data.customerAccessTokenCreate) {
+      var result = data.data.customerAccessTokenCreate;
+      if (result.customerAccessToken) {
+        customerToken = result.customerAccessToken.accessToken;
+        try {
+          sessionStorage.setItem('gc_token', customerToken);
+        } catch(e) {}
+        await fetchCustomerInfo();
+        updateNavLogin();
+        showAccountView();
+        showToastMsg('Welcome back, ' + customerName + '!');
+      } else {
+        var msg = 'Invalid email or password.';
+        if (result.customerUserErrors && result.customerUserErrors.length > 0) {
+          msg = result.customerUserErrors[0].message || msg;
+        }
+        errEl.textContent = msg;
+        errEl.style.display = 'block';
+      }
+    } else {
+      errEl.textContent = 'Something went wrong. Please try again.';
+      errEl.style.display = 'block';
+    }
+
+    btn.textContent = 'Log In';
+    btn.disabled = false;
+  }
+
+  async function registerCustomer() {
+    var first = document.getElementById('register-first').value.trim();
+    var last = document.getElementById('register-last').value.trim();
+    var email = document.getElementById('register-email').value.trim();
+    var password = document.getElementById('register-password').value;
+    var btn = document.getElementById('register-btn');
+    var errEl = document.getElementById('register-error');
+
+    if (!first || !email || !password) {
+      errEl.textContent = 'Please fill in all required fields.';
+      errEl.style.display = 'block';
+      return;
+    }
+    if (password.length < 6) {
+      errEl.textContent = 'Password must be at least 6 characters.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    btn.textContent = 'Creating account...';
+    btn.disabled = true;
+    errEl.style.display = 'none';
+
+    var query = 'mutation { customerCreate(input: { firstName: "' + first.replace(/"/g, '\\"') + '", lastName: "' + last.replace(/"/g, '\\"') + '", email: "' + email.replace(/"/g, '\\"') + '", password: "' + password.replace(/"/g, '\\"') + '" }) { customer { id firstName } customerUserErrors { message field } } }';
+    var data = await shopifyFetch(query);
+
+    if (data && data.data && data.data.customerCreate) {
+      var result = data.data.customerCreate;
+      if (result.customer) {
+        document.getElementById('login-email').value = email;
+        document.getElementById('login-password').value = password;
+        showLoginForm();
+        await loginCustomer();
+      } else {
+        var msg = 'Could not create account.';
+        if (result.customerUserErrors && result.customerUserErrors.length > 0) {
+          msg = result.customerUserErrors[0].message || msg;
+        }
+        errEl.textContent = msg;
+        errEl.style.display = 'block';
+      }
+    } else {
+      errEl.textContent = 'Something went wrong. Please try again.';
+      errEl.style.display = 'block';
+    }
+
+    btn.textContent = 'Create Account';
+    btn.disabled = false;
+  }
+
+  async function fetchCustomerInfo() {
+    if (!customerToken) return;
+    var query = '{ customer(customerAccessToken: "' + customerToken + '") { firstName lastName email phone createdAt } }';
+    var data = await shopifyFetch(query);
+    if (data && data.data && data.data.customer) {
+      var c = data.data.customer;
+      customerName = c.firstName || 'there';
+      var customerEmail = c.email || '';
+      try {
+        sessionStorage.setItem('gc_name', customerName);
+        sessionStorage.setItem('gc_email', customerEmail);
+      } catch(e) {}
+      document.getElementById('account-email-display').textContent = customerEmail;
+
+      // Profile tab
+      document.getElementById('prof-first').textContent = c.firstName || '—';
+      document.getElementById('prof-last').textContent = c.lastName || '—';
+      document.getElementById('prof-email').textContent = c.email || '—';
+      document.getElementById('prof-phone').textContent = c.phone || 'Not set';
+      if (c.createdAt) {
+        var d = new Date(c.createdAt);
+        document.getElementById('prof-since').textContent = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      }
+    }
+  }
+
+  async function fetchOrders() {
+    if (!customerToken) return;
+    var ordersList = document.getElementById('orders-list');
+    ordersList.innerHTML = '<div class="orders-loading">Loading your orders...</div>';
+
+    var query = '{ customer(customerAccessToken: "' + customerToken + '") { orders(first: 20, sortKey: PROCESSED_AT, reverse: true) { edges { node { id orderNumber name processedAt fulfillmentStatus currentTotalPrice { amount currencyCode } lineItems(first: 10) { edges { node { title quantity variant { image { url } } } } } } } } } }';
+    var data = await shopifyFetch(query);
+
+    if (data && data.data && data.data.customer && data.data.customer.orders) {
+      var orders = data.data.customer.orders.edges;
+      if (orders.length === 0) {
+        ordersList.innerHTML = '<div class="orders-empty">No orders yet. Start shopping!</div>';
+        return;
+      }
+
+      var html = '';
+      for (var i = 0; i < orders.length; i++) {
+        var order = orders[i].node;
+        var date = new Date(order.processedAt);
+        var dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        var status = order.fulfillmentStatus || 'UNFULFILLED';
+        var statusClass = status === 'FULFILLED' ? 'fulfilled' : 'unfulfilled';
+        var statusText = status === 'FULFILLED' ? 'Shipped' : 'Processing';
+
+        html += '<div class="order-card">';
+        html += '<div class="order-header">';
+        html += '<span class="order-number">Order ' + order.name + '</span>';
+        html += '<span class="order-status ' + statusClass + '">' + statusText + '</span>';
+        html += '</div>';
+        html += '<p class="order-date">' + dateStr + '</p>';
+
+        // Item thumbnails
+        html += '<div class="order-items">';
+        var items = order.lineItems.edges;
+        for (var j = 0; j < items.length && j < 4; j++) {
+          var item = items[j].node;
+          html += '<div class="order-item-thumb">';
+          if (item.variant && item.variant.image) {
+            html += '<img src="' + item.variant.image.url + '" alt="' + item.title + '">';
+          }
+          html += '</div>';
+        }
+        if (items.length > 4) {
+          html += '<div class="order-item-thumb" style="display:flex;align-items:center;justify-content:center;font-family:var(--font-body);font-size:11px;color:var(--stone-500);">+' + (items.length - 4) + '</div>';
+        }
+        html += '</div>';
+
+        // Item names
+        for (var k = 0; k < items.length; k++) {
+          html += '<p style="font-family:var(--font-body);font-size:11px;color:var(--stone-600);margin-bottom:2px;">' + items[k].node.title + ' × ' + items[k].node.quantity + '</p>';
+        }
+
+        html += '<div class="order-total" style="margin-top:10px;"><span>Total</span><span>$' + parseFloat(order.currentTotalPrice.amount).toFixed(2) + '</span></div>';
+        html += '</div>';
+      }
+      ordersList.innerHTML = html;
+    } else {
+      ordersList.innerHTML = '<div class="orders-empty">Could not load orders. Please try again.</div>';
+    }
+  }
+
+  // ============================================
+  // WISHLIST (stored locally)
+  // ============================================
+  var wishlist = [];
+
+  function loadWishlist() {
+    try {
+      var saved = localStorage.getItem('gc_wishlist');
+      if (saved) wishlist = JSON.parse(saved);
+    } catch(e) { wishlist = []; }
+  }
+
+  function saveWishlist() {
+    try { localStorage.setItem('gc_wishlist', JSON.stringify(wishlist)); } catch(e) {}
+  }
+
+  function toggleWishlist(productIndex) {
+    var p = products[productIndex];
+    var idx = -1;
+    for (var i = 0; i < wishlist.length; i++) {
+      if (wishlist[i].variantId === p.variantId) { idx = i; break; }
+    }
+    if (idx >= 0) {
+      wishlist.splice(idx, 1);
+      showToastMsg('Removed from wishlist');
+    } else {
+      wishlist.push({ name: p.name, price: p.price, image: p.image, variantId: p.variantId, category: p.category });
+      showToastMsg('Added to wishlist ♡');
+    }
+    saveWishlist();
+    renderProducts(document.querySelector('.filter-btn.active').textContent);
+  }
+
+  function isInWishlist(variantId) {
+    for (var i = 0; i < wishlist.length; i++) {
+      if (wishlist[i].variantId === variantId) return true;
+    }
+    return false;
+  }
+
+  function removeFromWishlist(index) {
+    wishlist.splice(index, 1);
+    saveWishlist();
+    renderWishlist();
+  }
+
+  function renderWishlist() {
+    var grid = document.getElementById('wishlist-grid');
+    if (!grid) return;
+    if (wishlist.length === 0) {
+      grid.innerHTML = '<div class="orders-empty" style="grid-column:1/-1;">Your wishlist is empty. Click the ♡ on any product to save it here.</div>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < wishlist.length; i++) {
+      var w = wishlist[i];
+      html += '<div class="wish-card">';
+      if (w.image) html += '<img src="' + w.image + '" alt="' + w.name + '">';
+      html += '<button class="wish-remove" onclick="event.stopPropagation();removeFromWishlist(' + i + ')">✕</button>';
+      html += '<div class="wish-card-info">';
+      html += '<p class="wish-card-name">' + w.name + '</p>';
+      html += '<p class="wish-card-price">$' + w.price.toFixed(2) + '</p>';
+      html += '</div></div>';
+    }
+    grid.innerHTML = html;
+  }
+
+  // ============================================
+  // ADDRESSES
+  // ============================================
+  function showAddressForm() {
+    var form = document.getElementById('address-form-wrap');
+    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+  }
+
+  async function fetchAddresses() {
+    if (!customerToken) return;
+    var list = document.getElementById('addresses-list');
+    list.innerHTML = '<div class="orders-loading">Loading addresses...</div>';
+
+    var query = '{ customer(customerAccessToken: "' + customerToken + '") { defaultAddress { id address1 address2 city province zip country } addresses(first: 10) { edges { node { id address1 address2 city province zip country } } } } }';
+    var data = await shopifyFetch(query);
+
+    if (data && data.data && data.data.customer) {
+      var c = data.data.customer;
+      var addrs = c.addresses ? c.addresses.edges : [];
+      var defaultId = c.defaultAddress ? c.defaultAddress.id : null;
+
+      if (addrs.length === 0) {
+        list.innerHTML = '<div class="orders-empty">No saved addresses yet.</div>';
+        return;
+      }
+
+      var html = '';
+      for (var i = 0; i < addrs.length; i++) {
+        var a = addrs[i].node;
+        var isDefault = a.id === defaultId;
+        html += '<div class="addr-card">';
+        if (isDefault) html += '<span class="addr-default">Default</span>';
+        html += '<p>' + a.address1 + '</p>';
+        if (a.address2) html += '<p>' + a.address2 + '</p>';
+        html += '<p>' + a.city + ', ' + a.province + ' ' + a.zip + '</p>';
+        html += '<p>' + a.country + '</p>';
+        html += '</div>';
+      }
+      list.innerHTML = html;
+    } else {
+      list.innerHTML = '<div class="orders-empty">Could not load addresses.</div>';
+    }
+  }
+
+  async function saveAddress() {
+    if (!customerToken) return;
+    var errEl = document.getElementById('addr-error');
+    var line1 = document.getElementById('addr-line1').value.trim();
+    var line2 = document.getElementById('addr-line2').value.trim();
+    var city = document.getElementById('addr-city').value.trim();
+    var state = document.getElementById('addr-state').value.trim();
+    var zip = document.getElementById('addr-zip').value.trim();
+    var country = document.getElementById('addr-country').value.trim() || 'US';
+
+    if (!line1 || !city || !state || !zip) {
+      errEl.textContent = 'Please fill in address, city, state, and ZIP.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    var query = 'mutation { customerAddressCreate(customerAccessToken: "' + customerToken + '", address: { address1: "' + line1.replace(/"/g, '\\"') + '", address2: "' + line2.replace(/"/g, '\\"') + '", city: "' + city.replace(/"/g, '\\"') + '", province: "' + state.replace(/"/g, '\\"') + '", zip: "' + zip.replace(/"/g, '\\"') + '", country: "' + country.replace(/"/g, '\\"') + '" }) { customerAddress { id } customerUserErrors { message } } }';
+    var data = await shopifyFetch(query);
+
+    if (data && data.data && data.data.customerAddressCreate && data.data.customerAddressCreate.customerAddress) {
+      showToastMsg('Address saved!');
+      document.getElementById('address-form-wrap').style.display = 'none';
+      document.getElementById('addr-line1').value = '';
+      document.getElementById('addr-line2').value = '';
+      document.getElementById('addr-city').value = '';
+      document.getElementById('addr-state').value = '';
+      document.getElementById('addr-zip').value = '';
+      errEl.style.display = 'none';
+      fetchAddresses();
+    } else {
+      errEl.textContent = 'Could not save address. Please try again.';
+      errEl.style.display = 'block';
+    }
+  }
+
+  function logoutCustomer() {
+    customerToken = null;
+    customerName = '';
+    try {
+      sessionStorage.removeItem('gc_token');
+      sessionStorage.removeItem('gc_name');
+      sessionStorage.removeItem('gc_email');
+    } catch(e) {}
+    updateNavLogin();
+    showToastMsg('You\'ve been logged out');
+  }
+
+  function updateNavLogin() {
+    if (customerToken && customerName) {
+      document.getElementById('nav-user').style.display = 'inline';
+      document.getElementById('nav-user-name').textContent = customerName;
+      document.getElementById('nav-logout').style.display = 'inline';
+    } else {
+      document.getElementById('nav-user').style.display = 'none';
+      document.getElementById('nav-logout').style.display = 'none';
+    }
+  }
+
+  function checkSession() {
+    try {
+      var savedToken = sessionStorage.getItem('gc_token');
+      var savedName = sessionStorage.getItem('gc_name');
+      if (savedToken) {
+        customerToken = savedToken;
+        customerName = savedName || 'there';
+        updateNavLogin();
+        fetchCustomerInfo().then(function() { updateNavLogin(); });
+      }
+    } catch(e) {}
+  }
+
+  // ============================================
   // CAROUSEL - NEW ARRIVALS
   // ============================================
   var carouselItems = [];
@@ -1339,7 +2239,7 @@
       } else {
         html += '<div class="product-placeholder"><div class="product-placeholder-circle"></div></div>';
       }
-      html += '<button class="product-wish" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></button>';
+      html += '<button class="product-wish" onclick="event.stopPropagation();toggleWishlist(' + pIndex + ')" style="' + (isInWishlist(p.variantId) ? 'opacity:1;' : '') + '"><svg viewBox="0 0 24 24"' + (isInWishlist(p.variantId) ? ' fill="var(--stone-700)"' : '') + '><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></button>';
       if (p.stock <= 0 || !p.available) {
         html += '<button class="product-overlay" onclick="event.stopPropagation()" style="background:var(--stone-500);transform:translateY(0);">Sold Out</button>';
       } else {
@@ -1466,6 +2366,7 @@
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
       closeModal();
+      closeLoginModal();
       if (document.getElementById('cart-drawer').classList.contains('open')) toggleCart();
     }
   });
@@ -1493,6 +2394,8 @@
     input.value = '';
   }
 
+  loadWishlist();
+  checkSession();
   fetchNewArrivals();
   fetchProducts();
 </script>
