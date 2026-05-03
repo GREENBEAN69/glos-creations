@@ -132,6 +132,149 @@
   .hero-badge-label { font-family: var(--font-body); font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--stone-400); margin-bottom: 3px; }
   .hero-badge-text { font-size: 13px; font-style: italic; color: var(--stone-700); }
 
+  /* Carousel */
+  .carousel {
+    position: relative;
+    aspect-ratio: 1/1;
+    overflow: hidden;
+    background: var(--stone-100);
+    border-radius: 24px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.08);
+  }
+  .carousel-track {
+    display: flex;
+    height: 100%;
+    transition: transform 0.5s ease;
+  }
+  .carousel-slide {
+    min-width: 100%;
+    height: 100%;
+    position: relative;
+    cursor: pointer;
+  }
+  .carousel-slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .carousel-slide::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    box-shadow: inset 0 0 120px 60px rgba(250,250,249,0.85);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .carousel-slide-info {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent 0%, rgba(28,25,23,0.3) 30%, rgba(28,25,23,0.8));
+    backdrop-filter: blur(2px);
+    padding: 48px 28px 28px;
+    color: white;
+  }
+  .carousel-slide-tag {
+    font-family: var(--font-body);
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 6px;
+  }
+  .carousel-slide-name {
+    font-size: 22px;
+    font-style: italic;
+    font-weight: 300;
+    margin-bottom: 4px;
+  }
+  .carousel-slide-price {
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: rgba(255,255,255,0.85);
+    margin-bottom: 12px;
+  }
+  .carousel-slide-btn {
+    display: inline-block;
+    font-family: var(--font-body);
+    font-size: 9.5px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: white;
+    border: 1px solid rgba(255,255,255,0.5);
+    padding: 9px 22px;
+    border-radius: 24px;
+    transition: background 0.2s, border-color 0.2s;
+    background: transparent;
+  }
+  .carousel-slide-btn:hover {
+    background: rgba(255,255,255,0.2);
+    border-color: white;
+  }
+  .carousel-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255,255,255,0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, transform 0.2s;
+    z-index: 2;
+  }
+  .carousel-arrow:hover { background: rgba(255,255,255,0.95); transform: translateY(-50%) scale(1.05); }
+  .carousel-arrow svg {
+    width: 18px;
+    height: 18px;
+    stroke: var(--stone-800);
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .carousel-prev { left: 12px; }
+  .carousel-next { right: 12px; }
+  .carousel-dots {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 2;
+  }
+  .carousel-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.35);
+    border: none;
+    padding: 0;
+    transition: all 0.3s;
+    cursor: pointer;
+  }
+  .carousel-dot.active {
+    background: white;
+    width: 24px;
+    border-radius: 4px;
+  }
+  .carousel-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--stone-400);
+  }
+
   /* Trust Bar */
   .trust-bar { border-top: 1px solid var(--stone-200); border-bottom: 1px solid var(--stone-200); padding: 28px 0; }
   .trust-bar-inner { max-width: 1280px; margin: 0 auto; padding: 0 40px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; text-align: center; }
@@ -159,13 +302,13 @@
   .product-card:hover .product-overlay { transform: translateY(0); }
   .product-card:hover .product-wish { opacity: 1; }
   .product-card:hover .product-img-wrap img { transform: scale(1.03); }
-  .product-img-wrap { aspect-ratio: 1; background: var(--stone-100); position: relative; overflow: hidden; margin-bottom: 14px; border: 1px solid var(--stone-200); }
+  .product-img-wrap { aspect-ratio: 1; background: var(--stone-100); position: relative; overflow: hidden; margin-bottom: 14px; border-radius: 16px; border: none; }
   .product-img-wrap img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s; }
   .product-placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
   .product-placeholder-circle { width: 50%; height: 50%; border-radius: 50%; background: var(--stone-200); opacity: 0.5; }
-  .product-wish { position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.85); border: none; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; }
+  .product-wish { position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.85); backdrop-filter: blur(4px); border: none; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; }
   .product-wish svg { width: 15px; height: 15px; stroke: var(--stone-700); fill: none; stroke-width: 1.5; }
-  .product-overlay { position: absolute; bottom: 0; left: 0; right: 0; background: var(--stone-900); color: white; padding: 11px; font-family: var(--font-body); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; text-align: center; transform: translateY(100%); transition: transform 0.25s; border: none; width: 100%; }
+  .product-overlay { position: absolute; bottom: 0; left: 0; right: 0; background: var(--stone-900); color: white; padding: 12px; font-family: var(--font-body); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; text-align: center; transform: translateY(100%); transition: transform 0.25s; border: none; width: 100%; border-radius: 0 0 16px 16px; }
   .product-type { font-family: var(--font-body); font-size: 9.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--stone-400); margin-bottom: 3px; }
   .product-name { font-size: 17px; font-style: italic; margin-bottom: 3px; color: var(--stone-800); }
   .product-price { font-family: var(--font-body); font-size: 13px; color: var(--stone-600); }
@@ -174,7 +317,8 @@
   /* About */
   .about { background: var(--stone-100); padding: 72px 0 88px; }
   .about-inner { max-width: 1280px; margin: 0 auto; padding: 0 40px; display: grid; grid-template-columns: 2fr 3fr; gap: 48px; align-items: center; }
-  .about-image { aspect-ratio: 4/5; background: linear-gradient(145deg, var(--stone-200), var(--stone-300)); position: relative; overflow: hidden; }
+  .about-image { aspect-ratio: 3/4; background: linear-gradient(145deg, var(--stone-200), var(--stone-300)); position: relative; overflow: hidden; border-radius: 50%; max-width: 360px; margin: 0 auto; }
+  .about-image img { width: 100%; height: 100%; object-fit: cover; object-position: center 20%; display: block; mask-image: radial-gradient(ellipse 70% 65% at center, black 50%, transparent 100%); -webkit-mask-image: radial-gradient(ellipse 70% 65% at center, black 50%, transparent 100%); }
   .about-image-circle { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
   .about-image-circle div { width: 120px; height: 120px; border-radius: 50%; background: rgba(255,255,255,0.4); }
   .about-tag { font-family: var(--font-body); font-size: 10.5px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--stone-400); margin-bottom: 20px; }
@@ -275,7 +419,7 @@
         <a href="#contact">Contact</a>
       </div>
     </div>
-    <a href="#" class="nav-logo"><span class="brand-glos">Glo's</span> <span class="brand-creations">Creations</span><span class="brand-316">3:16</span></a>
+    <a href="#" class="nav-logo"><img src="https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/logo.png" alt="Glo's Creation - Deuteronomy 31:6" style="height:48px;"></a>
     <div class="nav-right">
       <a href="https://glos-creations-2.myshopify.com/cart" class="nav-icon" title="Cart">
         <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
@@ -300,17 +444,15 @@
     </div>
   </div>
   <div class="hero-visual fade-in d3">
-    <div class="hero-image">
-      <div class="hero-image-art">
-        <div class="hero-circle-lg">
-          <div class="hero-circle-sm-1"></div>
-          <div class="hero-circle-sm-2"></div>
-        </div>
-      </div>
-    </div>
-    <div class="hero-badge">
-      <p class="hero-badge-label">New Arrivals</p>
-      <p class="hero-badge-text">Spring 2026 collection</p>
+    <div class="carousel" id="carousel">
+      <div class="carousel-track" id="carousel-track"></div>
+      <button class="carousel-arrow carousel-prev" onclick="carouselPrev()" aria-label="Previous">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <button class="carousel-arrow carousel-next" onclick="carouselNext()" aria-label="Next">
+        <svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+      </button>
+      <div class="carousel-dots" id="carousel-dots"></div>
     </div>
   </div>
 </section>
@@ -346,7 +488,7 @@
 
 <section class="about" id="about">
   <div class="about-inner">
-    <div class="about-image"><div class="about-image-circle"><div></div></div></div>
+    <div class="about-image"><img src="https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/about.jpg" alt="Glo and her husband" style="width:100%;height:100%;object-fit:cover;"></div>
     <div>
       <p class="about-tag">Meet the Maker</p>
       <h2>Hi, I'm <em>Glo</em>.</h2>
@@ -406,7 +548,7 @@
       <div class="footer-col">
         <p class="footer-col-title">Connect</p>
         <div class="footer-social">
-          <a href="#" title="Instagram"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg></a>
+          <a href="https://www.instagram.com/gloscreations31_6" target="_blank" title="Instagram"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg></a>
           <a href="mailto:sales@gloscreations316.com" title="Email"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></a>
         </div>
       </div>
@@ -422,10 +564,119 @@
 </footer>
 
 <script>
-  const SHOPIFY_STORE = 'glos-creations-2.myshopify.com';
-  const SHOPIFY_TOKEN = '861afc7223b28d374e9f6754e3eb5538';
-  const API_VERSIONS = ['2025-01', '2024-10', '2024-07', '2024-04', '2024-01'];
-  let products = [];
+  var SHOPIFY_STORE = 'glos-creations-2.myshopify.com';
+  var SHOPIFY_TOKEN = '861afc7223b28d374e9f6754e3eb5538';
+  var API_VERSIONS = ['2025-01', '2024-10', '2024-07', '2024-04', '2024-01'];
+  var products = [];
+
+  // ============================================
+  // CAROUSEL - NEW ARRIVALS
+  // ============================================
+  var carouselItems = [];
+  var carouselIndex = 0;
+  var carouselTimer = null;
+
+  async function fetchNewArrivals() {
+    var track = document.getElementById('carousel-track');
+    track.innerHTML = '<div class="carousel-loading">Loading new arrivals...</div>';
+
+    var query = '{ collection(handle: "new-arrivals") { products(first: 10) { edges { node { id title handle productType priceRange { minVariantPrice { amount } } images(first: 1) { edges { node { url altText } } } } } } } }';
+
+    for (var v = 0; v < API_VERSIONS.length; v++) {
+      try {
+        var response = await fetch('https://' + SHOPIFY_STORE + '/api/' + API_VERSIONS[v] + '/graphql.json', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': SHOPIFY_TOKEN },
+          body: JSON.stringify({ query: query }),
+        });
+        if (response.status === 401) continue;
+        var data = await response.json();
+        if (data.errors) continue;
+        if (data.data && data.data.collection && data.data.collection.products.edges.length > 0) {
+          carouselItems = data.data.collection.products.edges.map(function(edge) {
+            var node = edge.node;
+            return {
+              name: node.title,
+              handle: node.handle,
+              category: node.productType || 'Jewelry',
+              price: parseFloat(node.priceRange.minVariantPrice.amount),
+              image: node.images.edges[0] ? node.images.edges[0].node.url : null,
+              url: 'https://' + SHOPIFY_STORE + '/products/' + node.handle,
+            };
+          });
+          renderCarousel();
+          startCarouselTimer();
+          return;
+        }
+      } catch (e) { continue; }
+    }
+    // Fallback if collection not found
+    track.innerHTML = '<div class="carousel-loading">Add products to your "New Arrivals" collection in Shopify</div>';
+  }
+
+  function renderCarousel() {
+    var track = document.getElementById('carousel-track');
+    var dots = document.getElementById('carousel-dots');
+    var html = '';
+    for (var i = 0; i < carouselItems.length; i++) {
+      var item = carouselItems[i];
+      html += '<div class="carousel-slide" onclick="window.location.href=\'' + item.url + '\'">';
+      if (item.image) {
+        html += '<img src="' + item.image + '" alt="' + item.name + '">';
+      }
+      html += '<div class="carousel-slide-info">';
+      html += '<p class="carousel-slide-tag">New Arrival · ' + item.category + '</p>';
+      html += '<p class="carousel-slide-name">' + item.name + '</p>';
+      html += '<p class="carousel-slide-price">$' + item.price.toFixed(2) + '</p>';
+      html += '<span class="carousel-slide-btn">Shop Now</span>';
+      html += '</div></div>';
+    }
+    track.innerHTML = html;
+
+    var dotsHtml = '';
+    for (var j = 0; j < carouselItems.length; j++) {
+      dotsHtml += '<button class="carousel-dot' + (j === 0 ? ' active' : '') + '" onclick="goToSlide(' + j + ')"></button>';
+    }
+    dots.innerHTML = dotsHtml;
+    carouselIndex = 0;
+  }
+
+  function goToSlide(index) {
+    carouselIndex = index;
+    var track = document.getElementById('carousel-track');
+    track.style.transform = 'translateX(-' + (carouselIndex * 100) + '%)';
+    var allDots = document.querySelectorAll('.carousel-dot');
+    for (var i = 0; i < allDots.length; i++) {
+      allDots[i].classList.remove('active');
+    }
+    if (allDots[carouselIndex]) allDots[carouselIndex].classList.add('active');
+    resetCarouselTimer();
+  }
+
+  function carouselNext() {
+    if (carouselItems.length === 0) return;
+    goToSlide((carouselIndex + 1) % carouselItems.length);
+  }
+
+  function carouselPrev() {
+    if (carouselItems.length === 0) return;
+    goToSlide((carouselIndex - 1 + carouselItems.length) % carouselItems.length);
+  }
+
+  function startCarouselTimer() {
+    carouselTimer = setInterval(function() {
+      carouselNext();
+    }, 4000);
+  }
+
+  function resetCarouselTimer() {
+    if (carouselTimer) clearInterval(carouselTimer);
+    startCarouselTimer();
+  }
+
+  // ============================================
+  // PRODUCTS - ALL
+  // ============================================
 
   async function fetchProducts() {
     const grid = document.getElementById('products-grid');
@@ -516,6 +767,7 @@
     input.value = '';
   }
 
+  fetchNewArrivals();
   fetchProducts();
 </script>
 </body>
