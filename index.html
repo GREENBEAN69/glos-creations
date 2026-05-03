@@ -1051,6 +1051,61 @@
   }
   .cart-checkout-btn:hover { background: var(--stone-700); }
   .cart-checkout-btn:disabled { background: var(--stone-300); cursor: not-allowed; }
+
+  .saved-item {
+    display: flex;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--stone-100);
+    align-items: center;
+  }
+  .saved-item:last-child { border-bottom: none; }
+  .saved-item-img {
+    width: 52px;
+    height: 52px;
+    border-radius: 8px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: var(--stone-100);
+  }
+  .saved-item-img img { width: 100%; height: 100%; object-fit: cover; }
+  .saved-item-info { flex: 1; }
+  .saved-item-name {
+    font-size: 13px;
+    font-style: italic;
+    color: var(--stone-800);
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .saved-item-price {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--stone-500);
+  }
+  .saved-item-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .saved-item-btn {
+    background: none;
+    border: none;
+    font-family: var(--font-body);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 4px 0;
+    transition: color 0.2s;
+    white-space: nowrap;
+  }
+  .saved-move-btn { color: var(--stone-700); }
+  .saved-move-btn:hover { color: var(--stone-900); }
+  .saved-remove-btn { color: var(--stone-400); }
+  .saved-remove-btn:hover { color: var(--stone-900); }
+
   .cart-badge {
     position: absolute;
     top: -4px;
@@ -1475,6 +1530,12 @@
   <div class="cart-items" id="cart-items">
     <div class="cart-empty">Your cart is empty</div>
   </div>
+  <div id="cart-saved" style="display:none;">
+    <div style="padding:0 24px;border-top:1px solid var(--stone-200);">
+      <p style="font-family:var(--font-body);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--stone-400);padding:14px 0 8px;">Saved for Later (<span id="saved-count">0</span>)</p>
+    </div>
+    <div id="cart-saved-items" style="padding:0 24px 12px;max-height:200px;overflow-y:auto;"></div>
+  </div>
   <div class="cart-footer" id="cart-footer" style="display:none;">
     <div class="cart-subtotal">
       <span>Subtotal</span>
@@ -1596,9 +1657,10 @@
 
   function saveForLater(index) {
     if (!customerToken) {
-      showToastMsg('Please log in to save items');
-      removeFromCart(index);
+      // Don't remove from cart - just prompt login
+      toggleCart();
       openLoginModal();
+      showToastMsg('Please log in to save items for later');
       return;
     }
     var item = cart[index];
@@ -1655,6 +1717,7 @@
     var container = document.getElementById('cart-items');
     if (cart.length === 0) {
       container.innerHTML = '<div class="cart-empty">Your cart is empty</div>';
+      renderSavedForLater();
       return;
     }
 
@@ -1680,6 +1743,69 @@
       html += '</div></div>';
     }
     container.innerHTML = html;
+    renderSavedForLater();
+  }
+
+  function renderSavedForLater() {
+    var savedSection = document.getElementById('cart-saved');
+    var savedContainer = document.getElementById('cart-saved-items');
+    var savedCount = document.getElementById('saved-count');
+
+    if (!customerToken || wishlist.length === 0) {
+      savedSection.style.display = 'none';
+      return;
+    }
+
+    savedSection.style.display = 'block';
+    savedCount.textContent = wishlist.length;
+
+    var html = '';
+    for (var i = 0; i < wishlist.length; i++) {
+      var w = wishlist[i];
+      html += '<div class="saved-item">';
+      html += '<div class="saved-item-img">';
+      if (w.image) html += '<img src="' + w.image + '" alt="' + w.name + '">';
+      html += '</div>';
+      html += '<div class="saved-item-info">';
+      html += '<p class="saved-item-name">' + w.name + '</p>';
+      html += '<p class="saved-item-price">$' + w.price.toFixed(2) + '</p>';
+      html += '</div>';
+      html += '<div class="saved-item-actions">';
+      html += '<button class="saved-item-btn saved-move-btn" onclick="moveToCart(' + i + ')">Add to Cart</button>';
+      html += '<button class="saved-item-btn saved-remove-btn" onclick="removeSaved(' + i + ')">Remove</button>';
+      html += '</div>';
+      html += '</div>';
+    }
+    savedContainer.innerHTML = html;
+  }
+
+  function moveToCart(wishlistIndex) {
+    var item = wishlist[wishlistIndex];
+    var matchedProduct = null;
+    for (var i = 0; i < products.length; i++) {
+      if (products[i].variantId === item.variantId) { matchedProduct = products[i]; break; }
+    }
+    if (matchedProduct) {
+      addToCart(matchedProduct);
+    } else {
+      cart.push({ name: item.name, price: item.price, image: item.image, variantId: item.variantId, qty: 1, stock: 999 });
+      updateCartUI();
+      showToast();
+    }
+    wishlist.splice(wishlistIndex, 1);
+    saveWishlist();
+    renderSavedForLater();
+    var activeFilter = document.querySelector('.filter-btn.active');
+    if (activeFilter) renderProducts(activeFilter.textContent);
+  }
+
+  function removeSaved(wishlistIndex) {
+    wishlist.splice(wishlistIndex, 1);
+    saveWishlist();
+    renderSavedForLater();
+    var activeFilter = document.querySelector('.filter-btn.active');
+    if (activeFilter) renderProducts(activeFilter.textContent);
+    showToastMsg('Removed from saved items');
   }
 
   function showToast() {
