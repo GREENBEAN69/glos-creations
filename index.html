@@ -57,8 +57,8 @@
   }
   .nav-inner {
     max-width: 1280px; margin: 0 auto; padding: 0 40px;
-    display: grid; grid-template-columns: 1fr auto 1fr;
-    align-items: center; height: 72px;
+    display: flex; justify-content: space-between;
+    align-items: center; height: 56px;
   }
   .nav-left { display: flex; align-items: center; }
   .nav-links {
@@ -94,7 +94,7 @@
 
   /* Hero */
   .hero {
-    max-width: 1280px; margin: 0 auto; padding: 72px 40px 88px;
+    max-width: 1280px; margin: 0 auto; padding: 40px 40px 88px;
     display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center;
   }
   .hero-tag { font-family: var(--font-body); font-size: 10.5px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--stone-400); margin-bottom: 20px; }
@@ -419,7 +419,6 @@
         <a href="#contact">Contact</a>
       </div>
     </div>
-    <a href="#" class="nav-logo"><img src="https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/logo.png" alt="Glo's Creation - Deuteronomy 31:6" style="height:48px;"></a>
     <div class="nav-right">
       <a href="https://glos-creations-2.myshopify.com/cart" class="nav-icon" title="Cart">
         <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
@@ -435,8 +434,8 @@
 
 <section class="hero">
   <div>
-    <p class="hero-tag fade-in d1">Handcrafted Polymer Clay</p>
-    <h1 class="fade-in d2">Wearable<br><em>artistry,</em><br>made by hand.</h1>
+    <img src="https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/logo.png" alt="Glo's Creation - Deuteronomy 31:6" style="max-width:400px;width:100%;margin-bottom:0;" class="fade-in d1">
+    <h1 class="fade-in d2" style="margin-top:8px;">Wearable<br><em>artistry,</em><br>made by hand.</h1>
     <p class="hero-desc fade-in d3">Each piece is sculpted, shaped, and finished one at a time — small batch jewelry designed to feel like nothing else.</p>
     <div class="hero-actions fade-in d4">
       <a href="#shop" class="btn-primary">Shop the Collection <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
