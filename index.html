@@ -1197,7 +1197,7 @@
 </head>
 <body>
 
-<div class="announcement">Free shipping on orders over $75 · Handmade with love</div>
+<div class="announcement">Free shipping on orders over $50 (continental US) · Handmade with love</div>
 
 <nav class="nav">
   <div class="nav-inner">
@@ -1218,6 +1218,9 @@
         <span class="cart-badge" id="wish-badge" style="background:#e11d48;">0</span>
       </button>
       <button class="nav-logout" id="nav-logout" onclick="logoutCustomer()" style="display:none;">Log out</button>
+      <a href="https://www.instagram.com/gloscreations31_6" target="_blank" class="nav-icon" title="Follow us on Instagram" style="margin-right:4px;">
+        <svg viewBox="0 0 24 24" style="stroke:url(#ig-gradient);"><defs><linearGradient id="ig-gradient" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#feda75"/><stop offset="25%" style="stop-color:#fa7e1e"/><stop offset="50%" style="stop-color:#d62976"/><stop offset="75%" style="stop-color:#962fbf"/><stop offset="100%" style="stop-color:#4f5bd5"/></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="url(#ig-gradient)" stroke="none"/></svg>
+      </a>
       <button class="nav-icon" id="nav-account-btn" title="My Account" onclick="openLoginModal()" style="margin-right:8px;">
         <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       </button>
@@ -1273,12 +1276,8 @@
       <p class="shop-tag">The Collection</p>
       <h2>Shop <em>pieces</em></h2>
     </div>
-    <div class="filters">
+    <div class="filters" id="filters-container">
       <button class="filter-btn active" onclick="filterProducts('All', this)">All</button>
-      <button class="filter-btn" onclick="filterProducts('Earrings', this)">Earrings</button>
-      <button class="filter-btn" onclick="filterProducts('Necklaces', this)">Necklaces</button>
-      <button class="filter-btn" onclick="filterProducts('Rings', this)">Rings</button>
-      <button class="filter-btn" onclick="filterProducts('Bracelets', this)">Bracelets</button>
     </div>
   </div>
   <div class="products-grid" id="products-grid"></div>
@@ -1323,6 +1322,16 @@
     <p id="subscribe-msg" style="margin-top:12px;font-family:var(--font-body);font-size:12px;display:none;"></p>
   </div>
 </section>
+
+<!-- Policy Modal -->
+<div class="modal-overlay" id="policy-overlay" onclick="if(event.target===this)closePolicy()">
+  <div class="modal" style="grid-template-columns:1fr;max-width:720px;">
+    <button class="modal-close" onclick="closePolicy()">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div style="padding:40px 36px;max-height:85vh;overflow-y:auto;" id="policy-content"></div>
+  </div>
+</div>
 
 <!-- Login Modal -->
 <div class="login-overlay" id="login-overlay" onclick="if(event.target===this)closeLoginModal()">
@@ -1537,10 +1546,24 @@
     <div id="cart-saved-items" style="padding:0 24px 12px;max-height:200px;overflow-y:auto;"></div>
   </div>
   <div class="cart-footer" id="cart-footer" style="display:none;">
+    <div id="shipping-progress" style="margin-bottom:14px;">
+      <div id="shipping-msg" style="font-family:var(--font-body);font-size:12px;margin-bottom:8px;"></div>
+      <div style="height:6px;background:var(--stone-200);border-radius:3px;overflow:hidden;">
+        <div id="shipping-bar" style="height:100%;background:var(--stone-900);border-radius:3px;transition:width 0.4s ease;width:0%;"></div>
+      </div>
+    </div>
     <div class="cart-subtotal">
       <span>Subtotal</span>
       <span class="cart-subtotal-amount" id="cart-subtotal">$0.00</span>
     </div>
+    <div class="cart-subtotal" id="shipping-line" style="margin-bottom:4px;">
+      <span>Shipping</span>
+      <span id="shipping-cost" style="font-weight:500;color:var(--stone-900);">Calculated at checkout</span>
+    </div>
+    <div id="shipping-rates-info" style="font-family:var(--font-body);font-size:11px;color:var(--stone-500);margin-bottom:10px;line-height:1.6;">
+      <span id="shipping-rates-text">Standard $5 · Priority $9</span>
+    </div>
+    <p style="font-family:var(--font-body);font-size:10px;color:var(--stone-400);margin-bottom:14px;">Free shipping on orders $50+ (continental US)</p>
     <button class="cart-checkout-btn" id="cart-checkout-btn" onclick="goToCheckout()">Proceed to Checkout</button>
   </div>
 </div>
@@ -1566,8 +1589,10 @@
       <div class="footer-col">
         <p class="footer-col-title">Help</p>
         <ul>
+          <li><a href="#" onclick="openPolicy('shipping');return false;">Shipping</a></li>
+          <li><a href="#" onclick="openPolicy('returns');return false;">Returns & Exchanges</a></li>
+          <li><a href="#" onclick="openPolicy('care');return false;">Care Guide</a></li>
           <li><a href="mailto:sales@gloscreations316.com">Contact Us</a></li>
-          <li><a href="#contact">Newsletter</a></li>
         </ul>
       </div>
       <div class="footer-col">
@@ -1581,8 +1606,10 @@
     <div class="footer-bottom">
       <p>&copy; 2026 Glo's Creations 3:16. All rights reserved.</p>
       <div class="footer-bottom-links">
-        <a href="#">Privacy</a>
-        <a href="#">Terms</a>
+        <a href="#" onclick="openPolicy('privacy');return false;">Privacy Policy</a>
+        <a href="#" onclick="openPolicy('terms');return false;">Terms of Service</a>
+        <a href="#" onclick="openPolicy('returns');return false;">Returns</a>
+        <a href="#" onclick="openPolicy('shipping');return false;">Shipping</a>
       </div>
     </div>
   </div>
@@ -1709,6 +1736,30 @@
 
     // Subtotal
     document.getElementById('cart-subtotal').textContent = '$' + subtotal.toFixed(2);
+
+    // Shipping progress
+    var FREE_SHIPPING_MIN = 50;
+    var shippingMsg = document.getElementById('shipping-msg');
+    var shippingBar = document.getElementById('shipping-bar');
+    var shippingCost = document.getElementById('shipping-cost');
+    var progress = Math.min((subtotal / FREE_SHIPPING_MIN) * 100, 100);
+    shippingBar.style.width = progress + '%';
+
+    if (subtotal >= FREE_SHIPPING_MIN) {
+      shippingMsg.innerHTML = '<span style="color:#166534;">✓ You\'ve earned free shipping!</span>';
+      shippingBar.style.background = '#166534';
+      shippingCost.textContent = 'FREE';
+      shippingCost.style.color = '#166534';
+      document.getElementById('shipping-rates-text').textContent = 'Free standard shipping applied!';
+    } else {
+      var remaining = (FREE_SHIPPING_MIN - subtotal).toFixed(2);
+      shippingMsg.innerHTML = 'You\'re <strong>$' + remaining + '</strong> away from free shipping!';
+      shippingMsg.style.color = 'var(--stone-600)';
+      shippingBar.style.background = 'var(--stone-900)';
+      shippingCost.textContent = 'From $5.00';
+      shippingCost.style.color = 'var(--stone-600)';
+      document.getElementById('shipping-rates-text').textContent = 'Standard $5 (3-5 days) · Priority $9 (1-2 days)';
+    }
 
     // Footer
     document.getElementById('cart-footer').style.display = totalItems > 0 ? 'block' : 'none';
@@ -2395,7 +2446,7 @@
     var track = document.getElementById('carousel-track');
     track.innerHTML = '<div class="carousel-loading">Loading new arrivals...</div>';
 
-    var query = '{ collection(handle: "new-arrivals") { products(first: 10) { edges { node { id title handle productType priceRange { minVariantPrice { amount } } images(first: 1) { edges { node { url altText } } } variants(first: 1) { edges { node { id } } } } } } } }';
+    var query = '{ collection(handle: "new-arrivals") { products(first: 10) { edges { node { id title handle productType priceRange { minVariantPrice { amount } } images(first: 1) { edges { node { url altText } } } variants(first: 1) { edges { node { id availableForSale quantityAvailable } } } } } } } }';
     var data = await shopifyFetch(query);
 
     if (data && data.data && data.data.collection && data.data.collection.products.edges.length > 0) {
@@ -2408,6 +2459,8 @@
           price: parseFloat(node.priceRange.minVariantPrice.amount),
           image: node.images.edges[0] ? node.images.edges[0].node.url : null,
           variantId: node.variants.edges[0] ? node.variants.edges[0].node.id : null,
+          available: node.variants.edges[0] ? node.variants.edges[0].node.availableForSale : false,
+          stock: node.variants.edges[0] && node.variants.edges[0].node.quantityAvailable !== null ? node.variants.edges[0].node.quantityAvailable : 999,
         };
       });
       renderCarousel();
@@ -2472,25 +2525,52 @@
   }
 
   // ============================================
-  // PRODUCTS - ALL
+  // PRODUCTS - COLLECTION BASED
   // ============================================
+  var collections = [];
+
+  async function fetchCollections() {
+    var query = '{ collections(first: 20) { edges { node { id title handle } } } }';
+    var data = await shopifyFetch(query);
+    if (data && data.data && data.data.collections) {
+      collections = data.data.collections.edges.map(function(edge) {
+        return { title: edge.node.title, handle: edge.node.handle };
+      }).filter(function(c) {
+        // Exclude "New Arrivals" since that's the carousel, and any default Shopify collections
+        var skip = ['new-arrivals', 'frontpage', 'all'];
+        return skip.indexOf(c.handle) === -1;
+      });
+      buildFilters();
+    }
+    // Fetch all products initially
+    await fetchProducts();
+  }
+
   async function fetchProducts() {
     var grid = document.getElementById('products-grid');
     grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--stone-400);font-family:var(--font-body);font-size:13px;">Loading products...</div>';
 
-    var query = '{ products(first: 50) { edges { node { id title handle description productType priceRange { minVariantPrice { amount currencyCode } } images(first: 6) { edges { node { url altText } } } variants(first: 1) { edges { node { id availableForSale quantityAvailable } } } } } } }';
+    var query = '{ products(first: 50) { edges { node { id title handle description productType collections(first:5) { edges { node { title handle } } } priceRange { minVariantPrice { amount currencyCode } } images(first: 6) { edges { node { url altText } } } variants(first: 1) { edges { node { id availableForSale quantityAvailable } } } } } } }';
     var data = await shopifyFetch(query);
 
     if (data && data.data && data.data.products && data.data.products.edges) {
       products = data.data.products.edges.map(function(edge) {
         var node = edge.node;
+        // Get collection names for this product (excluding New Arrivals and system ones)
+        var prodCollections = [];
+        if (node.collections && node.collections.edges) {
+          prodCollections = node.collections.edges.map(function(c) { return c.node.title; }).filter(function(t) {
+            return t !== 'New Arrivals' && t !== 'Home page';
+          });
+        }
         return {
           id: node.id,
           name: node.title,
           handle: node.handle,
           description: node.description,
           price: parseFloat(node.priceRange.minVariantPrice.amount),
-          category: node.productType || 'Jewelry',
+          category: prodCollections.length > 0 ? prodCollections[0] : (node.productType || 'Jewelry'),
+          categories: prodCollections,
           image: node.images.edges[0] ? node.images.edges[0].node.url : null,
           images: node.images.edges.map(function(e) { return e.node.url; }),
           variantId: node.variants.edges[0] ? node.variants.edges[0].node.id : null,
@@ -2499,6 +2579,8 @@
         };
       });
       document.querySelector('.shop-tag').textContent = 'The Collection (' + products.length + ')';
+      console.log('Products loaded with stock:', products.map(function(p) { return p.name + ': stock=' + p.stock + ', collections=' + p.categories.join(','); }));
+      if (collections.length === 0) buildFilters();
       renderProducts('All');
     } else {
       grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--stone-400);font-family:var(--font-body);font-size:13px;">Could not load products. Please try again later.</div>';
@@ -2507,7 +2589,13 @@
 
   function renderProducts(filter) {
     var grid = document.getElementById('products-grid');
-    var filtered = filter === 'All' ? products : products.filter(function(p) { return p.category === filter; });
+    var filtered = filter === 'All' ? products : products.filter(function(p) {
+      // Check if product belongs to this collection
+      if (p.categories && p.categories.length > 0) {
+        return p.categories.indexOf(filter) !== -1;
+      }
+      return p.category === filter;
+    });
     if (filtered.length === 0) {
       grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--stone-400);font-family:var(--font-body);font-size:13px;">No products in this category yet.</div>';
       return;
@@ -2651,6 +2739,7 @@
     if (e.key === 'Escape') {
       closeModal();
       closeLoginModal();
+      closePolicy();
       if (document.getElementById('cart-drawer').classList.contains('open')) toggleCart();
     }
   });
@@ -2660,6 +2749,34 @@
     for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
     btn.classList.add('active');
     renderProducts(category);
+  }
+
+  function buildFilters() {
+    var container = document.getElementById('filters-container');
+    var html = '<button class="filter-btn active" onclick="filterProducts(\'All\', this)">All</button>';
+
+    if (collections.length > 0) {
+      // Use collections from Shopify
+      for (var j = 0; j < collections.length; j++) {
+        html += '<button class="filter-btn" onclick="filterProducts(\'' + collections[j].title + '\', this)">' + collections[j].title + '</button>';
+      }
+    } else {
+      // Fallback: build from product categories
+      var categories = [];
+      for (var i = 0; i < products.length; i++) {
+        var cats = products[i].categories || [products[i].category];
+        for (var k = 0; k < cats.length; k++) {
+          if (cats[k] && categories.indexOf(cats[k]) === -1) {
+            categories.push(cats[k]);
+          }
+        }
+      }
+      categories.sort();
+      for (var m = 0; m < categories.length; m++) {
+        html += '<button class="filter-btn" onclick="filterProducts(\'' + categories[m] + '\', this)">' + categories[m] + '</button>';
+      }
+    }
+    container.innerHTML = html;
   }
 
   function handleSubscribe() {
@@ -2678,10 +2795,152 @@
     input.value = '';
   }
 
+  // ============================================
+  // POLICIES
+  // ============================================
+  var policies = {
+    privacy: {
+      title: 'Privacy Policy',
+      content: '<p><strong>Last Updated: May 2026</strong></p>' +
+        '<p>Glo\'s Creations 3:16 ("we," "us," or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website gloscreations316.com and make purchases from our store.</p>' +
+        '<h4>Information We Collect</h4>' +
+        '<p><strong>Personal Information:</strong> When you make a purchase or create an account, we may collect your name, email address, shipping address, billing address, phone number, and payment information. Payment card details are processed securely by Shopify Payments and are never stored on our servers.</p>' +
+        '<p><strong>Automatically Collected Information:</strong> We may collect information about your device, browser type, IP address, and browsing behavior on our site through cookies and similar technologies.</p>' +
+        '<h4>How We Use Your Information</h4>' +
+        '<p>We use the information we collect to: process and fulfill your orders; communicate with you about your orders, products, and promotions; improve our website and customer experience; comply with legal obligations; and prevent fraud.</p>' +
+        '<h4>Information Sharing</h4>' +
+        '<p>We do not sell, trade, or rent your personal information to third parties. We may share your information with: Shopify (our e-commerce platform provider); shipping carriers to deliver your orders; payment processors to process transactions; and law enforcement if required by law.</p>' +
+        '<h4>Data Security</h4>' +
+        '<p>We implement appropriate technical and organizational measures to protect your personal information. All transactions are processed through Shopify\'s secure, PCI-compliant payment system. However, no method of transmission over the Internet is 100% secure, and we cannot guarantee absolute security.</p>' +
+        '<h4>Cookies</h4>' +
+        '<p>Our website uses cookies and similar technologies to enhance your browsing experience, analyze site traffic, and personalize content. You can control cookie settings through your browser preferences.</p>' +
+        '<h4>Your Rights</h4>' +
+        '<p>You have the right to: access the personal information we hold about you; request correction of inaccurate information; request deletion of your information (subject to legal obligations); opt out of marketing communications at any time.</p>' +
+        '<h4>Children\'s Privacy</h4>' +
+        '<p>Our website is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13.</p>' +
+        '<h4>Changes to This Policy</h4>' +
+        '<p>We may update this Privacy Policy from time to time. Changes will be posted on this page with an updated revision date.</p>' +
+        '<h4>Contact Us</h4>' +
+        '<p>If you have questions about this Privacy Policy, please contact us at <a href="mailto:sales@gloscreations316.com">sales@gloscreations316.com</a>.</p>'
+    },
+    terms: {
+      title: 'Terms of Service',
+      content: '<p><strong>Last Updated: May 2026</strong></p>' +
+        '<p>Welcome to Glo\'s Creations 3:16. By accessing or using our website gloscreations316.com, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our website.</p>' +
+        '<h4>General Conditions</h4>' +
+        '<p>We reserve the right to refuse service to anyone for any reason at any time. Prices for our products are subject to change without notice. We reserve the right to modify or discontinue any product at any time without notice.</p>' +
+        '<h4>Accuracy of Information</h4>' +
+        '<p>We make every effort to display our products as accurately as possible. However, due to variations in photography, screen displays, and the handmade nature of our products, actual colors, textures, and dimensions may vary slightly from what is shown on the website. Each piece of polymer clay jewelry is handcrafted individually, making every item unique. Minor variations in color, pattern, and size are inherent to handmade products and are not considered defects.</p>' +
+        '<h4>Products & Pricing</h4>' +
+        '<p>All products are handmade polymer clay jewelry. Prices are listed in US Dollars (USD) and are subject to change without prior notice. We are not responsible for typographical errors in pricing. In the event of a pricing error, we reserve the right to cancel the order and notify you of the error.</p>' +
+        '<h4>Orders & Payment</h4>' +
+        '<p>By placing an order, you represent that the information you provide is accurate and that you are authorized to use the payment method provided. We reserve the right to refuse or cancel any order for any reason, including suspected fraud, unauthorized transactions, or product availability issues. All payments are processed securely through Shopify Payments.</p>' +
+        '<h4>Intellectual Property</h4>' +
+        '<p>All content on this website, including but not limited to text, graphics, logos, images, product designs, and photographs, is the property of Glo\'s Creations 3:16 and is protected by copyright, trademark, and other intellectual property laws. You may not reproduce, distribute, modify, or create derivative works from any content without our express written permission.</p>' +
+        '<h4>Limitation of Liability</h4>' +
+        '<p>To the fullest extent permitted by applicable law, Glo\'s Creations 3:16 shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to loss of profits, data, or other intangible losses, resulting from: your use or inability to use our website or products; any unauthorized access to or alteration of your personal information; any errors or omissions in any content; or any other matter relating to our website or products.</p>' +
+        '<h4>Indemnification</h4>' +
+        '<p>You agree to indemnify, defend, and hold harmless Glo\'s Creations 3:16 and its owners, officers, employees, and agents from and against any claims, liabilities, damages, losses, and expenses arising out of or in any way connected with your access to or use of our website or products.</p>' +
+        '<h4>Allergies & Sensitivities Disclaimer</h4>' +
+        '<p>While our polymer clay jewelry is generally hypoallergenic, we cannot guarantee that our products will not cause allergic reactions or skin sensitivities in all individuals. If you have known sensitivities to jewelry materials, earring hooks, or adhesives, please review product descriptions carefully or contact us before purchasing. Glo\'s Creations 3:16 is not liable for any allergic reactions or skin irritations caused by our products.</p>' +
+        '<h4>Product Safety</h4>' +
+        '<p>Our products are decorative jewelry items and are not intended as toys. Small parts may present a choking hazard for children under 3 years of age. Keep jewelry out of reach of small children and pets. Our products are not intended for use in the mouth and should not be ingested.</p>' +
+        '<h4>Governing Law</h4>' +
+        '<p>These Terms of Service shall be governed by and construed in accordance with the laws of the State of Georgia, United States, without regard to its conflict of law provisions. Any disputes shall be resolved in the courts of Cherokee County, Georgia.</p>' +
+        '<h4>Changes to Terms</h4>' +
+        '<p>We reserve the right to update or modify these Terms of Service at any time without prior notice. Your continued use of our website following any changes constitutes your acceptance of the revised terms.</p>' +
+        '<h4>Contact Us</h4>' +
+        '<p>If you have questions about these Terms of Service, please contact us at <a href="mailto:sales@gloscreations316.com">sales@gloscreations316.com</a>.</p>'
+    },
+    returns: {
+      title: 'Return & Exchange Policy',
+      content: '<p><strong>Last Updated: May 2026</strong></p>' +
+        '<p>We want you to love your Glo\'s Creations 3:16 jewelry! If you\'re not completely satisfied with your purchase, we offer the following return and exchange options.</p>' +
+        '<h4>Return Window</h4>' +
+        '<p>You may return or exchange items within <strong>14 days</strong> of receiving your order. Items must be in their original, unworn condition with all original packaging and tags intact.</p>' +
+        '<h4>Eligible Returns</h4>' +
+        '<p>To be eligible for a return, your item must be: unused, unworn, and in the same condition you received it; in its original packaging; accompanied by proof of purchase (order number or receipt).</p>' +
+        '<h4>Non-Returnable Items</h4>' +
+        '<p>The following items are <strong>not eligible</strong> for return or exchange: custom or personalized orders; items that have been worn, altered, or damaged by the customer; sale or clearance items marked as "Final Sale"; gift cards.</p>' +
+        '<h4>How to Initiate a Return</h4>' +
+        '<p>To start a return or exchange, please email us at <a href="mailto:sales@gloscreations316.com">sales@gloscreations316.com</a> with your order number and reason for return. We will provide you with return instructions within 1-2 business days.</p>' +
+        '<h4>Return Shipping</h4>' +
+        '<p>Customers are responsible for return shipping costs unless the item arrived damaged or defective. We recommend using a trackable shipping method, as we cannot be responsible for items lost in return transit. Original shipping charges are non-refundable.</p>' +
+        '<h4>Refund Processing</h4>' +
+        '<p>Once we receive and inspect your return, we will notify you of the approval or rejection of your refund. Approved refunds will be processed to your original payment method within <strong>5-10 business days</strong>. Please note that your bank or credit card company may take additional time to post the refund to your account.</p>' +
+        '<h4>Exchanges</h4>' +
+        '<p>If you would like to exchange an item for a different piece, please email us and we will do our best to accommodate your request, subject to availability. If the exchange item is a different price, we will charge or refund the difference accordingly.</p>' +
+        '<h4>Damaged or Defective Items</h4>' +
+        '<p>If your item arrives damaged or defective, please contact us within <strong>48 hours</strong> of delivery with photos of the damage. We will provide a prepaid return label and send a replacement or issue a full refund at no cost to you.</p>' +
+        '<h4>Contact Us</h4>' +
+        '<p>For all return and exchange inquiries, please email <a href="mailto:sales@gloscreations316.com">sales@gloscreations316.com</a>.</p>'
+    },
+    shipping: {
+      title: 'Shipping Policy',
+      content: '<p><strong>Last Updated: May 2026</strong></p>' +
+        '<h4>Processing Time</h4>' +
+        '<p>All orders are processed within <strong>1-3 business days</strong> (Monday–Friday, excluding holidays). You will receive a confirmation email with tracking information once your order has shipped.</p>' +
+        '<h4>Shipping Rates & Delivery Times</h4>' +
+        '<p><strong>Standard Shipping:</strong> $5.00 — Estimated delivery: 3-5 business days<br>' +
+        '<strong>Priority Shipping:</strong> $9.00 — Estimated delivery: 1-2 business days<br>' +
+        '<strong>Free Standard Shipping:</strong> On orders of $50 or more (continental United States only)</p>' +
+        '<p>Delivery times are estimates and are not guaranteed. Delays may occur due to carrier issues, weather, holidays, or other circumstances beyond our control.</p>' +
+        '<h4>Shipping Locations</h4>' +
+        '<p>We currently ship to the <strong>continental United States</strong> (48 states). We do not currently ship to Alaska, Hawaii, US territories, or international locations. If you are interested in international shipping, please contact us at <a href="mailto:sales@gloscreations316.com">sales@gloscreations316.com</a>.</p>' +
+        '<h4>Order Tracking</h4>' +
+        '<p>Once your order ships, you will receive a shipping confirmation email. If a tracking number is available, it will be included in this email along with a link to track your package. Please allow up to 24 hours for tracking information to update. Not all shipping methods include tracking. If tracking is not available for your shipment, estimated delivery windows will be provided in your confirmation email.</p>' +
+        '<h4>Lost or Stolen Packages</h4>' +
+        '<p>Glo\'s Creations 3:16 is not responsible for packages that are lost, stolen, or damaged after they have been delivered and confirmed by the carrier. If your tracking shows "delivered" but you have not received your package, please: check with neighbors and household members; contact your local post office or carrier; and contact us within 7 days of the delivery date so we can assist with filing a claim.</p>' +
+        '<h4>Incorrect Shipping Address</h4>' +
+        '<p>Please double-check your shipping address before completing your order. We are not responsible for orders shipped to incorrect addresses provided by the customer. If a package is returned to us due to an incorrect address, the customer will be responsible for additional shipping charges to reship the order.</p>' +
+        '<h4>P.O. Boxes</h4>' +
+        '<p>We can ship to P.O. Boxes via USPS. Please note that delivery to P.O. Boxes may take longer than delivery to a physical address.</p>' +
+        '<h4>Contact Us</h4>' +
+        '<p>For shipping questions or concerns, please email <a href="mailto:sales@gloscreations316.com">sales@gloscreations316.com</a>.</p>'
+    },
+    care: {
+      title: 'Jewelry Care Guide',
+      content: '<p><strong>Taking Care of Your Polymer Clay Jewelry</strong></p>' +
+        '<p>Your Glo\'s Creations 3:16 jewelry is handmade with love and care. With proper care, your pieces will stay beautiful for years to come. Here are some tips to keep your jewelry looking its best.</p>' +
+        '<h4>General Care</h4>' +
+        '<p>Polymer clay is a durable material, but like all jewelry, it benefits from gentle handling. Avoid dropping your jewelry on hard surfaces, as this may cause chipping or cracking. Store your jewelry in a cool, dry place away from direct sunlight, as prolonged sun exposure may cause colors to fade over time.</p>' +
+        '<h4>Cleaning</h4>' +
+        '<p>To clean your polymer clay jewelry, gently wipe with a soft, damp cloth. Do not use harsh chemicals, alcohol, acetone, or abrasive cleaners, as these may damage the finish or color of the clay. Do not submerge your jewelry in water for extended periods.</p>' +
+        '<h4>What to Avoid</h4>' +
+        '<p>Remove your jewelry before: swimming, bathing, or showering; exercising or engaging in strenuous activity; applying lotions, perfumes, hairspray, or other beauty products; sleeping (to prevent accidental damage); household cleaning with chemicals.</p>' +
+        '<h4>Storage</h4>' +
+        '<p>Store each piece separately in a soft pouch, jewelry box, or the original packaging to prevent scratching. Keep away from extreme heat, as polymer clay can soften in very high temperatures (above 170°F/77°C). Avoid storing near windows or in cars during hot weather.</p>' +
+        '<h4>Metal Components</h4>' +
+        '<p>Some of our jewelry features metal findings (hooks, posts, chains). These components may tarnish over time with exposure to moisture and air. To slow tarnishing, store in an airtight container or with anti-tarnish strips. If tarnishing occurs, gently clean metal parts with a soft jewelry polishing cloth.</p>' +
+        '<h4>Disclaimer</h4>' +
+        '<p>Polymer clay jewelry is a handcrafted artisan product. While durable for everyday wear, it is not indestructible. Normal wear and tear, including minor surface scratches, are expected over time and are not covered under any warranty. By purchasing and wearing our jewelry, you acknowledge and accept these care guidelines.</p>'
+    }
+  };
+
+  function openPolicy(type) {
+    var policy = policies[type];
+    if (!policy) return;
+    var content = document.getElementById('policy-content');
+    content.innerHTML = '<h3 class="login-title" style="margin-bottom:16px;">' + policy.title + '</h3>' +
+      '<div style="font-family:var(--font-body);font-size:13px;color:var(--stone-600);line-height:1.8;">' + policy.content + '</div>';
+    // Style the headings
+    var headings = content.querySelectorAll('h4');
+    for (var i = 0; i < headings.length; i++) {
+      headings[i].style.cssText = 'font-family:var(--font-body);font-size:13px;font-weight:500;color:var(--stone-900);margin:20px 0 8px;letter-spacing:0.05em;';
+    }
+    document.getElementById('policy-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closePolicy() {
+    document.getElementById('policy-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
   loadWishlist();
   checkSession();
   fetchNewArrivals();
-  fetchProducts();
+  fetchCollections();
 </script>
 </body>
 </html>
