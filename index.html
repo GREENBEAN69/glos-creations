@@ -442,6 +442,116 @@
   .product-price { font-family: var(--font-body); font-size: 13px; color: var(--stone-600); }
   .shop-cta { text-align: center; margin-top: 56px; }
 
+  /* Recently Sold */
+  .recently-sold {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 56px 40px 72px;
+    border-top: 1px solid var(--stone-200);
+    display: none;
+  }
+  .recently-sold.has-items { display: block; }
+  .recently-sold-header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  .recently-sold-tag {
+    font-family: var(--font-body);
+    font-size: 10.5px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--stone-400);
+    margin-bottom: 12px;
+  }
+  .recently-sold h2 {
+    font-size: clamp(28px, 3vw, 38px);
+    font-weight: 300;
+    color: var(--stone-700);
+    margin-bottom: 10px;
+  }
+  .recently-sold h2 em { font-weight: 300; font-style: italic; }
+  .recently-sold-desc {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--stone-500);
+    line-height: 1.6;
+    max-width: 460px;
+    margin: 0 auto;
+  }
+  .sold-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 28px;
+  }
+  .sold-card {
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    position: relative;
+  }
+  .sold-card:hover { transform: translateY(-4px); }
+  .sold-img-wrap {
+    aspect-ratio: 1;
+    background: var(--stone-100);
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 14px;
+    border-radius: 2px;
+  }
+  .sold-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.55;
+    filter: saturate(0.7);
+    transition: opacity 0.3s ease;
+  }
+  .sold-card:hover .sold-img-wrap img { opacity: 0.7; }
+  .sold-img-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(245,245,244,0.15) 0%, rgba(245,245,244,0.45) 100%);
+    pointer-events: none;
+  }
+  .sold-tag {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    color: var(--stone-700);
+    font-family: var(--font-body);
+    font-size: 9.5px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    padding: 6px 12px;
+    border-radius: 2px;
+    font-weight: 500;
+  }
+  .sold-card-info { text-align: center; }
+  .sold-card-category {
+    font-family: var(--font-body);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--stone-400);
+    margin-bottom: 6px;
+  }
+  .sold-card-name {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 400;
+    color: var(--stone-600);
+    margin-bottom: 4px;
+    font-style: italic;
+  }
+  .sold-card-price {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--stone-400);
+    text-decoration: line-through;
+  }
+
   /* About */
   .about { background: var(--stone-100); padding: 72px 0 88px; }
   .about-inner { max-width: 1280px; margin: 0 auto; padding: 0 40px; display: grid; grid-template-columns: 2fr 3fr; gap: 48px; align-items: center; }
@@ -1946,7 +2056,10 @@
   .d4 { animation-delay: 0.35s; opacity: 0; }
 
   /* Responsive */
-  @media (max-width: 1024px) { .products-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 1024px) {
+    .products-grid { grid-template-columns: repeat(3, 1fr); }
+    .sold-grid { grid-template-columns: repeat(3, 1fr); }
+  }
   @media (max-width: 768px) {
     .carousel-slide::after { display: none; }
     .nav-links { display: none; }
@@ -1959,6 +2072,8 @@
     .trust-bar-inner { grid-template-columns: repeat(2, 1fr); padding: 0 20px; gap: 16px; }
     .shop { padding: 48px 20px 60px; }
     .products-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .sold-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .recently-sold { padding: 40px 20px 56px; }
     .shop-header { flex-direction: column; align-items: flex-start; }
     .about-inner { grid-template-columns: 1fr; padding: 0 20px; }
     .about-image { max-width: 300px; }
@@ -2090,6 +2205,15 @@
   <div class="shop-cta">
     <a href="https://glos-creations-2.myshopify.com/collections/all" class="btn-text" target="_blank">View All Pieces →</a>
   </div>
+</section>
+
+<section class="recently-sold" id="recently-sold-section">
+  <div class="recently-sold-header">
+    <p class="recently-sold-tag">Recently sold</p>
+    <h2>Found their <em>forever home.</em></h2>
+    <p class="recently-sold-desc">Each piece is one-of-a-kind. These have already gone home with someone — but new pieces drop often. Follow along to catch the next one.</p>
+  </div>
+  <div class="sold-grid" id="sold-grid"></div>
 </section>
 
 <section class="about" id="about">
@@ -2688,15 +2812,59 @@
   // ============================================
   // BEHIND THE CLAY - REAL INSTAGRAM POSTS
   // ============================================
-  // Edit this array to swap in different IG posts. Just paste the post URL.
-  // Labels are optional but help visitors know what each post is about.
-  var igPosts = [
+  // Posts are now loaded dynamically from Shopify metaobjects (type: instagram_post)
+  // To edit: Shopify Admin → Settings → Custom data → Metaobjects → Instagram Post
+  // The hardcoded list below is a safety fallback used only if Shopify is unreachable.
+  var igPostsFallback = [
     { url: 'https://www.instagram.com/p/DX50fhIjTyU/', label: 'Latest', image: 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/ig-post-1.png' },
     { url: 'https://www.instagram.com/p/DX0d-aTjBdI/', label: 'New Drop', image: 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/ig-post-2.png' },
     { url: 'https://www.instagram.com/p/DXvS_igjHgQ/', label: 'In Studio', image: 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/ig-post-3.png' },
     { url: 'https://www.instagram.com/p/DXj6RcwDukj/', label: 'Behind The Scenes', image: 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/ig-post-4.png' },
     { url: 'https://www.instagram.com/p/DXj2pK5jg9B/', label: 'The Why', image: 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/ig-post-5.png' }
   ];
+  var igPosts = igPostsFallback.slice();
+
+  // Fetch IG post entries from Shopify metaobjects
+  async function fetchIgPosts() {
+    var query = '{ metaobjects(type: "instagram_post", first: 20) { edges { node { id handle fields { key value reference { ... on MediaImage { image { url } } } } } } } }';
+    var data = await shopifyFetch(query);
+    if (!data || !data.data || !data.data.metaobjects || !data.data.metaobjects.edges) {
+      console.log('IG posts: using fallback (Shopify metaobjects unavailable)');
+      return;
+    }
+    var edges = data.data.metaobjects.edges;
+    if (!edges.length) {
+      console.log('IG posts: no metaobjects returned, using fallback');
+      return;
+    }
+    var loaded = [];
+    for (var i = 0; i < edges.length; i++) {
+      var fields = edges[i].node.fields || [];
+      var post = { url: '', label: '', image: '', order: 999 };
+      for (var f = 0; f < fields.length; f++) {
+        var fld = fields[f];
+        if (fld.key === 'url') post.url = fld.value || '';
+        else if (fld.key === 'label') post.label = fld.value || '';
+        else if (fld.key === 'thumbnail') {
+          if (fld.reference && fld.reference.image && fld.reference.image.url) {
+            post.image = fld.reference.image.url;
+          }
+        }
+        else if (fld.key === 'display_order') post.order = parseInt(fld.value, 10) || 999;
+      }
+      if (post.url) loaded.push(post);
+    }
+    if (!loaded.length) {
+      console.log('IG posts: no valid entries, using fallback');
+      return;
+    }
+    // Sort by display order ascending
+    loaded.sort(function(a, b) { return a.order - b.order; });
+    igPosts = loaded;
+    console.log('IG posts loaded from Shopify:', igPosts.length);
+    renderIgBubbles();
+  }
+
 
   var currentPostIndex = 0;
 
@@ -3826,11 +3994,14 @@
           createdAt: node.createdAt || '',
         };
       });
-      document.querySelector('.shop-tag').textContent = 'The Collection (' + products.length + ')';
+      // Show in-stock count in the shop tag (the sold ones live in their own section)
+      var inStockCount = products.filter(function(p) { return p.available && p.stock > 0; }).length;
+      document.querySelector('.shop-tag').textContent = 'The Collection (' + inStockCount + ')';
       console.log('Products loaded with stock:', products.map(function(p) { return p.name + ': stock=' + p.stock + ', collections=' + p.categories.join(',') + ', tags=' + p.tags.join(','); }));
       if (collections.length === 0) buildFilters();
       buildStyleFilters();
       renderProducts('All');
+      renderRecentlySold();
     } else {
       grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--stone-400);font-family:var(--font-body);font-size:13px;">Could not load products. Please try again later.</div>';
     }
@@ -4031,8 +4202,10 @@
     currentSort = document.getElementById('sort-select').value;
     trackEvent('sort_products', { sort_value: currentSort });
 
-    // Start with all products
-    var filtered = products.slice();
+    // Start with all in-stock products (sold-out items go to "Recently Sold" section)
+    var filtered = products.filter(function(p) {
+      return p.available && p.stock > 0;
+    });
 
     // Apply collection filter
     if (currentCollectionFilter !== 'All') {
@@ -4108,6 +4281,53 @@
       html += '<p class="product-type">' + p.category + '</p>';
       html += '<p class="product-name">' + p.name + '</p>';
       html += '<p class="product-price">$' + p.price.toFixed(2) + '</p>';
+      html += '</div>';
+    }
+    grid.innerHTML = html;
+  }
+
+  function renderRecentlySold() {
+    var section = document.getElementById('recently-sold-section');
+    var grid = document.getElementById('sold-grid');
+    if (!section || !grid) return;
+
+    // Find sold-out products
+    var sold = products.filter(function(p) {
+      return !p.available || p.stock <= 0;
+    });
+
+    // Sort by newest first (most recently sold appears first)
+    sold.sort(function(a, b) {
+      return (b.createdAt || '').localeCompare(a.createdAt || '');
+    });
+
+    // Limit to 8 most recent so the section doesn't grow too long
+    sold = sold.slice(0, 8);
+
+    if (sold.length === 0) {
+      section.classList.remove('has-items');
+      grid.innerHTML = '';
+      return;
+    }
+
+    section.classList.add('has-items');
+    var html = '';
+    for (var i = 0; i < sold.length; i++) {
+      var p = sold[i];
+      var pIndex = products.indexOf(p);
+      html += '<div class="sold-card" onclick="openModal(' + pIndex + ')">';
+      html += '<div class="sold-img-wrap">';
+      if (p.image) {
+        html += '<img src="' + p.image + '" alt="' + p.name + '" loading="lazy">';
+      }
+      html += '<div class="sold-img-overlay"></div>';
+      html += '<span class="sold-tag">Sold</span>';
+      html += '</div>';
+      html += '<div class="sold-card-info">';
+      html += '<p class="sold-card-category">' + p.category + '</p>';
+      html += '<p class="sold-card-name">' + p.name + '</p>';
+      html += '<p class="sold-card-price">$' + p.price.toFixed(2) + '</p>';
+      html += '</div>';
       html += '</div>';
     }
     grid.innerHTML = html;
@@ -4930,6 +5150,7 @@
   showCookieBanner();
   startIgPopupTimer();
   renderIgBubbles();
+  fetchIgPosts();
 </script>
 </body>
 </html>
