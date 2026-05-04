@@ -3047,7 +3047,12 @@
   resetAnnounceTimer();
 
   function openInstagram() {
-    window.open('https://www.instagram.com/gloscreations31_6/', '_blank');
+    var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      window.location.href = 'https://www.instagram.com/gloscreations31_6/';
+    } else {
+      window.open('https://www.instagram.com/gloscreations31_6/', '_blank');
+    }
   }
 
   function openPolicy(type) {
