@@ -3876,7 +3876,14 @@
           available: node.variants.edges[0] ? node.variants.edges[0].node.availableForSale : false,
           stock: node.variants.edges[0] && node.variants.edges[0].node.quantityAvailable !== null ? node.variants.edges[0].node.quantityAvailable : 999,
         };
+      // Hide sold-out items — they live in the "Recently Sold" section instead
+      }).filter(function(item) {
+        return item.available && item.stock > 0;
       });
+      if (carouselItems.length === 0) {
+        track.innerHTML = '<div class="carousel-loading">All new arrivals just sold out — check back soon for new pieces!</div>';
+        return;
+      }
       renderCarousel();
       startCarouselTimer();
     } else {
