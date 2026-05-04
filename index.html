@@ -737,6 +737,62 @@
   }
   .addr-actions button:hover { color: var(--stone-900); }
 
+  /* Virtual Try-On */
+  .tryon-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 350;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  .tryon-overlay.open { display: flex; align-items: center; justify-content: center; }
+  .tryon-modal {
+    background: var(--stone-50);
+    border-radius: 20px;
+    max-width: 700px;
+    width: 94%;
+    max-height: 92vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    animation: modalIn 0.3s ease;
+  }
+  .tryon-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--stone-200);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .tryon-title { font-family: var(--font-body); font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--stone-800); }
+  .tryon-close { width: 36px; height: 36px; border-radius: 50%; background: var(--stone-100); border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .tryon-close:hover { background: var(--stone-200); }
+  .tryon-close svg { width: 18px; height: 18px; stroke: var(--stone-700); fill: none; stroke-width: 1.5; }
+  .tryon-body { padding: 24px; text-align: center; }
+  .tryon-canvas-wrap { position: relative; display: inline-block; max-width: 100%; border-radius: 16px; overflow: hidden; background: var(--stone-100); }
+  .tryon-canvas-wrap canvas { display: block; max-width: 100%; border-radius: 16px; }
+  .tryon-controls { padding: 20px 24px; border-top: 1px solid var(--stone-200); display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .tryon-btn { padding: 12px 24px; font-family: var(--font-body); font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; border-radius: 10px; border: none; cursor: pointer; transition: background 0.2s; }
+  .tryon-btn-primary { background: var(--stone-900); color: white; }
+  .tryon-btn-primary:hover { background: var(--stone-700); }
+  .tryon-btn-secondary { background: transparent; color: var(--stone-700); border: 1px solid var(--stone-300); }
+  .tryon-btn-secondary:hover { border-color: var(--stone-700); }
+  .tryon-upload-area { border: 2px dashed var(--stone-300); border-radius: 16px; padding: 48px 24px; cursor: pointer; transition: border-color 0.2s, background 0.2s; margin-bottom: 16px; }
+  .tryon-upload-area:hover { border-color: var(--stone-500); background: var(--stone-100); }
+  .tryon-upload-text { font-family: var(--font-body); font-size: 13px; color: var(--stone-500); margin-bottom: 4px; }
+  .tryon-upload-sub { font-family: var(--font-body); font-size: 11px; color: var(--stone-400); }
+  .tryon-loading { padding: 40px; text-align: center; font-family: var(--font-body); font-size: 13px; color: var(--stone-400); }
+  .tryon-earring-size { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 16px; font-family: var(--font-body); font-size: 11px; color: var(--stone-500); }
+  .tryon-size-slider { width: 120px; accent-color: var(--stone-700); }
+  .tryon-product-name { font-size: 16px; font-style: italic; color: var(--stone-800); margin-bottom: 16px; }
+  @media (max-width: 768px) {
+    .tryon-modal { width: 98%; max-height: 95vh; border-radius: 16px; }
+    .tryon-body { padding: 16px; }
+    .tryon-upload-area { padding: 32px 16px; }
+  }
+
   /* Product Modal */
   .modal-overlay {
     display: none;
@@ -798,6 +854,42 @@
     object-fit: cover;
     display: block;
   }
+  .modal-img-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 2;
+    transition: background 0.2s, transform 0.2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  .modal-img-arrow:hover { background: white; transform: translateY(-50%) scale(1.05); }
+  .modal-img-arrow svg { width: 18px; height: 18px; stroke: var(--stone-800); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .modal-img-prev { left: 12px; }
+  .modal-img-next { right: 12px; }
+  .modal-img-counter {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: rgba(0,0,0,0.5);
+    color: white;
+    font-family: var(--font-body);
+    font-size: 11px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    z-index: 2;
+    letter-spacing: 0.05em;
+  }
   .modal-image-nav {
     position: absolute;
     bottom: 16px;
@@ -807,19 +899,20 @@
     gap: 8px;
   }
   .modal-img-dot {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
-    background: rgba(255,255,255,0.4);
+    background: rgba(255,255,255,0.5);
     border: none;
     padding: 0;
     cursor: pointer;
     transition: all 0.2s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
   }
   .modal-img-dot.active {
     background: white;
-    width: 20px;
-    border-radius: 4px;
+    width: 24px;
+    border-radius: 5px;
   }
   .modal-info {
     padding: 40px 36px;
@@ -1389,6 +1482,94 @@
   </div>
 </section>
 
+<!-- Virtual Try-On Modal -->
+<div class="tryon-overlay" id="tryon-overlay" onclick="if(event.target===this)closeTryon()">
+  <div class="tryon-modal">
+    <div class="tryon-header">
+      <span class="tryon-title">Virtual Try-On</span>
+      <button class="tryon-close" onclick="closeTryon()">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="tryon-body" id="tryon-body">
+      <p class="tryon-product-name" id="tryon-product-name"></p>
+      
+      <!-- Upload State -->
+      <div id="tryon-upload-state">
+        <div style="background:var(--stone-100);border-radius:12px;padding:16px 20px;margin-bottom:20px;text-align:left;">
+          <p style="font-family:var(--font-body);font-size:12px;font-weight:500;color:var(--stone-700);margin-bottom:8px;">How it works:</p>
+          <p style="font-family:var(--font-body);font-size:12px;color:var(--stone-500);line-height:1.7;">
+            1. Upload a front-facing photo or use your camera<br>
+            2. Our AI will detect your face and place the earrings<br>
+            3. Drag the earrings to adjust their position<br>
+            4. Use the slider to resize and zoom to see detail<br>
+            5. Save the image to share or keep
+          </p>
+          <p style="font-family:var(--font-body);font-size:11px;color:var(--stone-800);margin-top:10px;font-weight:500;">💡 Tips for best results:</p>
+          <p style="font-family:var(--font-body);font-size:11px;color:var(--stone-500);line-height:1.6;">
+            Face the camera directly · Use good lighting · Pull hair behind ears
+          </p>
+        </div>
+        <div class="tryon-upload-area" onclick="document.getElementById('tryon-file-input').click()">
+          <p style="font-size:36px;margin-bottom:12px;">📸</p>
+          <p class="tryon-upload-text">Upload a photo of yourself</p>
+          <p class="tryon-upload-sub">Front-facing photo works best · JPG or PNG</p>
+        </div>
+        <input type="file" id="tryon-file-input" accept="image/*" style="display:none;" onchange="handleTryonUpload(event)">
+        <button class="tryon-btn tryon-btn-secondary" onclick="startCamera()" style="width:100%;">Or Use Your Camera</button>
+        <div style="margin-top:20px;padding:14px 16px;background:var(--stone-100);border-radius:10px;">
+          <p style="font-family:var(--font-body);font-size:10px;color:var(--stone-400);line-height:1.7;text-align:left;">
+            <span style="font-weight:500;color:var(--stone-600);">Privacy Notice:</span> Your photos are processed entirely within your browser using on-device facial detection technology. No images, photographs, or biometric data are uploaded, transmitted, stored, or retained by Glo's Creations 3:16 or any third party. All image processing occurs locally on your device and all data is permanently discarded when you close this window. By using this feature, you acknowledge that virtual try-on results are approximations intended for visualization purposes only and may not reflect the exact appearance of the product when worn. Glo's Creations 3:16 assumes no liability for purchasing decisions made based on virtual try-on results.
+          </p>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div id="tryon-loading-state" style="display:none;">
+        <div class="tryon-loading">
+          <p style="font-size:28px;margin-bottom:12px;">✨</p>
+          <p>Detecting face and placing earrings...</p>
+        </div>
+      </div>
+
+      <!-- Camera State -->
+      <div id="tryon-camera-state" style="display:none;">
+        <div class="tryon-canvas-wrap">
+          <video id="tryon-video" autoplay playsinline style="max-width:100%;border-radius:16px;transform:scaleX(-1);"></video>
+        </div>
+        <div style="margin-top:16px;">
+          <button class="tryon-btn tryon-btn-primary" onclick="captureCamera()">Take Photo</button>
+          <button class="tryon-btn tryon-btn-secondary" onclick="stopCamera();showUploadState()">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Result State -->
+      <div id="tryon-result-state" style="display:none;">
+        <div class="tryon-canvas-wrap">
+          <canvas id="tryon-canvas"></canvas>
+        </div>
+        <div class="tryon-earring-size">
+          <span>Earring Size</span>
+          <input type="range" class="tryon-size-slider" id="tryon-size-slider" min="30" max="150" value="70" oninput="updateTryonSize(this.value)">
+          <span id="tryon-size-label">Medium</span>
+        </div>
+        <p style="font-family:var(--font-body);font-size:11px;color:var(--stone-400);margin-top:12px;">Drag the earrings to reposition them · Use the slider to resize</p>
+        <div class="tryon-earring-size" style="margin-top:12px;">
+          <span>Zoom</span>
+          <button class="tryon-btn-secondary" style="padding:4px 12px;font-size:14px;border-radius:6px;min-width:32px;" onclick="tryonZoom(-0.2)">−</button>
+          <span id="tryon-zoom-label" style="min-width:40px;text-align:center;">100%</span>
+          <button class="tryon-btn-secondary" style="padding:4px 12px;font-size:14px;border-radius:6px;min-width:32px;" onclick="tryonZoom(0.2)">+</button>
+          <button class="tryon-btn-secondary" style="padding:4px 12px;font-size:10px;border-radius:6px;" onclick="tryonResetZoom()">Reset</button>
+        </div>
+      </div>
+    </div>
+    <div class="tryon-controls" id="tryon-controls" style="display:none;">
+      <button class="tryon-btn tryon-btn-secondary" onclick="resetTryon()">Try Another Photo</button>
+      <button class="tryon-btn tryon-btn-primary" onclick="saveTryonImage()">Save Image</button>
+    </div>
+  </div>
+</div>
+
 <!-- Policy Modal -->
 <div class="modal-overlay" id="policy-overlay" onclick="if(event.target===this)closePolicy()">
   <div class="modal" style="grid-template-columns:1fr;max-width:720px;">
@@ -1587,6 +1768,7 @@
         </div>
       </div>
       <button class="modal-add-btn" id="modal-add-btn" onclick="addModalToCart()">Add to Cart</button>
+      <button class="modal-add-btn" onclick="openTryon()" style="background:transparent;color:var(--stone-700);border:1px solid var(--stone-300);margin-top:10px;">✨ Virtual Try-On</button>
     </div>
   </div>
 </div>
@@ -2513,7 +2695,7 @@
     var track = document.getElementById('carousel-track');
     track.innerHTML = '<div class="carousel-loading">Loading new arrivals...</div>';
 
-    var query = '{ collection(handle: "new-arrivals") { products(first: 10) { edges { node { id title handle productType priceRange { minVariantPrice { amount } } images(first: 1) { edges { node { url altText } } } variants(first: 1) { edges { node { id availableForSale quantityAvailable } } } } } } } }';
+    var query = '{ collection(handle: "new-arrivals") { products(first: 10) { edges { node { id title handle productType description priceRange { minVariantPrice { amount } } images(first: 6) { edges { node { url altText } } } variants(first: 1) { edges { node { id availableForSale quantityAvailable } } } } } } } }';
     var data = await shopifyFetch(query);
 
     if (data && data.data && data.data.collection && data.data.collection.products.edges.length > 0) {
@@ -2525,6 +2707,8 @@
           category: node.productType || 'Jewelry',
           price: parseFloat(node.priceRange.minVariantPrice.amount),
           image: node.images.edges[0] ? node.images.edges[0].node.url : null,
+          images: node.images.edges.map(function(e) { return e.node.url; }),
+          description: node.description || '',
           variantId: node.variants.edges[0] ? node.variants.edges[0].node.id : null,
           available: node.variants.edges[0] ? node.variants.edges[0].node.availableForSale : false,
           stock: node.variants.edges[0] && node.variants.edges[0].node.quantityAvailable !== null ? node.variants.edges[0].node.quantityAvailable : 999,
@@ -2682,7 +2866,14 @@
       if (p.stock <= 0 || !p.available) {
         html += '<button class="product-overlay" onclick="event.stopPropagation()" style="background:var(--stone-500);transform:translateY(0);">Sold Out</button>';
       } else {
-        html += '<button class="product-overlay" onclick="event.stopPropagation(); addToCart(products[' + pIndex + '])">Add to Cart</button>';
+        html += '<div class="product-overlay" style="display:flex;justify-content:space-between;align-items:center;padding:11px 16px;">';
+        html += '<span onclick="event.stopPropagation();openModal(' + pIndex + ')" style="cursor:pointer;">View Details</span>';
+        html += '<span onclick="event.stopPropagation();addToCart(products[' + pIndex + '])" style="cursor:pointer;">Add to Cart +</span>';
+        html += '</div>';
+      }
+      // Image count badge
+      if (p.images && p.images.length > 1) {
+        html += '<div style="position:absolute;top:10px;left:10px;background:rgba(0,0,0,0.5);color:white;font-family:var(--font-body);font-size:10px;padding:4px 10px;border-radius:12px;z-index:1;display:flex;align-items:center;gap:4px;"><svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:white;fill:none;stroke-width:2;"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>' + p.images.length + ' photos</div>';
       }
       html += '</div>';
       html += '<p class="product-type">' + p.category + '</p>';
@@ -2750,6 +2941,15 @@
     if (modalImages.length > 0) {
       html += '<img src="' + modalImages[modalImageIndex] + '" alt="' + modalProduct.name + '">';
       if (modalImages.length > 1) {
+        // Image counter
+        html += '<div class="modal-img-counter">' + (modalImageIndex + 1) + ' / ' + modalImages.length + '</div>';
+        // Left arrow
+        html += '<button class="modal-img-arrow modal-img-prev" onclick="changeModalImage(' + ((modalImageIndex - 1 + modalImages.length) % modalImages.length) + ')">';
+        html += '<svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>';
+        // Right arrow
+        html += '<button class="modal-img-arrow modal-img-next" onclick="changeModalImage(' + ((modalImageIndex + 1) % modalImages.length) + ')">';
+        html += '<svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></button>';
+        // Dots
         html += '<div class="modal-image-nav">';
         for (var i = 0; i < modalImages.length; i++) {
           html += '<button class="modal-img-dot' + (i === modalImageIndex ? ' active' : '') + '" onclick="changeModalImage(' + i + ')"></button>';
@@ -3073,6 +3273,479 @@
   function closePolicy() {
     document.getElementById('policy-overlay').classList.remove('open');
     document.body.style.overflow = '';
+  }
+
+  // ============================================
+  // VIRTUAL TRY-ON
+  // ============================================
+  var tryonEarringImg = null;
+  var tryonUserImg = null;
+  var tryonFaceLandmarks = null;
+  var tryonEarringSize = 70;
+  var tryonStream = null;
+  var faceMeshLoaded = false;
+  var faceMesh = null;
+
+  async function loadFaceMesh() {
+    if (faceMeshLoaded) return;
+    var script1 = document.createElement('script');
+    script1.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js';
+    document.head.appendChild(script1);
+    var script2 = document.createElement('script');
+    script2.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js';
+    document.head.appendChild(script2);
+
+    await new Promise(function(resolve) {
+      var check = setInterval(function() {
+        if (typeof FaceMesh !== 'undefined') { clearInterval(check); resolve(); }
+      }, 100);
+      setTimeout(function() { clearInterval(check); resolve(); }, 10000);
+    });
+
+    if (typeof FaceMesh === 'undefined') {
+      alert('Could not load face detection. Please try again.');
+      return;
+    }
+
+    faceMesh = new FaceMesh({
+      locateFile: function(file) {
+        return 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/' + file;
+      }
+    });
+    faceMesh.setOptions({
+      maxNumFaces: 1,
+      refineLandmarks: true,
+      minDetectionConfidence: 0.5,
+      minTrackingConfidence: 0.5
+    });
+    faceMesh.onResults(function(results) {
+      if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+        tryonFaceLandmarks = results.multiFaceLandmarks[0];
+        renderTryon();
+      } else {
+        alert('No face detected. Please try a clearer, front-facing photo.');
+        showUploadState();
+      }
+    });
+    faceMeshLoaded = true;
+  }
+
+  function openTryon() {
+    if (!modalProduct) return;
+    document.getElementById('tryon-product-name').textContent = modalProduct.name;
+
+    // Map products to their transparent earring images on GitHub
+    var earringImages = {
+      'arch': 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/earring-arch.png'
+    };
+
+    // Try to find a matching earring image by checking product name
+    var earringSrc = null;
+    var nameLower = modalProduct.name.toLowerCase();
+    for (var key in earringImages) {
+      if (nameLower.indexOf(key) !== -1) {
+        earringSrc = earringImages[key];
+        break;
+      }
+    }
+
+    // Fallback to product image if no transparent version exists
+    if (!earringSrc) earringSrc = modalProduct.image;
+
+    tryonEarringImg = new Image();
+    tryonEarringImg.crossOrigin = 'anonymous';
+    tryonEarringImg.src = earringSrc;
+    showUploadState();
+    document.getElementById('tryon-overlay').classList.add('open');
+  }
+
+  function closeTryon() {
+    document.getElementById('tryon-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+    stopCamera();
+  }
+
+  function showUploadState() {
+    document.getElementById('tryon-upload-state').style.display = 'block';
+    document.getElementById('tryon-loading-state').style.display = 'none';
+    document.getElementById('tryon-camera-state').style.display = 'none';
+    document.getElementById('tryon-result-state').style.display = 'none';
+    document.getElementById('tryon-controls').style.display = 'none';
+  }
+
+  async function handleTryonUpload(event) {
+    var file = event.target.files[0];
+    if (!file) return;
+    document.getElementById('tryon-upload-state').style.display = 'none';
+    document.getElementById('tryon-loading-state').style.display = 'block';
+
+    tryonUserImg = new Image();
+    tryonUserImg.onload = async function() {
+      await loadFaceMesh();
+      if (faceMesh) {
+        var tempCanvas = document.createElement('canvas');
+        tempCanvas.width = tryonUserImg.width;
+        tempCanvas.height = tryonUserImg.height;
+        var tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(tryonUserImg, 0, 0);
+        await faceMesh.send({ image: tempCanvas });
+      }
+    };
+    tryonUserImg.src = URL.createObjectURL(file);
+  }
+
+  async function startCamera() {
+    document.getElementById('tryon-upload-state').style.display = 'none';
+    document.getElementById('tryon-camera-state').style.display = 'block';
+    try {
+      tryonStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } });
+      document.getElementById('tryon-video').srcObject = tryonStream;
+    } catch (e) {
+      alert('Could not access camera. Please upload a photo instead.');
+      showUploadState();
+    }
+  }
+
+  function stopCamera() {
+    if (tryonStream) {
+      tryonStream.getTracks().forEach(function(track) { track.stop(); });
+      tryonStream = null;
+    }
+  }
+
+  async function captureCamera() {
+    var video = document.getElementById('tryon-video');
+    var tempCanvas = document.createElement('canvas');
+    tempCanvas.width = video.videoWidth;
+    tempCanvas.height = video.videoHeight;
+    var tempCtx = tempCanvas.getContext('2d');
+    tempCtx.translate(tempCanvas.width, 0);
+    tempCtx.scale(-1, 1);
+    tempCtx.drawImage(video, 0, 0);
+    stopCamera();
+
+    document.getElementById('tryon-camera-state').style.display = 'none';
+    document.getElementById('tryon-loading-state').style.display = 'block';
+
+    tryonUserImg = new Image();
+    tryonUserImg.onload = async function() {
+      await loadFaceMesh();
+      if (faceMesh) {
+        await faceMesh.send({ image: tempCanvas });
+      }
+    };
+    tryonUserImg.src = tempCanvas.toDataURL();
+  }
+
+  function renderTryon() {
+    document.getElementById('tryon-loading-state').style.display = 'none';
+    document.getElementById('tryon-result-state').style.display = 'block';
+    document.getElementById('tryon-controls').style.display = 'flex';
+
+    var canvas = document.getElementById('tryon-canvas');
+    var ctx = canvas.getContext('2d');
+
+    // Use full resolution for quality
+    var maxW = 800;
+    var scale = Math.min(maxW / tryonUserImg.width, 1);
+    canvas.width = tryonUserImg.width * scale;
+    canvas.height = tryonUserImg.height * scale;
+
+    // Enable high quality rendering
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    if (!tryonFaceLandmarks) return;
+
+    var landmarks = tryonFaceLandmarks;
+    var leftCheek = landmarks[234];
+    var rightCheek = landmarks[454];
+    var faceWidth = Math.abs(rightCheek.x - leftCheek.x) * canvas.width;
+
+    var earringH = faceWidth * (tryonEarringSize / 100) * 0.8;
+    var earringW = earringH * (tryonEarringImg.width / tryonEarringImg.height);
+
+    // Set initial positions if not already dragged
+    if (!tryonLeftPos) {
+      var leftEar = landmarks[177];
+      tryonLeftPos = { x: leftEar.x * canvas.width - earringW / 2, y: leftEar.y * canvas.height };
+    }
+    if (!tryonRightPos) {
+      var rightEar = landmarks[401];
+      tryonRightPos = { x: rightEar.x * canvas.width - earringW / 2, y: rightEar.y * canvas.height };
+    }
+
+    tryonEarringW = earringW;
+    tryonEarringH = earringH;
+
+    drawTryonCanvas();
+  }
+
+  var tryonLeftPos = null;
+  var tryonRightPos = null;
+  var tryonEarringW = 0;
+  var tryonEarringH = 0;
+  var tryonDragging = null;
+  var tryonDragOffset = { x: 0, y: 0 };
+  var tryonZoomLevel = 1;
+  var tryonPanX = 0;
+  var tryonPanY = 0;
+  var tryonPanning = false;
+  var tryonPanStart = { x: 0, y: 0 };
+
+  function drawTryonCanvas() {
+    var canvas = document.getElementById('tryon-canvas');
+    var ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Apply zoom and pan
+    ctx.save();
+    ctx.translate(tryonPanX, tryonPanY);
+    ctx.scale(tryonZoomLevel, tryonZoomLevel);
+
+    // Draw user photo
+    ctx.drawImage(tryonUserImg, 0, 0, canvas.width, canvas.height);
+
+    if (!tryonEarringImg || !tryonLeftPos || !tryonRightPos) {
+      ctx.restore();
+      return;
+    }
+
+    // Draw left earring
+    ctx.drawImage(tryonEarringImg, tryonLeftPos.x, tryonLeftPos.y, tryonEarringW, tryonEarringH);
+    // Draw right earring (mirrored)
+    ctx.save();
+    ctx.translate(tryonRightPos.x + tryonEarringW, tryonRightPos.y);
+    ctx.scale(-1, 1);
+    ctx.drawImage(tryonEarringImg, 0, 0, tryonEarringW, tryonEarringH);
+    ctx.restore();
+
+    // Draw drag handles
+    drawDragHandle(ctx, tryonLeftPos.x + tryonEarringW / 2, tryonLeftPos.y + tryonEarringH / 2);
+    drawDragHandle(ctx, tryonRightPos.x + tryonEarringW / 2, tryonRightPos.y + tryonEarringH / 2);
+
+    ctx.restore();
+  }
+
+  function tryonZoom(delta) {
+    var oldZoom = tryonZoomLevel;
+    tryonZoomLevel = Math.max(0.5, Math.min(4, tryonZoomLevel + delta));
+    
+    // Zoom toward center
+    var canvas = document.getElementById('tryon-canvas');
+    var cx = canvas.width / 2;
+    var cy = canvas.height / 2;
+    tryonPanX = cx - (cx - tryonPanX) * (tryonZoomLevel / oldZoom);
+    tryonPanY = cy - (cy - tryonPanY) * (tryonZoomLevel / oldZoom);
+    
+    document.getElementById('tryon-zoom-label').textContent = Math.round(tryonZoomLevel * 100) + '%';
+    drawTryonCanvas();
+  }
+
+  function tryonResetZoom() {
+    tryonZoomLevel = 1;
+    tryonPanX = 0;
+    tryonPanY = 0;
+    document.getElementById('tryon-zoom-label').textContent = '100%';
+    drawTryonCanvas();
+  }
+
+  function drawDragHandle(ctx, x, y) {
+    ctx.beginPath();
+    ctx.arc(x, y, 14, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // Move icon
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('✥', x, y + 4);
+  }
+
+  // Mouse/touch drag handling
+  function initTryonDrag() {
+    var canvas = document.getElementById('tryon-canvas');
+
+    function getPos(e) {
+      var rect = canvas.getBoundingClientRect();
+      var scaleX = canvas.width / rect.width;
+      var scaleY = canvas.height / rect.height;
+      var clientX, clientY;
+      if (e.touches) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      } else {
+        clientX = e.clientX;
+        clientY = e.clientY;
+      }
+      // Convert screen coords to canvas coords accounting for zoom/pan
+      var canvasX = (clientX - rect.left) * scaleX;
+      var canvasY = (clientY - rect.top) * scaleY;
+      // Convert to zoomed coordinate space
+      var zoomedX = (canvasX - tryonPanX) / tryonZoomLevel;
+      var zoomedY = (canvasY - tryonPanY) / tryonZoomLevel;
+      return { x: zoomedX, y: zoomedY, rawX: canvasX, rawY: canvasY };
+    }
+
+    function hitTest(pos) {
+      if (tryonLeftPos && pos.x >= tryonLeftPos.x && pos.x <= tryonLeftPos.x + tryonEarringW &&
+          pos.y >= tryonLeftPos.y && pos.y <= tryonLeftPos.y + tryonEarringH) {
+        return 'left';
+      }
+      if (tryonRightPos && pos.x >= tryonRightPos.x && pos.x <= tryonRightPos.x + tryonEarringW &&
+          pos.y >= tryonRightPos.y && pos.y <= tryonRightPos.y + tryonEarringH) {
+        return 'right';
+      }
+      return null;
+    }
+
+    function onStart(e) {
+      e.preventDefault();
+      var pos = getPos(e);
+      var hit = hitTest(pos);
+      if (hit) {
+        tryonDragging = hit;
+        var earPos = hit === 'left' ? tryonLeftPos : tryonRightPos;
+        tryonDragOffset = { x: pos.x - earPos.x, y: pos.y - earPos.y };
+        canvas.style.cursor = 'grabbing';
+      } else if (tryonZoomLevel > 1) {
+        // Pan when zoomed in and not dragging earrings
+        tryonPanning = true;
+        tryonPanStart = { x: pos.rawX - tryonPanX, y: pos.rawY - tryonPanY };
+        canvas.style.cursor = 'move';
+      }
+    }
+
+    function onMove(e) {
+      e.preventDefault();
+      if (tryonPanning) {
+        var pos = getPos(e);
+        tryonPanX = pos.rawX - tryonPanStart.x;
+        tryonPanY = pos.rawY - tryonPanStart.y;
+        drawTryonCanvas();
+        return;
+      }
+      if (!tryonDragging) {
+        var pos = getPos(e);
+        var hit = hitTest(pos);
+        canvas.style.cursor = hit ? 'grab' : (tryonZoomLevel > 1 ? 'move' : 'default');
+        return;
+      }
+      var pos = getPos(e);
+      var newX = pos.x - tryonDragOffset.x;
+      var newY = pos.y - tryonDragOffset.y;
+      if (tryonDragging === 'left') {
+        tryonLeftPos = { x: newX, y: newY };
+      } else {
+        tryonRightPos = { x: newX, y: newY };
+      }
+      drawTryonCanvas();
+    }
+
+    function onEnd(e) {
+      tryonDragging = null;
+      tryonPanning = false;
+      canvas.style.cursor = 'default';
+    }
+
+    // Mouse wheel zoom
+    canvas.addEventListener('wheel', function(e) {
+      e.preventDefault();
+      var delta = e.deltaY > 0 ? -0.15 : 0.15;
+      tryonZoom(delta);
+    }, { passive: false });
+
+    canvas.addEventListener('mousedown', onStart);
+    canvas.addEventListener('mousemove', onMove);
+    canvas.addEventListener('mouseup', onEnd);
+    canvas.addEventListener('mouseleave', onEnd);
+    canvas.addEventListener('touchstart', onStart, { passive: false });
+    canvas.addEventListener('touchmove', onMove, { passive: false });
+    canvas.addEventListener('touchend', onEnd);
+  }
+
+  // Initialize drag after first render
+  var tryonDragInitialized = false;
+  var origRenderTryon = renderTryon;
+  renderTryon = function() {
+    origRenderTryon();
+    if (!tryonDragInitialized) {
+      initTryonDrag();
+      tryonDragInitialized = true;
+    }
+  };
+
+  function updateTryonSize(value) {
+    tryonEarringSize = parseInt(value);
+    var label = document.getElementById('tryon-size-label');
+    if (value < 50) label.textContent = 'Small';
+    else if (value < 90) label.textContent = 'Medium';
+    else label.textContent = 'Large';
+
+    // Recalculate earring dimensions
+    if (tryonFaceLandmarks) {
+      var canvas = document.getElementById('tryon-canvas');
+      var landmarks = tryonFaceLandmarks;
+      var leftCheek = landmarks[234];
+      var rightCheek = landmarks[454];
+      var faceWidth = Math.abs(rightCheek.x - leftCheek.x) * canvas.width;
+      tryonEarringH = faceWidth * (tryonEarringSize / 100) * 0.8;
+      tryonEarringW = tryonEarringH * (tryonEarringImg.width / tryonEarringImg.height);
+      drawTryonCanvas();
+    }
+  }
+
+  function resetTryon() {
+    document.getElementById('tryon-file-input').value = '';
+    tryonFaceLandmarks = null;
+    tryonUserImg = null;
+    tryonLeftPos = null;
+    tryonRightPos = null;
+    tryonDragging = null;
+    tryonDragInitialized = false;
+    tryonZoomLevel = 1;
+    tryonPanX = 0;
+    tryonPanY = 0;
+    tryonPanning = false;
+    document.getElementById('tryon-zoom-label').textContent = '100%';
+    showUploadState();
+  }
+
+  function saveTryonImage() {
+    var canvas = document.getElementById('tryon-canvas');
+    var ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    // Redraw without handles at current zoom
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.translate(tryonPanX, tryonPanY);
+    ctx.scale(tryonZoomLevel, tryonZoomLevel);
+    ctx.drawImage(tryonUserImg, 0, 0, canvas.width, canvas.height);
+    if (tryonEarringImg && tryonLeftPos && tryonRightPos) {
+      ctx.drawImage(tryonEarringImg, tryonLeftPos.x, tryonLeftPos.y, tryonEarringW, tryonEarringH);
+      ctx.save();
+      ctx.translate(tryonRightPos.x + tryonEarringW, tryonRightPos.y);
+      ctx.scale(-1, 1);
+      ctx.drawImage(tryonEarringImg, 0, 0, tryonEarringW, tryonEarringH);
+      ctx.restore();
+    }
+    ctx.restore();
+
+    var link = document.createElement('a');
+    link.download = 'glos-creations-tryon.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    showToastMsg('Image saved!');
+
+    drawTryonCanvas();
   }
 
   loadWishlist();
