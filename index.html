@@ -3589,8 +3589,10 @@
       minTrackingConfidence: 0.5
     });
     faceMesh.onResults(function(results) {
+      console.log('FaceMesh results received:', results.multiFaceLandmarks ? results.multiFaceLandmarks.length + ' faces' : 'no faces');
       if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
         tryonFaceLandmarks = results.multiFaceLandmarks[0];
+        console.log('Earring image ready:', tryonEarringImg ? (tryonEarringImg.complete ? 'loaded' : 'loading') : 'null');
         renderTryon();
       } else {
         alert('No face detected. Please try a clearer, front-facing photo.');
@@ -3626,13 +3628,23 @@
         break;
       }
     }
-    if (!earringSrc) console.log('No match found, using product image as fallback');
+    if (!earringSrc) {
+      console.log('No match found, using product image as fallback');
+      earringSrc = modalProduct.image;
+    }
 
-    // Fallback to product image if no transparent version exists
-    if (!earringSrc) earringSrc = modalProduct.image;
-
+    // Pre-load the earring image before showing the upload screen
     tryonEarringImg = new Image();
     tryonEarringImg.crossOrigin = 'anonymous';
+    tryonEarringImg.onload = function() {
+      console.log('Earring image loaded:', tryonEarringImg.width, 'x', tryonEarringImg.height);
+    };
+    tryonEarringImg.onerror = function() {
+      console.error('Failed to load earring image, using product image');
+      tryonEarringImg = new Image();
+      tryonEarringImg.crossOrigin = 'anonymous';
+      tryonEarringImg.src = modalProduct.image;
+    };
     tryonEarringImg.src = earringSrc;
     showUploadState();
     document.getElementById('tryon-overlay').classList.add('open');
@@ -3717,6 +3729,7 @@
   }
 
   function renderTryon() {
+    console.log('renderTryon called');
     document.getElementById('tryon-loading-state').style.display = 'none';
     document.getElementById('tryon-result-state').style.display = 'block';
     document.getElementById('tryon-controls').style.display = 'flex';
@@ -3734,7 +3747,15 @@
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
 
-    if (!tryonFaceLandmarks) return;
+    if (!tryonFaceLandmarks) { console.log('No face landmarks'); return; }
+    if (!tryonEarringImg || !tryonEarringImg.complete) {
+      console.log('Earring image not ready, waiting...');
+      tryonEarringImg.onload = function() { console.log('Earring loaded now, re-rendering'); renderTryon(); };
+      // Still draw the user photo
+      drawTryonCanvas();
+      return;
+    }
+    console.log('Rendering with earring:', tryonEarringImg.src.substring(0, 60) + '...');
 
     var landmarks = tryonFaceLandmarks;
     var leftCheek = landmarks[234];
