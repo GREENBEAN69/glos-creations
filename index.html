@@ -464,19 +464,335 @@
   .reviews blockquote { font-size: clamp(22px, 3vw, 32px); font-weight: 300; font-style: italic; line-height: 1.55; margin-bottom: 20px; color: var(--stone-800); }
   .reviews-author { font-family: var(--font-body); font-size: 10.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--stone-400); }
 
-  /* Newsletter */
-  .newsletter { background: var(--stone-900); color: var(--stone-50); padding: 72px 0 80px; text-align: center; }
-  .newsletter-inner { max-width: 520px; margin: 0 auto; padding: 0 40px; }
-  .newsletter-tag { font-family: var(--font-body); font-size: 10.5px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--stone-400); margin-bottom: 20px; }
-  .newsletter h2 { font-size: clamp(28px, 3.5vw, 44px); font-weight: 300; margin-bottom: 16px; }
-  .newsletter h2 em { font-weight: 300; font-style: italic; }
-  .newsletter-desc { color: var(--stone-400); font-size: 15px; margin-bottom: 32px; line-height: 1.6; }
-  .newsletter-form { display: flex; gap: 10px; max-width: 400px; margin: 0 auto; }
-  .newsletter-form input { flex: 1; background: transparent; border: 1px solid var(--stone-600); padding: 13px 18px; font-family: var(--font-body); font-size: 13px; color: var(--stone-100); outline: none; transition: border-color 0.2s; }
-  .newsletter-form input::placeholder { color: var(--stone-500); }
-  .newsletter-form input:focus { border-color: var(--stone-300); }
-  .newsletter-form button { background: var(--stone-50); color: var(--stone-900); padding: 13px 24px; font-family: var(--font-body); font-size: 10.5px; letter-spacing: 0.18em; text-transform: uppercase; border: none; transition: background 0.2s; white-space: nowrap; }
-  .newsletter-form button:hover { background: var(--stone-200); }
+  /* Behind The Clay - Instagram Stories Section */
+  .stories-section { background: var(--stone-900); color: var(--stone-50); padding: 80px 0 88px; text-align: center; position: relative; overflow: hidden; }
+  .stories-section::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(circle at 20% 30%, rgba(238, 42, 123, 0.08), transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(98, 40, 215, 0.06), transparent 50%);
+    pointer-events: none;
+  }
+  .stories-inner { max-width: 1100px; margin: 0 auto; padding: 0 40px; position: relative; z-index: 1; }
+  .stories-tag { font-family: var(--font-body); font-size: 10.5px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--stone-400); margin-bottom: 14px; }
+  .stories-section h2 { font-size: clamp(28px, 3.5vw, 44px); font-weight: 300; margin-bottom: 12px; }
+  .stories-section h2 em { font-weight: 300; font-style: italic; }
+  .stories-desc { color: var(--stone-400); font-size: 14px; margin-bottom: 44px; line-height: 1.6; max-width: 480px; margin-left: auto; margin-right: auto; }
+  .stories-row {
+    display: flex;
+    gap: 28px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 48px;
+  }
+  .story-bubble {
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    transition: transform 0.3s ease;
+  }
+  .story-bubble:hover { transform: translateY(-4px); }
+  .story-bubble-ring {
+    width: 92px;
+    height: 92px;
+    border-radius: 50%;
+    padding: 3px;
+    background: linear-gradient(135deg, #f9ce34 0%, #ee2a7b 50%, #6228d7 100%);
+    position: relative;
+  }
+  .story-bubble-ring::before {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border-radius: 50%;
+    background: var(--stone-900);
+  }
+  .story-bubble-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+    background: var(--stone-800);
+  }
+  .story-bubble-inner img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+  }
+  .story-bubble-inner.loading {
+    background: linear-gradient(135deg, #2a2620, #1c1917);
+  }
+  .story-bubble-play-icon {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--stone-900);
+    border: 2px solid white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+  }
+  .story-bubble-play-icon svg {
+    width: 10px;
+    height: 10px;
+    fill: white;
+  }
+  .story-bubble-label {
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    color: var(--stone-300);
+    max-width: 100px;
+    line-height: 1.3;
+  }
+  .stories-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 26px;
+    background: linear-gradient(135deg, #f9ce34 0%, #ee2a7b 50%, #6228d7 100%);
+    color: white;
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    font-weight: 500;
+    border: none;
+    border-radius: 6px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+  }
+  .stories-cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(238, 42, 123, 0.3);
+  }
+  .stories-cta svg { width: 14px; height: 14px; stroke: white; fill: none; stroke-width: 2; }
+  .stories-handle {
+    margin-top: 14px;
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: var(--stone-500);
+    text-transform: uppercase;
+  }
+  .stories-handle a { color: var(--stone-300); transition: color 0.2s; }
+  .stories-handle a:hover { color: var(--stone-100); }
+
+  /* Story Viewer (Fullscreen with IG Embed) */
+  .story-viewer {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.92);
+    z-index: 10000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .story-viewer.open { display: flex; }
+  .story-viewer-content {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    max-height: 95vh;
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+  }
+  .story-viewer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--stone-200);
+    background: white;
+  }
+  .story-viewer-meta { display: flex; align-items: center; gap: 10px; }
+  .story-viewer-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f9ce34 0%, #ee2a7b 50%, #6228d7 100%);
+    padding: 2px;
+  }
+  .story-viewer-avatar img {
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    background: white;
+    border: 2px solid white;
+  }
+  .story-viewer-name {
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--stone-900);
+  }
+  .story-viewer-time {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--stone-500);
+  }
+  .story-viewer-close {
+    background: none;
+    border: none;
+    color: var(--stone-700);
+    font-size: 28px;
+    line-height: 1;
+    padding: 4px 8px;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  .story-viewer-close:hover { color: var(--stone-900); }
+  .story-embed-wrap {
+    flex: 1;
+    overflow-y: auto;
+    background: white;
+    min-height: 400px;
+    max-height: 60vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+  .story-embed-wrap blockquote.instagram-media {
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+  .story-embed-loader {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 400px;
+    width: 100%;
+    color: var(--stone-400);
+    font-family: var(--font-body);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .story-viewer-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-top: 1px solid var(--stone-200);
+    background: var(--stone-50);
+  }
+  .story-nav-btn {
+    background: white;
+    border: 1px solid var(--stone-300);
+    color: var(--stone-700);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  .story-nav-btn:hover {
+    background: var(--stone-900);
+    color: white;
+    border-color: var(--stone-900);
+  }
+  .story-nav-btn svg {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+  }
+  .story-nav-counter {
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: var(--stone-500);
+    text-transform: uppercase;
+  }
+  .story-viewer-cta {
+    padding: 14px 16px 16px;
+    background: white;
+    border-top: 1px solid var(--stone-200);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .story-viewer-view-btn {
+    width: 100%;
+    padding: 12px 20px;
+    background: white;
+    color: var(--stone-900);
+    border: 1px solid var(--stone-900);
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .story-viewer-view-btn:hover {
+    background: var(--stone-900);
+    color: white;
+  }
+  .story-viewer-follow-btn {
+    width: 100%;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #f9ce34 0%, #ee2a7b 50%, #6228d7 100%);
+    color: white;
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-weight: 500;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: transform 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .story-viewer-follow-btn:hover { transform: translateY(-1px); }
+  .story-viewer-follow-btn svg { width: 14px; height: 14px; stroke: white; fill: none; stroke-width: 2; }
+  @media (max-width: 480px) {
+    .story-viewer { padding: 0; }
+    .story-viewer-content {
+      max-width: 100%;
+      max-height: 100%;
+      height: 100%;
+      border-radius: 0;
+    }
+    .story-embed-wrap { max-height: none; }
+    .stories-row { gap: 14px; }
+    .story-bubble-ring { width: 76px; height: 76px; }
+  }
+
 
   /* Login Modal */
   .login-overlay {
@@ -1647,8 +1963,7 @@
     .about-inner { grid-template-columns: 1fr; padding: 0 20px; }
     .about-image { max-width: 300px; }
     .reviews-inner { padding: 0 20px; }
-    .newsletter-inner { padding: 0 20px; }
-    .newsletter-form { flex-direction: column; }
+    .stories-inner { padding: 0 20px; }
     .footer-inner { padding: 0 20px; }
     .footer-grid { grid-template-columns: 1fr 1fr; gap: 28px; }
     .footer-bottom { flex-direction: column; gap: 12px; text-align: center; }
@@ -1801,18 +2116,58 @@
   </div>
 </section>
 
-<section class="newsletter" id="contact">
-  <div class="newsletter-inner">
-    <p class="newsletter-tag">Stay in the loop</p>
-    <h2>New collections, <em>first.</em></h2>
-    <p class="newsletter-desc">Be the first to see new pieces and small-batch drops. No spam, ever.</p>
-    <div class="newsletter-form">
-      <input type="email" placeholder="your@email.com" id="email-input">
-      <button type="button" onclick="handleSubscribe()">Subscribe</button>
+<section class="stories-section" id="contact">
+  <div class="stories-inner">
+    <p class="stories-tag">Behind the clay</p>
+    <h2>Latest from the <em>'gram.</em></h2>
+    <p class="stories-desc">Real posts, real pieces, real life. Tap any to see it on Instagram — and follow along while you're there.</p>
+    <div class="stories-row" id="stories-row">
+      <!-- Bubbles populated by JS -->
     </div>
-    <p id="subscribe-msg" style="margin-top:12px;font-family:var(--font-body);font-size:12px;display:none;"></p>
+    <button class="stories-cta" onclick="popupFollowInstagram()">
+      <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+      Follow for daily looks
+    </button>
+    <p class="stories-handle"><a href="#" onclick="popupFollowInstagram();return false;">@gloscreations31_6</a></p>
   </div>
 </section>
+
+<!-- Story Viewer (Fullscreen with Real IG Embed) -->
+<div class="story-viewer" id="story-viewer">
+  <div class="story-viewer-content" id="story-viewer-content">
+    <div class="story-viewer-header">
+      <div class="story-viewer-meta">
+        <div class="story-viewer-avatar">
+          <img src="https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/logo.png" alt="Glo's">
+        </div>
+        <div>
+          <div class="story-viewer-name">gloscreations31_6</div>
+          <div class="story-viewer-time" id="story-viewer-time">on Instagram</div>
+        </div>
+      </div>
+      <button class="story-viewer-close" onclick="closeStory()" aria-label="Close">×</button>
+    </div>
+    <div class="story-embed-wrap" id="story-embed-wrap">
+      <!-- IG embed injected here -->
+    </div>
+    <div class="story-viewer-nav">
+      <button class="story-nav-btn" onclick="storyPrev()" aria-label="Previous">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <span class="story-nav-counter" id="story-nav-counter">1 / 5</span>
+      <button class="story-nav-btn" onclick="storyNext()" aria-label="Next">
+        <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+    <div class="story-viewer-cta">
+      <button class="story-viewer-view-btn" onclick="viewOnInstagram()">View on Instagram</button>
+      <button class="story-viewer-follow-btn" onclick="popupFollowInstagram()">
+        <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+        Follow on Instagram
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- Virtual Try-On Modal -->
 <div class="tryon-overlay" id="tryon-overlay" onclick="if(event.target===this)closeTryon()">
@@ -2329,6 +2684,154 @@
       window.open('https://www.instagram.com/gloscreations31_6/', '_blank');
     }
   }
+
+  // ============================================
+  // BEHIND THE CLAY - REAL INSTAGRAM POSTS
+  // ============================================
+  // Edit this array to swap in different IG posts. Just paste the post URL.
+  // Labels are optional but help visitors know what each post is about.
+  var igPosts = [
+    { url: 'https://www.instagram.com/p/DX50fhIjTyU/', label: 'Latest', image: 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/ig-post-1.png' },
+    { url: 'https://www.instagram.com/p/DX0d-aTjBdI/', label: 'New Drop', image: 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/ig-post-2.png' },
+    { url: 'https://www.instagram.com/p/DXvS_igjHgQ/', label: 'In Studio', image: 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/ig-post-3.png' },
+    { url: 'https://www.instagram.com/p/DXj6RcwDukj/', label: 'Behind The Scenes', image: 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/ig-post-4.png' },
+    { url: 'https://www.instagram.com/p/DXj2pK5jg9B/', label: 'The Why', image: 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/ig-post-5.png' }
+  ];
+
+  var currentPostIndex = 0;
+
+  // Load Instagram embed script once (used for the in-page viewer)
+  function loadInstagramEmbedScript() {
+    if (window.instgrm) return Promise.resolve();
+    return new Promise(function(resolve) {
+      var s = document.createElement('script');
+      s.async = true;
+      s.src = 'https://www.instagram.com/embed.js';
+      s.onload = function() { resolve(); };
+      document.body.appendChild(s);
+    });
+  }
+
+  // Get IG post shortcode from URL (e.g. "DX50fhIjTyU")
+  function getIgShortcode(url) {
+    var m = url.match(/\/(p|reel|tv)\/([^/?]+)/);
+    return m ? m[2] : null;
+  }
+
+  // Render the bubble row with IG thumbnails
+  function renderIgBubbles() {
+    var row = document.getElementById('stories-row');
+    if (!row) return;
+    var html = '';
+    for (var i = 0; i < igPosts.length; i++) {
+      var post = igPosts[i];
+      // Prefer locally hosted snapshot image; fall back to Instagram's media endpoint
+      var thumbUrl = post.image;
+      if (!thumbUrl) {
+        var shortcode = getIgShortcode(post.url);
+        thumbUrl = 'https://www.instagram.com/p/' + shortcode + '/media/?size=l';
+      }
+      html += '<button class="story-bubble" onclick="openIgPost(' + i + ')">' +
+        '<div class="story-bubble-ring">' +
+          '<div class="story-bubble-inner">' +
+            '<img src="' + thumbUrl + '" alt="' + (post.label || 'Instagram post') + '" loading="lazy" onerror="this.style.display=\'none\';this.parentNode.classList.add(\'loading\');this.parentNode.innerHTML=\'<svg viewBox=&quot;0 0 24 24&quot; style=&quot;width:32px;height:32px;stroke:#fff;fill:none;stroke-width:1.5;opacity:0.5;&quot;><rect x=&quot;2&quot; y=&quot;2&quot; width=&quot;20&quot; height=&quot;20&quot; rx=&quot;5&quot;/><path d=&quot;M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z&quot;/><line x1=&quot;17.5&quot; y1=&quot;6.5&quot; x2=&quot;17.51&quot; y2=&quot;6.5&quot;/></svg>\';">' +
+            '<div class="story-bubble-play-icon"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>' +
+          '</div>' +
+        '</div>' +
+        '<span class="story-bubble-label">' + (post.label || '') + '</span>' +
+      '</button>';
+    }
+    row.innerHTML = html;
+  }
+
+  function openIgPost(index) {
+    currentPostIndex = index;
+    var post = igPosts[index];
+    if (!post) return;
+    trackEvent('story_open', { post_index: index, post_url: post.url, post_label: post.label || '' });
+
+    document.getElementById('story-viewer').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    renderIgEmbed();
+    updateStoryCounter();
+  }
+
+  function renderIgEmbed() {
+    var post = igPosts[currentPostIndex];
+    if (!post) return;
+    var wrap = document.getElementById('story-embed-wrap');
+    wrap.innerHTML = '<div class="story-embed-loader">Loading post...</div>';
+
+    // Build the official Instagram embed blockquote
+    var embedHtml = '<blockquote class="instagram-media" data-instgrm-permalink="' + post.url + '" data-instgrm-version="14" style="background:#FFF;border:0;margin:0;padding:0;width:100%;"></blockquote>';
+
+    setTimeout(function() {
+      wrap.innerHTML = embedHtml;
+      loadInstagramEmbedScript().then(function() {
+        if (window.instgrm && window.instgrm.Embeds) {
+          window.instgrm.Embeds.process();
+        }
+      });
+    }, 100);
+  }
+
+  function updateStoryCounter() {
+    var c = document.getElementById('story-nav-counter');
+    if (c) c.textContent = (currentPostIndex + 1) + ' / ' + igPosts.length;
+  }
+
+  function storyNext() {
+    currentPostIndex = (currentPostIndex + 1) % igPosts.length;
+    var post = igPosts[currentPostIndex];
+    trackEvent('story_navigate', { direction: 'next', post_index: currentPostIndex, post_label: post.label || '' });
+    renderIgEmbed();
+    updateStoryCounter();
+  }
+
+  function storyPrev() {
+    currentPostIndex = (currentPostIndex - 1 + igPosts.length) % igPosts.length;
+    var post = igPosts[currentPostIndex];
+    trackEvent('story_navigate', { direction: 'prev', post_index: currentPostIndex, post_label: post.label || '' });
+    renderIgEmbed();
+    updateStoryCounter();
+  }
+
+  function closeStory() {
+    document.getElementById('story-viewer').classList.remove('open');
+    document.body.style.overflow = '';
+    // Clear embed to stop any video playback
+    var wrap = document.getElementById('story-embed-wrap');
+    if (wrap) wrap.innerHTML = '';
+  }
+
+  function viewOnInstagram() {
+    var post = igPosts[currentPostIndex];
+    if (!post) return;
+    trackEvent('story_view_on_ig', { post_index: currentPostIndex, post_label: post.label || '' });
+    var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      window.location.href = post.url;
+    } else {
+      window.open(post.url, '_blank');
+    }
+  }
+
+  // Keyboard navigation
+  document.addEventListener('keydown', function(e) {
+    var open = document.getElementById('story-viewer') && document.getElementById('story-viewer').classList.contains('open');
+    if (!open) return;
+    if (e.key === 'Escape') closeStory();
+    if (e.key === 'ArrowRight') storyNext();
+    if (e.key === 'ArrowLeft') storyPrev();
+  });
+
+  // Click outside to close
+  document.addEventListener('click', function(e) {
+    var viewer = document.getElementById('story-viewer');
+    if (viewer && viewer.classList.contains('open') && e.target === viewer) {
+      closeStory();
+    }
+  });
 
   // ============================================
   // SHOPIFY API HELPER
@@ -4426,6 +4929,7 @@
   fetchCollections();
   showCookieBanner();
   startIgPopupTimer();
+  renderIgBubbles();
 </script>
 </body>
 </html>
