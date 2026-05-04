@@ -8,6 +8,25 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet">
+
+<!-- Google Analytics 4 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-JDYYGYT60T"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('consent', 'default', {
+    'ad_storage': 'denied',
+    'ad_user_data': 'denied',
+    'ad_personalization': 'denied',
+    'analytics_storage': 'denied'
+  });
+  gtag('config', 'G-JDYYGYT60T', { 'anonymize_ip': true });
+  function trackEvent(name, params) {
+    try { gtag('event', name, params || {}); } catch(e) {}
+  }
+</script>
+
 <style>
   :root {
     --stone-50: #fafaf9;
@@ -1420,6 +1439,55 @@
   .footer-bottom-links a { color: var(--stone-400); transition: color 0.2s; }
   .footer-bottom-links a:hover { color: var(--stone-900); }
 
+  /* Cookie Consent */
+  .cookie-banner {
+    position: fixed;
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+    max-width: 520px;
+    margin: 0 auto;
+    background: var(--stone-900);
+    color: var(--stone-100);
+    padding: 18px 22px;
+    border-radius: 8px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+    z-index: 9999;
+    font-family: var(--font-body);
+    font-size: 13px;
+    line-height: 1.5;
+    display: none;
+    transform: translateY(120%);
+    transition: transform 0.4s ease;
+  }
+  .cookie-banner.show { display: block; transform: translateY(0); }
+  .cookie-banner p { margin-bottom: 12px; color: var(--stone-300); }
+  .cookie-banner a { color: var(--stone-100); text-decoration: underline; }
+  .cookie-banner-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+  .cookie-btn {
+    flex: 1;
+    min-width: 110px;
+    padding: 9px 14px;
+    border-radius: 4px;
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    border: none;
+    transition: all 0.2s;
+  }
+  .cookie-btn-accept {
+    background: var(--stone-100);
+    color: var(--stone-900);
+  }
+  .cookie-btn-accept:hover { background: white; }
+  .cookie-btn-decline {
+    background: transparent;
+    color: var(--stone-300);
+    border: 1px solid var(--stone-600);
+  }
+  .cookie-btn-decline:hover { border-color: var(--stone-400); color: var(--stone-100); }
+
   /* Animations */
   @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
   .fade-in { animation: fadeUp 0.7s ease-out forwards; }
@@ -1965,6 +2033,15 @@
 <!-- Added to Cart Toast -->
 <div class="added-toast" id="added-toast">Added to cart ✓</div>
 
+<!-- Cookie Consent Banner -->
+<div class="cookie-banner" id="cookie-banner">
+  <p>We use cookies to understand how visitors use our site and improve your experience. See our <a href="#" onclick="openPolicy('privacy');return false;">Privacy Policy</a>.</p>
+  <div class="cookie-banner-buttons">
+    <button class="cookie-btn cookie-btn-decline" onclick="declineCookies()">Decline</button>
+    <button class="cookie-btn cookie-btn-accept" onclick="acceptCookies()">Accept</button>
+  </div>
+</div>
+
 <footer class="footer">
   <div class="footer-inner">
     <div class="footer-grid">
@@ -2019,6 +2096,37 @@
   var workingApiVersion = null;
 
   // ============================================
+  // COOKIE CONSENT
+  // ============================================
+  function showCookieBanner() {
+    var choice = localStorage.getItem('gc_cookie_consent');
+    if (!choice) {
+      setTimeout(function() {
+        var banner = document.getElementById('cookie-banner');
+        if (banner) banner.classList.add('show');
+      }, 1500);
+    } else if (choice === 'accepted') {
+      enableAnalytics();
+    }
+  }
+  function acceptCookies() {
+    localStorage.setItem('gc_cookie_consent', 'accepted');
+    document.getElementById('cookie-banner').classList.remove('show');
+    enableAnalytics();
+  }
+  function declineCookies() {
+    localStorage.setItem('gc_cookie_consent', 'declined');
+    document.getElementById('cookie-banner').classList.remove('show');
+  }
+  function enableAnalytics() {
+    if (typeof gtag === 'function') {
+      gtag('consent', 'update', {
+        'analytics_storage': 'granted'
+      });
+    }
+  }
+
+  // ============================================
   // SHOPIFY API HELPER
   // ============================================
   async function shopifyFetch(query) {
@@ -2068,11 +2176,24 @@
     } else {
       cart.push({ name: product.name, price: product.price, image: product.image, variantId: product.variantId, qty: 1, stock: product.stock });
     }
+    trackEvent('add_to_cart', {
+      currency: 'USD',
+      value: product.price,
+      items: [{ item_id: product.variantId, item_name: product.name, price: product.price, quantity: 1 }]
+    });
     updateCartUI();
     showToast();
   }
 
   function removeFromCart(index) {
+    var removed = cart[index];
+    if (removed) {
+      trackEvent('remove_from_cart', {
+        currency: 'USD',
+        value: removed.price * removed.qty,
+        items: [{ item_id: removed.variantId, item_name: removed.name, price: removed.price, quantity: removed.qty }]
+      });
+    }
     cart.splice(index, 1);
     updateCartUI();
   }
@@ -2270,6 +2391,15 @@
     btn.textContent = 'Creating checkout...';
     btn.disabled = true;
 
+    // Track checkout start
+    var totalValue = 0;
+    var checkoutItems = [];
+    for (var k = 0; k < cart.length; k++) {
+      totalValue += cart[k].price * cart[k].qty;
+      checkoutItems.push({ item_id: cart[k].variantId, item_name: cart[k].name, price: cart[k].price, quantity: cart[k].qty });
+    }
+    trackEvent('begin_checkout', { currency: 'USD', value: totalValue, items: checkoutItems });
+
     // Build line items
     var lines = [];
     for (var i = 0; i < cart.length; i++) {
@@ -2450,6 +2580,7 @@
         loadWishlist();
         updateNavLogin();
         showAccountView();
+        trackEvent('login', { method: 'email' });
         showToastMsg('Welcome back, ' + customerName + '!');
       } else {
         var msg = 'Invalid email or password.';
@@ -2497,6 +2628,7 @@
     if (data && data.data && data.data.customerCreate) {
       var result = data.data.customerCreate;
       if (result.customer) {
+        trackEvent('sign_up', { method: 'email' });
         document.getElementById('login-email').value = email;
         document.getElementById('login-password').value = password;
         showLoginForm();
@@ -2652,9 +2784,19 @@
     }
     if (idx >= 0) {
       wishlist.splice(idx, 1);
+      trackEvent('remove_from_wishlist', {
+        currency: 'USD',
+        value: p.price,
+        items: [{ item_id: p.variantId, item_name: p.name, price: p.price }]
+      });
       showToastMsg('Removed from wishlist');
     } else {
       wishlist.push({ name: p.name, price: p.price, image: p.image, variantId: p.variantId, category: p.category });
+      trackEvent('add_to_wishlist', {
+        currency: 'USD',
+        value: p.price,
+        items: [{ item_id: p.variantId, item_name: p.name, item_category: p.category, price: p.price }]
+      });
       showToastMsg('Added to wishlist ♡');
     }
     saveWishlist();
@@ -3005,6 +3147,12 @@
     modalQty = 1;
     modalImageIndex = 0;
 
+    trackEvent('view_item', {
+      currency: 'USD',
+      value: modalProduct.price,
+      items: [{ item_id: modalProduct.id, item_name: modalProduct.name, item_category: modalProduct.category, price: modalProduct.price }]
+    });
+
     document.getElementById('modal-category').textContent = modalProduct.category;
     document.getElementById('modal-title').textContent = modalProduct.name;
     document.getElementById('modal-price').textContent = '$' + modalProduct.price.toFixed(2);
@@ -3082,6 +3230,9 @@
 
   function openLightbox(index) {
     lightboxIndex = index;
+    if (modalProduct) {
+      trackEvent('image_lightbox_open', { product_name: modalProduct.name, image_index: index });
+    }
     renderLightbox();
     document.getElementById('lightbox').classList.add('open');
   }
@@ -3156,6 +3307,7 @@
     for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
     btn.classList.add('active');
     currentCollectionFilter = category;
+    trackEvent('filter_collection', { filter_value: category });
     applyFilters();
   }
 
@@ -3164,11 +3316,13 @@
     for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
     btn.classList.add('active');
     currentStyleFilter = style;
+    trackEvent('filter_style', { filter_value: style });
     applyFilters();
   }
 
   function applyFilters() {
     currentSort = document.getElementById('sort-select').value;
+    trackEvent('sort_products', { sort_value: currentSort });
 
     // Start with all products
     var filtered = products.slice();
@@ -3341,6 +3495,7 @@
     if (data && data.data && data.data.customerCreate) {
       var result = data.data.customerCreate;
       if (result.customer) {
+        trackEvent('newsletter_subscribe', { status: 'new' });
         msg.textContent = "You're in! Watch your inbox for new drops and exclusive offers.";
         msg.style.color = '#6d9e6d';
         input.value = '';
@@ -3348,6 +3503,7 @@
         var errMsg = result.customerUserErrors[0].message || '';
         var errCode = result.customerUserErrors[0].code || '';
         if (errCode === 'TAKEN' || errMsg.toLowerCase().indexOf('taken') !== -1 || errMsg.toLowerCase().indexOf('already') !== -1) {
+          trackEvent('newsletter_subscribe', { status: 'already_subscribed' });
           msg.textContent = "You're already subscribed! Thank you for your support.";
           msg.style.color = '#6d9e6d';
           input.value = '';
@@ -3380,7 +3536,7 @@
         '<h4>How We Use Your Information</h4>' +
         '<p>We use the information we collect to: process and fulfill your orders; communicate with you about your orders, products, and promotions; improve our website and customer experience; comply with legal obligations; and prevent fraud.</p>' +
         '<h4>Information Sharing</h4>' +
-        '<p>We do not sell, trade, or rent your personal information to third parties. We may share your information with: Shopify (our e-commerce platform provider); shipping carriers to deliver your orders; payment processors to process transactions; and law enforcement if required by law.</p>' +
+        '<p>We do not sell, trade, or rent your personal information to third parties. We may share your information with: Shopify (our e-commerce platform provider); shipping carriers to deliver your orders; payment processors to process transactions; Google Analytics for website usage analytics (anonymized); and law enforcement if required by law.</p>' +
         '<h4>Data Security</h4>' +
         '<p>We implement appropriate technical and organizational measures to protect your personal information. All transactions are processed through Shopify\'s secure, PCI-compliant payment system. However, no method of transmission over the Internet is 100% secure, and we cannot guarantee absolute security.</p>' +
         '<h4>Cookies</h4>' +
@@ -3517,6 +3673,7 @@
   resetAnnounceTimer();
 
   function openInstagram() {
+    trackEvent('instagram_click', {});
     var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     if (isMobile) {
       window.location.href = 'https://www.instagram.com/gloscreations31_6/';
@@ -3528,6 +3685,7 @@
   function openPolicy(type) {
     var policy = policies[type];
     if (!policy) return;
+    trackEvent('policy_view', { policy_type: type });
     var content = document.getElementById('policy-content');
     content.innerHTML = '<h3 class="login-title" style="margin-bottom:16px;">' + policy.title + '</h3>' +
       '<div style="font-family:var(--font-body);font-size:13px;color:var(--stone-600);line-height:1.8;">' + policy.content + '</div>';
@@ -3604,6 +3762,11 @@
 
   function openTryon() {
     if (!modalProduct) return;
+    trackEvent('tryon_open', {
+      product_name: modalProduct.name,
+      product_id: modalProduct.id,
+      product_category: modalProduct.category
+    });
     document.getElementById('tryon-product-name').textContent = modalProduct.name;
 
     // Map products to their transparent earring images on GitHub
@@ -3667,6 +3830,7 @@
   async function handleTryonUpload(event) {
     var file = event.target.files[0];
     if (!file) return;
+    trackEvent('tryon_upload_photo', { product_name: modalProduct ? modalProduct.name : '' });
     document.getElementById('tryon-upload-state').style.display = 'none';
     document.getElementById('tryon-loading-state').style.display = 'block';
 
@@ -3686,6 +3850,7 @@
   }
 
   async function startCamera() {
+    trackEvent('tryon_use_camera', { product_name: modalProduct ? modalProduct.name : '' });
     document.getElementById('tryon-upload-state').style.display = 'none';
     document.getElementById('tryon-camera-state').style.display = 'block';
     try {
@@ -4020,6 +4185,7 @@
   }
 
   function saveTryonImage() {
+    trackEvent('tryon_save_image', { product_name: modalProduct ? modalProduct.name : '' });
     var canvas = document.getElementById('tryon-canvas');
     var ctx = canvas.getContext('2d');
     ctx.imageSmoothingEnabled = true;
@@ -4054,6 +4220,7 @@
   checkSession();
   fetchNewArrivals();
   fetchCollections();
+  showCookieBanner();
 </script>
 </body>
 </html>
