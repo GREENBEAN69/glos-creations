@@ -436,6 +436,47 @@
   .product-placeholder-circle { width: 50%; height: 50%; border-radius: 50%; background: var(--stone-200); opacity: 0.5; }
   .product-wish { position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.85); backdrop-filter: blur(4px); border: none; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; }
   .product-wish svg { width: 15px; height: 15px; stroke: var(--stone-700); fill: none; stroke-width: 1.5; }
+
+  /* Virtual Try-On Badges */
+  .tryon-badge-card {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    color: var(--stone-800);
+    font-family: var(--font-body);
+    font-size: 9.5px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 5px 10px;
+    border-radius: 12px;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 500;
+    transition: opacity 0.25s;
+  }
+  .product-card:hover .tryon-badge-card { opacity: 0; pointer-events: none; }
+
+  .tryon-badge-modal {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: linear-gradient(135deg, #f5f0e8, #ede4d6);
+    color: var(--stone-700);
+    font-family: var(--font-body);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 5px 11px;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    font-weight: 500;
+    border: 1px solid rgba(212, 165, 116, 0.3);
+  }
   .product-overlay { position: absolute; bottom: 0; left: 0; right: 0; background: var(--stone-900); color: white; padding: 12px; font-family: var(--font-body); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; text-align: center; transform: translateY(100%); transition: transform 0.25s; border: none; width: 100%; border-radius: 0 0 16px 16px; }
   .product-type { font-family: var(--font-body); font-size: 9.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--stone-400); margin-bottom: 3px; }
   .product-name { font-size: 17px; font-style: italic; margin-bottom: 3px; color: var(--stone-800); }
@@ -2761,6 +2802,7 @@
     <div class="modal-image" id="modal-image"></div>
     <div class="modal-info">
       <p class="modal-category" id="modal-category"></p>
+      <span class="tryon-badge-modal" id="modal-tryon-badge" style="display:none;">✨ Virtual Try-On Available</span>
       <h3 class="modal-title" id="modal-title"></h3>
       <p class="modal-price" id="modal-price"></p>
       <div class="modal-rating-row" id="modal-rating-row">
@@ -2780,7 +2822,7 @@
         </div>
       </div>
       <button class="modal-add-btn" id="modal-add-btn" onclick="addModalToCart()">Add to Cart</button>
-      <button class="modal-add-btn" onclick="openTryon()" style="background:transparent;color:var(--stone-700);border:1px solid var(--stone-300);margin-top:10px;">✨ Virtual Try-On</button>
+      <button class="modal-add-btn" id="modal-tryon-btn" onclick="openTryon()" style="background:transparent;color:var(--stone-700);border:1px solid var(--stone-300);margin-top:10px;">✨ Virtual Try-On</button>
       <div class="modal-reviews-section" id="modal-reviews-section">
         <div class="modal-reviews-header">
           <span class="modal-reviews-title">Reviews</span>
@@ -4280,6 +4322,17 @@
     modalImages = modalProduct.images || (modalProduct.image ? [modalProduct.image] : []);
     renderModalImage();
 
+    // Show or hide the Virtual Try-On button based on:
+    //   1. Whether a matching earring image exists for this product
+    //   2. Whether the item is still available for purchase (sold items skip the try-on)
+    var tryonBtn = document.getElementById('modal-tryon-btn');
+    var tryonBadge = document.getElementById('modal-tryon-badge');
+    var hasEarring = !!getTryonEarringForProduct(modalProduct);
+    var isAvailable = modalProduct.available && modalProduct.stock > 0;
+    var showTryon = hasEarring && isAvailable;
+    if (tryonBtn) tryonBtn.style.display = showTryon ? 'block' : 'none';
+    if (tryonBadge) tryonBadge.style.display = showTryon ? 'inline-flex' : 'none';
+
     document.getElementById('modal-overlay').classList.add('open');
     document.body.style.overflow = 'hidden';
 
@@ -4500,6 +4553,10 @@
       if (p.images && p.images.length > 1) {
         html += '<div style="position:absolute;top:10px;left:10px;background:rgba(0,0,0,0.5);color:white;font-family:var(--font-body);font-size:10px;padding:4px 10px;border-radius:12px;z-index:1;display:flex;align-items:center;gap:4px;"><svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:white;fill:none;stroke-width:2;"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>' + p.images.length + ' photos</div>';
       }
+      // Try-On badge — only when item has a matching earring image AND is in stock
+      if (getTryonEarringForProduct(p) && p.available && p.stock > 0) {
+        html += '<div class="tryon-badge-card">Try On</div>';
+      }
       html += '</div>';
       html += '<p class="product-type">' + p.category + '</p>';
       html += '<p class="product-name">' + p.name + '</p>';
@@ -4682,20 +4739,21 @@
   }
 
   // ============================================
-  // JUDGE.ME REVIEWS (via Shopify metafields)
+  // JUDGE.ME REVIEWS
   // ============================================
-  // Judge.me automatically syncs review data to Shopify product metafields:
-  //   reviews.rating         (average like "4.8")
-  //   reviews.rating_count   (number like "12")
-  // These come through the Storefront API along with products. Reviews display
-  // links out to Judge.me's hosted review page for the product.
-  var JUDGEME_SHOP_URL = 'https://glos-creations-2.myshopify.com';
+  // Aggregate rating comes from Shopify metafields (synced by Judge.me automatically).
+  // Actual review text is fetched on-demand from Judge.me's public widget API.
+  var JUDGEME_TOKEN = 'P0bKacLWsVQXol7Pl1x9ADBdDSA';
+  var JUDGEME_SHOP = 'cytrsm-kp.myshopify.com';
   var currentReviewsProductHandle = null;
+  var reviewsCache = {};
 
-  function buildStarsSvg(filled) {
+  function buildStarsSvg(filled, size) {
+    size = size || 14;
     var svg = '';
     for (var i = 1; i <= 5; i++) {
-      svg += '<svg viewBox="0 0 24 24" class="' + (i <= Math.round(filled) ? 'filled' : '') + '"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>';
+      var isFilled = i <= Math.round(filled);
+      svg += '<svg viewBox="0 0 24 24" width="' + size + '" height="' + size + '" style="display:inline-block;vertical-align:middle;fill:' + (isFilled ? '#d4a574' : '#d6d3d1') + ';margin:0 1px;"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>';
     }
     return svg;
   }
@@ -4705,10 +4763,94 @@
     if (!el) return;
     if (!rating || !rating.count) return;
     el.classList.add('has-reviews');
-    el.innerHTML = buildStarsSvg(rating.average) + '<span class="sold-card-stars-count">(' + rating.count + ')</span>';
+    el.innerHTML = buildStarsSvg(rating.average, 10) + '<span class="sold-card-stars-count">(' + rating.count + ')</span>';
   }
 
-  // Display rating + link in modal — called from openModal
+  // Fetch actual review text from Judge.me public widget API (CORS-friendly)
+  function fetchReviewText(handle, callback) {
+    if (reviewsCache[handle] !== undefined) { callback(reviewsCache[handle]); return; }
+    var url = 'https://judge.me/api/v1/widgets/product_review?api_token=' + encodeURIComponent(JUDGEME_TOKEN) +
+              '&shop_domain=' + encodeURIComponent(JUDGEME_SHOP) +
+              '&handle=' + encodeURIComponent(handle);
+    fetch(url)
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var html = (data && data.widget) ? data.widget : '';
+        var reviews = parseJudgemeWidget(html);
+        reviewsCache[handle] = reviews;
+        callback(reviews);
+      })
+      .catch(function() {
+        reviewsCache[handle] = [];
+        callback([]);
+      });
+  }
+
+  // Parse Judge.me widget HTML to extract review data
+  function parseJudgemeWidget(html) {
+    if (!html) return [];
+    try {
+      var doc = new DOMParser().parseFromString(html, 'text/html');
+      var reviewEls = doc.querySelectorAll('.jdgm-rev');
+      var reviews = [];
+      for (var i = 0; i < reviewEls.length; i++) {
+        var r = reviewEls[i];
+        // Try multiple ways to find the rating: data-score on review or nested rating element
+        var rating = parseFloat(r.getAttribute('data-score')) || parseFloat(r.getAttribute('data-rating')) || 0;
+        if (!rating) {
+          var ratingEl = r.querySelector('[data-score], .jdgm-rev__rating');
+          if (ratingEl) {
+            rating = parseFloat(ratingEl.getAttribute('data-score')) || 0;
+            // Fallback: count filled star elements if data-score isn't useful
+            if (!rating) {
+              var filledStars = ratingEl.querySelectorAll('.jdgm--on, .jdgm-star--on, .jdgm-rev__rating--on');
+              if (filledStars.length) rating = filledStars.length;
+            }
+          }
+        }
+        // Final fallback: count star characters in aria-label like "5 out of 5 stars"
+        if (!rating) {
+          var ariaLabel = r.getAttribute('aria-label') || '';
+          var match = ariaLabel.match(/(\d+(?:\.\d+)?)\s*(?:out of|\/)\s*5/i);
+          if (match) rating = parseFloat(match[1]);
+        }
+        rating = Math.max(0, Math.min(5, Math.round(rating)));
+
+        var titleEl = r.querySelector('.jdgm-rev__title');
+        var bodyEl = r.querySelector('.jdgm-rev__body');
+        var authorEl = r.querySelector('.jdgm-rev__author');
+        var dateEl = r.querySelector('.jdgm-rev__timestamp');
+        var verifiedEl = r.querySelector('.jdgm-rev__buyer-badge');
+        var picEls = r.querySelectorAll('.jdgm-rev__pic-img, .jdgm-rev__pic img');
+        var pictures = [];
+        for (var p = 0; p < picEls.length; p++) {
+          var src = picEls[p].getAttribute('data-src') || picEls[p].getAttribute('src');
+          if (src) pictures.push(src);
+        }
+        reviews.push({
+          rating: rating,
+          title: titleEl ? titleEl.textContent.trim() : '',
+          body: bodyEl ? bodyEl.textContent.trim() : '',
+          author: authorEl ? authorEl.textContent.trim() : 'Anonymous',
+          date: dateEl ? (dateEl.getAttribute('data-content') || dateEl.textContent.trim()) : '',
+          verified: !!verifiedEl,
+          pictures: pictures
+        });
+      }
+      return reviews;
+    } catch(e) {
+      return [];
+    }
+  }
+
+  function escapeHtml(s) {
+    if (!s) return '';
+    return String(s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  // Display rating + reviews in modal — called from openModal
   function loadModalReviews(product) {
     var ratingRow = document.getElementById('modal-rating-row');
     var ratingStars = document.getElementById('modal-rating-stars');
@@ -4729,31 +4871,62 @@
 
     var avg = product.rating;
     var count = product.ratingCount;
-    var productUrl = JUDGEME_SHOP_URL + '/products/' + product.handle;
-    var reviewLink = JUDGEME_SHOP_URL + '/products/' + product.handle + '#judgeme_product_reviews';
 
-    // Top star rating row
-    ratingStars.innerHTML = buildStarsSvg(avg);
-    ratingText.innerHTML = '<strong>' + avg.toFixed(1) + '</strong> · ' + count + ' review' + (count !== 1 ? 's' : '') +
-      ' · <a href="' + reviewLink + '" target="_blank" rel="noopener">Read all</a>';
+    // Top star rating row (no Read all link)
+    ratingStars.innerHTML = buildStarsSvg(avg, 14);
+    ratingText.innerHTML = '<strong>' + avg.toFixed(1) + '</strong> · ' + count + ' review' + (count !== 1 ? 's' : '');
     ratingRow.classList.add('has-reviews');
 
-    // Reviews section — links out to Judge.me hosted reviews page
+    // Reviews section
     summary.textContent = avg.toFixed(1) + ' out of 5 · ' + count + ' total';
-    list.innerHTML = '<div style="text-align:center;padding:24px 0;">' +
-      '<div style="margin-bottom:14px;">' + buildStarsSvg(avg) + '</div>' +
-      '<p style="font-family:var(--font-body);font-size:13px;color:var(--stone-600);line-height:1.6;margin-bottom:16px;">' +
-        'This piece has <strong>' + count + ' review' + (count !== 1 ? 's' : '') + '</strong> with an average of <strong>' + avg.toFixed(1) + ' stars</strong>.' +
-      '</p>' +
-      '<a href="' + reviewLink + '" target="_blank" rel="noopener" style="display:inline-block;padding:11px 22px;background:var(--stone-900);color:white;font-family:var(--font-body);font-size:11px;letter-spacing:0.18em;text-transform:uppercase;border-radius:4px;text-decoration:none;">Read all reviews →</a>' +
-      '<p style="font-family:var(--font-body);font-size:11px;color:var(--stone-400);margin-top:14px;">' +
-        '<a href="' + productUrl + '#write_a_review" target="_blank" rel="noopener" style="color:var(--stone-500);text-decoration:underline;">Leave a review</a>' +
-      '</p>' +
-      '</div>';
     section.classList.add('has-reviews');
+    list.innerHTML = '<div class="reviews-loading">Loading reviews...</div>';
+
+    // Fetch the actual review text and render
+    fetchReviewText(product.handle, function(reviews) {
+      // Bail if user opened a different product while we were fetching
+      if (currentReviewsProductHandle !== product.handle) return;
+      // If exactly one review and parser couldn't read its rating, use the aggregate average
+      if (reviews && reviews.length === 1 && (!reviews[0].rating || reviews[0].rating === 0)) {
+        reviews[0].rating = Math.round(avg);
+      }
+      renderReviewsList(reviews);
+    });
   }
 
-  // Stub kept for backward compat — sold cards now read straight from product
+  function renderReviewsList(reviews) {
+    var list = document.getElementById('modal-reviews-list');
+    if (!reviews || !reviews.length) {
+      list.innerHTML = '<p style="text-align:center;font-family:var(--font-body);font-size:12px;color:var(--stone-400);padding:12px 0;">Reviews are syncing — refresh in a few minutes.</p>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < reviews.length; i++) {
+      var r = reviews[i];
+      html += '<div class="review-item">';
+      html += '<div class="review-header">';
+      html += '<div class="review-header-left">';
+      html += '<span class="review-stars">' + buildStarsSvg(r.rating, 12) + '</span>';
+      html += '<span class="review-author">' + escapeHtml(r.author) + '</span>';
+      if (r.verified) html += '<span class="review-verified">Verified</span>';
+      html += '</div>';
+      if (r.date) html += '<span class="review-date">' + escapeHtml(r.date) + '</span>';
+      html += '</div>';
+      if (r.title) html += '<p class="review-title">' + escapeHtml(r.title) + '</p>';
+      if (r.body) html += '<p class="review-body">' + escapeHtml(r.body).replace(/\n/g, '<br>') + '</p>';
+      if (r.pictures && r.pictures.length > 0) {
+        html += '<div class="review-photos">';
+        for (var p = 0; p < r.pictures.length; p++) {
+          html += '<img class="review-photo" src="' + r.pictures[p] + '" alt="Customer photo" onclick="window.open(\'' + r.pictures[p] + '\',\'_blank\')">';
+        }
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+    list.innerHTML = html;
+  }
+
+  // Stub kept for the Recently Sold cards
   function fetchProductRating(product, callback) {
     if (product && product.rating && product.ratingCount) {
       callback({ average: product.rating, count: product.ratingCount });
@@ -5000,41 +5173,62 @@
     faceMeshLoaded = true;
   }
 
+  // Map products to their transparent earring images on GitHub
+  // To add a new try-on earring: upload `earring-<keyword>.png` to GitHub and add an entry below.
+  // Keywords are matched against the product name. Longer/more-specific keywords beat shorter ones
+  // (e.g. "bumble" beats "bee" if both appear in the name).
+  var TRYON_EARRINGS = {
+    'arch': 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/earring-arch.png',
+    'bee': 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/earring-bee.png',
+    'bumble': 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/earring-bee.png',
+    'cappuccino': 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/earring-cappuccino.png',
+    'cross': 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/earring-cross.png',
+    'rose': 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/earring-rose.png',
+    'strawberry': 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/earring-strawberry.png'
+  };
+
+  // Returns the earring image URL for a product, or null if no match.
+  // Uses LONGEST-match-wins to prevent collisions (e.g. "Bumble Bee" matches "bumble", not "bee").
+  // Also prefers word-boundary matches over substring matches.
+  function getTryonEarringForProduct(product) {
+    if (!product || !product.name) return null;
+    var nameLower = product.name.toLowerCase();
+    var bestKey = null;
+    var bestScore = -1;
+    for (var key in TRYON_EARRINGS) {
+      var idx = nameLower.indexOf(key);
+      if (idx === -1) continue;
+      // Score = key length, plus bonus if at word boundary (start of name or preceded by space)
+      var score = key.length;
+      var prevChar = idx === 0 ? ' ' : nameLower.charAt(idx - 1);
+      var nextChar = nameLower.charAt(idx + key.length) || ' ';
+      if (/[\s\-_]/.test(prevChar)) score += 2;
+      if (/[\s\-_]/.test(nextChar) || nextChar === '') score += 2;
+      if (score > bestScore) {
+        bestScore = score;
+        bestKey = key;
+      }
+    }
+    if (!bestKey) return null;
+    console.log('Try-on match:', product.name, '→', bestKey);
+    return TRYON_EARRINGS[bestKey];
+  }
+
   function openTryon() {
     if (!modalProduct) return;
+    var earringSrc = getTryonEarringForProduct(modalProduct);
+    if (!earringSrc) {
+      // Safety net — should never reach here because button is hidden when no match
+      console.log('No try-on image available for this product');
+      return;
+    }
     trackEvent('tryon_open', {
       product_name: modalProduct.name,
       product_id: modalProduct.id,
       product_category: modalProduct.category
     });
     document.getElementById('tryon-product-name').textContent = modalProduct.name;
-
-    // Map products to their transparent earring images on GitHub
-    var earringImages = {
-      'arch': 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/earring-arch.png',
-      'bee': 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/earring-bee.png',
-      'bumble': 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/earring-bee.png',
-      'cappuccino': 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/earring-cappuccino.png',
-      'cross': 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/earring-cross.png',
-      'rose': 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/earring-rose.png',
-      'strawberry': 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/earring-strawberry.png'
-    };
-
-    // Try to find a matching earring image by checking product name
-    var earringSrc = null;
-    var nameLower = modalProduct.name.toLowerCase();
-    console.log('Try-on product name:', nameLower);
-    for (var key in earringImages) {
-      if (nameLower.indexOf(key) !== -1) {
-        earringSrc = earringImages[key];
-        console.log('Matched earring key:', key, '→', earringSrc);
-        break;
-      }
-    }
-    if (!earringSrc) {
-      console.log('No match found, using product image as fallback');
-      earringSrc = modalProduct.image;
-    }
+    console.log('Try-on earring src:', earringSrc);
 
     // Pre-load the earring image before showing the upload screen
     tryonEarringImg = new Image();
@@ -5170,16 +5364,25 @@
     var earringH = faceWidth * (tryonEarringSize / 100) * 0.8;
     var earringW = earringH * (tryonEarringImg.width / tryonEarringImg.height);
 
-    // Set initial positions if not already dragged
+    // Set initial positions if not already dragged.
+    // Landmarks 132/361 sit at jaw-level near each ear. We center the earring vertically on the landmark
+    // (offset = -earringH/2) — this puts a stud roughly at the lobe and a dangle's top near the lobe.
+    // Users can drag to fine-tune from there.
     if (!tryonLeftPos) {
-      // Landmark 132 = left earlobe, 234 = left ear top
+      // Landmark 132 = jawline near left ear (user's left)
       var leftEar = landmarks[132];
-      tryonLeftPos = { x: leftEar.x * canvas.width - earringW / 2, y: leftEar.y * canvas.height - earringH * 0.45 };
+      tryonLeftPos = {
+        x: leftEar.x * canvas.width - earringW / 2,
+        y: leftEar.y * canvas.height - earringH / 2
+      };
     }
     if (!tryonRightPos) {
-      // Landmark 361 = right earlobe, 454 = right ear top
+      // Landmark 361 = jawline near right ear (user's right)
       var rightEar = landmarks[361];
-      tryonRightPos = { x: rightEar.x * canvas.width - earringW / 2, y: rightEar.y * canvas.height - earringH * 0.45 };
+      tryonRightPos = {
+        x: rightEar.x * canvas.width - earringW / 2,
+        y: rightEar.y * canvas.height - earringH / 2
+      };
     }
 
     tryonEarringW = earringW;
