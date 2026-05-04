@@ -1581,6 +1581,188 @@
   }
   .modal-add-btn:hover { background: var(--stone-700); }
 
+  /* Reviews — Judge.me */
+  .modal-rating-row {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    margin-top: -8px;
+  }
+  .modal-rating-row.has-reviews { display: flex; }
+  .stars-display {
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
+  }
+  .stars-display svg {
+    width: 14px;
+    height: 14px;
+    fill: var(--stone-300);
+  }
+  .stars-display svg.filled { fill: #d4a574; }
+  .modal-rating-text {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--stone-500);
+    letter-spacing: 0.02em;
+  }
+  .modal-rating-text strong { color: var(--stone-700); font-weight: 500; margin-right: 4px; }
+  .modal-rating-text a {
+    color: var(--stone-500);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+  .modal-reviews-section {
+    margin-top: 28px;
+    padding-top: 28px;
+    border-top: 1px solid var(--stone-200);
+    display: none;
+  }
+  .modal-reviews-section.has-reviews { display: block; }
+  .modal-reviews-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .modal-reviews-title {
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--stone-700);
+  }
+  .modal-reviews-summary {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--stone-500);
+  }
+  .review-item {
+    padding: 16px 0;
+    border-bottom: 1px solid var(--stone-100);
+  }
+  .review-item:last-child { border-bottom: none; }
+  .review-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .review-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .review-stars { display: inline-flex; gap: 1px; }
+  .review-stars svg {
+    width: 12px;
+    height: 12px;
+    fill: var(--stone-300);
+  }
+  .review-stars svg.filled { fill: #d4a574; }
+  .review-author {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--stone-700);
+    font-weight: 500;
+  }
+  .review-verified {
+    font-family: var(--font-body);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #6d9e6d;
+    background: #ebf3eb;
+    padding: 2px 6px;
+    border-radius: 2px;
+  }
+  .review-date {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--stone-400);
+  }
+  .review-title {
+    font-family: var(--font-display);
+    font-size: 16px;
+    color: var(--stone-900);
+    font-weight: 400;
+    margin-bottom: 4px;
+    margin-top: 4px;
+  }
+  .review-body {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--stone-600);
+    line-height: 1.6;
+  }
+  .review-photos {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+  .review-photo {
+    width: 64px;
+    height: 64px;
+    border-radius: 4px;
+    object-fit: cover;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  .review-photo:hover { transform: scale(1.05); }
+  .reviews-loading {
+    text-align: center;
+    padding: 20px 0;
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--stone-400);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  .reviews-show-more {
+    display: block;
+    margin: 16px auto 0;
+    background: none;
+    border: 1px solid var(--stone-300);
+    color: var(--stone-700);
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 10px 22px;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+  .reviews-show-more:hover {
+    background: var(--stone-900);
+    color: white;
+    border-color: var(--stone-900);
+  }
+
+  /* Mini stars on Recently Sold cards */
+  .sold-card-stars {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    margin-top: 4px;
+  }
+  .sold-card-stars.has-reviews { display: inline-flex; }
+  .sold-card-stars svg {
+    width: 10px;
+    height: 10px;
+    fill: var(--stone-300);
+  }
+  .sold-card-stars svg.filled { fill: #d4a574; }
+  .sold-card-stars-count {
+    font-family: var(--font-body);
+    font-size: 10px;
+    color: var(--stone-400);
+    margin-left: 2px;
+  }
+
   @media (max-width: 768px) {
     .modal {
       grid-template-columns: 1fr;
@@ -2581,6 +2763,10 @@
       <p class="modal-category" id="modal-category"></p>
       <h3 class="modal-title" id="modal-title"></h3>
       <p class="modal-price" id="modal-price"></p>
+      <div class="modal-rating-row" id="modal-rating-row">
+        <span class="stars-display" id="modal-rating-stars"></span>
+        <span class="modal-rating-text" id="modal-rating-text"></span>
+      </div>
       <p id="modal-stock" style="font-family:var(--font-body);font-size:12px;letter-spacing:0.1em;margin-bottom:20px;"></p>
       <div class="modal-divider"></div>
       <p class="modal-desc-label">Description</p>
@@ -2595,6 +2781,14 @@
       </div>
       <button class="modal-add-btn" id="modal-add-btn" onclick="addModalToCart()">Add to Cart</button>
       <button class="modal-add-btn" onclick="openTryon()" style="background:transparent;color:var(--stone-700);border:1px solid var(--stone-300);margin-top:10px;">✨ Virtual Try-On</button>
+      <div class="modal-reviews-section" id="modal-reviews-section">
+        <div class="modal-reviews-header">
+          <span class="modal-reviews-title">Reviews</span>
+          <span class="modal-reviews-summary" id="modal-reviews-summary"></span>
+        </div>
+        <div id="modal-reviews-list"></div>
+        <button class="reviews-show-more" id="reviews-show-more" onclick="showMoreReviews()" style="display:none;">Show More Reviews</button>
+      </div>
     </div>
   </div>
 </div>
@@ -3971,7 +4165,7 @@
     var grid = document.getElementById('products-grid');
     grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--stone-400);font-family:var(--font-body);font-size:13px;">Loading products...</div>';
 
-    var query = '{ products(first: 50) { edges { node { id title handle description productType tags createdAt collections(first:5) { edges { node { title handle } } } priceRange { minVariantPrice { amount currencyCode } } images(first: 6) { edges { node { url altText } } } variants(first: 1) { edges { node { id availableForSale quantityAvailable } } } } } } }';
+    var query = '{ products(first: 50) { edges { node { id title handle description productType tags createdAt collections(first:5) { edges { node { title handle } } } priceRange { minVariantPrice { amount currencyCode } } images(first: 6) { edges { node { url altText } } } variants(first: 1) { edges { node { id availableForSale quantityAvailable } } } ratingMetafield: metafield(namespace: "reviews", key: "rating") { value } countMetafield: metafield(namespace: "reviews", key: "rating_count") { value } } } } }';
     var data = await shopifyFetch(query);
 
     if (data && data.data && data.data.products && data.data.products.edges) {
@@ -3983,6 +4177,23 @@
           prodCollections = node.collections.edges.map(function(c) { return c.node.title; }).filter(function(t) {
             return t !== 'New Arrivals' && t !== 'Home page';
           });
+        }
+        // Parse Judge.me rating metafields if present
+        var rating = null;
+        var ratingCount = 0;
+        if (node.ratingMetafield && node.ratingMetafield.value) {
+          // Rating field is JSON like {"value":"4.8","scale_max":"5.0","scale_min":"1.0"}
+          try {
+            var parsed = JSON.parse(node.ratingMetafield.value);
+            rating = parseFloat(parsed.value);
+            if (isNaN(rating)) rating = null;
+          } catch(e) {
+            rating = parseFloat(node.ratingMetafield.value);
+            if (isNaN(rating)) rating = null;
+          }
+        }
+        if (node.countMetafield && node.countMetafield.value) {
+          ratingCount = parseInt(node.countMetafield.value, 10) || 0;
         }
         return {
           id: node.id,
@@ -3999,6 +4210,8 @@
           stock: node.variants.edges[0] && node.variants.edges[0].node.quantityAvailable !== null ? node.variants.edges[0].node.quantityAvailable : 999,
           tags: node.tags || [],
           createdAt: node.createdAt || '',
+          rating: rating,
+          ratingCount: ratingCount,
         };
       });
       // Show in-stock count in the shop tag (the sold ones live in their own section)
@@ -4069,6 +4282,9 @@
 
     document.getElementById('modal-overlay').classList.add('open');
     document.body.style.overflow = 'hidden';
+
+    // Load reviews from Judge.me (async, will populate when ready)
+    loadModalReviews(modalProduct);
   }
 
   function closeModal() {
@@ -4334,10 +4550,19 @@
       html += '<p class="sold-card-category">' + p.category + '</p>';
       html += '<p class="sold-card-name">' + p.name + '</p>';
       html += '<p class="sold-card-price">$' + p.price.toFixed(2) + '</p>';
+      html += '<span class="sold-card-stars" id="sold-stars-' + pIndex + '"></span>';
       html += '</div>';
       html += '</div>';
     }
     grid.innerHTML = html;
+    // Fetch ratings for each sold product
+    for (var s = 0; s < sold.length; s++) {
+      (function(prod, idx) {
+        fetchProductRating(prod, function(rating) {
+          renderMiniStars('sold-stars-' + idx, rating);
+        });
+      })(sold[s], products.indexOf(sold[s]));
+    }
   }
 
   function buildStyleFilters() {
@@ -4454,6 +4679,87 @@
 
   function sendSubscribeNotification(email) {
     console.log('New subscriber:', email);
+  }
+
+  // ============================================
+  // JUDGE.ME REVIEWS (via Shopify metafields)
+  // ============================================
+  // Judge.me automatically syncs review data to Shopify product metafields:
+  //   reviews.rating         (average like "4.8")
+  //   reviews.rating_count   (number like "12")
+  // These come through the Storefront API along with products. Reviews display
+  // links out to Judge.me's hosted review page for the product.
+  var JUDGEME_SHOP_URL = 'https://glos-creations-2.myshopify.com';
+  var currentReviewsProductHandle = null;
+
+  function buildStarsSvg(filled) {
+    var svg = '';
+    for (var i = 1; i <= 5; i++) {
+      svg += '<svg viewBox="0 0 24 24" class="' + (i <= Math.round(filled) ? 'filled' : '') + '"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>';
+    }
+    return svg;
+  }
+
+  function renderMiniStars(elementId, rating) {
+    var el = document.getElementById(elementId);
+    if (!el) return;
+    if (!rating || !rating.count) return;
+    el.classList.add('has-reviews');
+    el.innerHTML = buildStarsSvg(rating.average) + '<span class="sold-card-stars-count">(' + rating.count + ')</span>';
+  }
+
+  // Display rating + link in modal — called from openModal
+  function loadModalReviews(product) {
+    var ratingRow = document.getElementById('modal-rating-row');
+    var ratingStars = document.getElementById('modal-rating-stars');
+    var ratingText = document.getElementById('modal-rating-text');
+    var section = document.getElementById('modal-reviews-section');
+    var list = document.getElementById('modal-reviews-list');
+    var summary = document.getElementById('modal-reviews-summary');
+    var showMoreBtn = document.getElementById('reviews-show-more');
+
+    // Reset
+    ratingRow.classList.remove('has-reviews');
+    section.classList.remove('has-reviews');
+    list.innerHTML = '';
+    showMoreBtn.style.display = 'none';
+    currentReviewsProductHandle = product.handle;
+
+    if (!product.rating || !product.ratingCount) return;
+
+    var avg = product.rating;
+    var count = product.ratingCount;
+    var productUrl = JUDGEME_SHOP_URL + '/products/' + product.handle;
+    var reviewLink = JUDGEME_SHOP_URL + '/products/' + product.handle + '#judgeme_product_reviews';
+
+    // Top star rating row
+    ratingStars.innerHTML = buildStarsSvg(avg);
+    ratingText.innerHTML = '<strong>' + avg.toFixed(1) + '</strong> · ' + count + ' review' + (count !== 1 ? 's' : '') +
+      ' · <a href="' + reviewLink + '" target="_blank" rel="noopener">Read all</a>';
+    ratingRow.classList.add('has-reviews');
+
+    // Reviews section — links out to Judge.me hosted reviews page
+    summary.textContent = avg.toFixed(1) + ' out of 5 · ' + count + ' total';
+    list.innerHTML = '<div style="text-align:center;padding:24px 0;">' +
+      '<div style="margin-bottom:14px;">' + buildStarsSvg(avg) + '</div>' +
+      '<p style="font-family:var(--font-body);font-size:13px;color:var(--stone-600);line-height:1.6;margin-bottom:16px;">' +
+        'This piece has <strong>' + count + ' review' + (count !== 1 ? 's' : '') + '</strong> with an average of <strong>' + avg.toFixed(1) + ' stars</strong>.' +
+      '</p>' +
+      '<a href="' + reviewLink + '" target="_blank" rel="noopener" style="display:inline-block;padding:11px 22px;background:var(--stone-900);color:white;font-family:var(--font-body);font-size:11px;letter-spacing:0.18em;text-transform:uppercase;border-radius:4px;text-decoration:none;">Read all reviews →</a>' +
+      '<p style="font-family:var(--font-body);font-size:11px;color:var(--stone-400);margin-top:14px;">' +
+        '<a href="' + productUrl + '#write_a_review" target="_blank" rel="noopener" style="color:var(--stone-500);text-decoration:underline;">Leave a review</a>' +
+      '</p>' +
+      '</div>';
+    section.classList.add('has-reviews');
+  }
+
+  // Stub kept for backward compat — sold cards now read straight from product
+  function fetchProductRating(product, callback) {
+    if (product && product.rating && product.ratingCount) {
+      callback({ average: product.rating, count: product.ratingCount });
+    } else {
+      callback(null);
+    }
   }
 
   // ============================================
