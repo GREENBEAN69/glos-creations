@@ -6835,6 +6835,10 @@
   // "Live chat" from the help menu. This keeps the homepage clean and gives
   // visitors a choice of FAQ / Email / Chat instead of forcing chat on them.
   var helpMenuOpen = false;
+  // Suppresses click-outside detection for ~50ms after the menu opens, so the same
+  // click that opened the menu (e.g. tapping "Need Help?" in the mobile hamburger)
+  // doesn't immediately bubble up and close it.
+  var helpMenuJustOpened = false;
 
   function dismissTawkChat() {
     if (window.Tawk_API && Tawk_API.hideWidget) {
@@ -6860,6 +6864,10 @@
     if (helpMenuOpen) {
       // Refresh Live Chat option visibility based on current Tawk.to status
       updateLiveChatOption();
+      // Set a flag to prevent the same click from closing the menu via the
+      // document-level click-outside handler. The flag clears 50ms later.
+      helpMenuJustOpened = true;
+      setTimeout(function() { helpMenuJustOpened = false; }, 50);
     }
   }
 
@@ -6927,9 +6935,12 @@
   // Close the help menu when clicking outside it
   document.addEventListener('click', function(e) {
     if (!helpMenuOpen) return;
+    if (helpMenuJustOpened) return; // ignore the click that opened the menu
     var menu = document.getElementById('help-menu');
     var btn = document.getElementById('help-launcher-btn');
-    if (menu && btn && !menu.contains(e.target) && !btn.contains(e.target)) {
+    var inMenu = menu && menu.contains(e.target);
+    var inBtn = btn && btn.contains(e.target);
+    if (!inMenu && !inBtn) {
       closeHelpMenu();
     }
   });
