@@ -6890,6 +6890,19 @@
   document.addEventListener('DOMContentLoaded', function() {
     var launcher = document.getElementById('help-launcher-btn');
     if (launcher) launcher.classList.add('show');
+    // Kick off status polling 5 seconds after page load. Tawk.to should be loaded by then.
+    // We don't rely on Tawk_API.onLoad because that callback doesn't always fire when the
+    // widget is hidden via dashboard settings.
+    setTimeout(function() {
+      // Run an immediate first check, then start the interval
+      if (window.Tawk_API && typeof Tawk_API.getStatus === 'function') {
+        try {
+          lastKnownTawkStatus = Tawk_API.getStatus();
+          updateLiveChatOption();
+        } catch(e) {}
+      }
+      startTawkStatusPolling();
+    }, 5000);
   });
 
   // Configure Tawk.to event listeners
@@ -6935,7 +6948,7 @@
           syncTawkWidgetVisibility();
         }
       } catch(e) {}
-    }, 30000); // every 30 seconds
+    }, 15000); // every 15 seconds
   }
 
   Tawk_API.onStatusChange = function(status) {
