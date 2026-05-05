@@ -6608,15 +6608,43 @@
     if (launcher) launcher.classList.add('show');
   });
 
-  // Configure Tawk.to event listeners — keep it minimal
+  // Configure Tawk.to event listeners
   var Tawk_API = Tawk_API || {};
+
+  // Hide the Tawk.to chat bubble when status is anything other than 'online'
+  // (This complements the dashboard "Hide on desktop/mobile" settings — code-level safety net.)
+  function syncTawkWidgetVisibility() {
+    if (!window.Tawk_API) return;
+    var available = isLiveChatAvailable();
+    if (available) {
+      // Online: keep the widget hidden too (only show when visitor explicitly clicks Live Chat)
+      // The dashboard "Hide on desktop/mobile" setting handles this automatically.
+    } else {
+      // Offline/Away: ensure the widget is hidden as a safety net
+      if (Tawk_API.hideWidget) Tawk_API.hideWidget();
+    }
+  }
 
   Tawk_API.onLoad = function() {
     updateLiveChatOption();
+    syncTawkWidgetVisibility();
   };
 
   Tawk_API.onStatusChange = function(status) {
     updateLiveChatOption();
+    syncTawkWidgetVisibility();
+    // If visitor was in a chat and we just went offline, minimize the chat
+    if (status !== 'online' && Tawk_API.minimize) {
+      Tawk_API.minimize();
+    }
+  };
+
+  // When the chat is minimized after a conversation, re-hide if we're offline
+  Tawk_API.onChatMinimized = function() {
+    syncTawkWidgetVisibility();
+  };
+  Tawk_API.onChatEnded = function() {
+    syncTawkWidgetVisibility();
   };
 </script>
 
