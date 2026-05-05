@@ -6279,12 +6279,13 @@
     stroke-width: 2.5;
     stroke-linecap: round;
   }
-  /* Subtle "Need help?" reopen button after dismissal */
-  .tawk-reopen-btn {
+
+  /* "Need help?" pill button — opens a popup menu of options */
+  .help-launcher-btn {
     position: fixed;
     bottom: 22px;
     right: 22px;
-    padding: 10px 18px 10px 14px;
+    padding: 11px 18px 11px 14px;
     background: #3a3633;
     color: white;
     border: none;
@@ -6301,21 +6302,132 @@
     letter-spacing: 0.05em;
     transition: transform 0.15s, background 0.15s;
   }
-  .tawk-reopen-btn.show { display: inline-flex; }
-  .tawk-reopen-btn:hover {
+  .help-launcher-btn.show { display: inline-flex; }
+  .help-launcher-btn:hover {
     background: #1c1917;
     transform: translateY(-2px);
   }
-  .tawk-reopen-btn svg {
+  .help-launcher-btn svg.help-icon {
     width: 16px;
     height: 16px;
     stroke: white;
     fill: none;
     stroke-width: 2;
   }
+  .help-launcher-btn svg.help-chevron {
+    width: 12px;
+    height: 12px;
+    stroke: white;
+    fill: none;
+    stroke-width: 2.5;
+    margin-left: 2px;
+    transition: transform 0.2s;
+  }
+  .help-launcher-btn.menu-open svg.help-chevron { transform: rotate(180deg); }
+
+  /* Popup menu of help options */
+  .help-menu {
+    position: fixed;
+    bottom: 78px;
+    right: 22px;
+    width: 260px;
+    background: white;
+    border-radius: 14px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.18);
+    border: 1px solid var(--stone-200);
+    z-index: 1000000001;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+  }
+  .help-menu.open {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+  }
+  .help-menu-header {
+    padding: 16px 18px 10px;
+    border-bottom: 1px solid var(--stone-100);
+  }
+  .help-menu-header h4 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--stone-900);
+    margin: 0 0 3px 0;
+  }
+  .help-menu-header p {
+    font-family: 'Inter', sans-serif;
+    font-size: 11.5px;
+    color: var(--stone-500);
+    margin: 0;
+    line-height: 1.4;
+  }
+  .help-menu-options { padding: 6px; }
+  .help-menu-option {
+    width: 100%;
+    background: transparent;
+    border: none;
+    text-align: left;
+    padding: 11px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: 'Inter', sans-serif;
+    transition: background 0.12s;
+    color: var(--stone-800);
+    text-decoration: none;
+  }
+  .help-menu-option:hover { background: var(--stone-50); }
+  .help-menu-option-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--stone-100);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .help-menu-option-icon svg {
+    width: 17px;
+    height: 17px;
+    stroke: var(--stone-700);
+    fill: none;
+    stroke-width: 1.8;
+  }
+  .help-menu-option-text { flex: 1; min-width: 0; }
+  .help-menu-option-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--stone-900);
+    margin: 0 0 1px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .help-menu-option-desc {
+    font-size: 11px;
+    color: var(--stone-500);
+    margin: 0;
+    line-height: 1.35;
+  }
+  .help-menu-online-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 0 2px rgba(34,197,94,0.2);
+  }
+
   @media (max-width: 600px) {
     .tawk-dismiss-btn { bottom: 76px; right: 16px; }
-    .tawk-reopen-btn { bottom: 16px; right: 16px; padding: 9px 14px 9px 12px; font-size: 11px; }
+    .help-launcher-btn { bottom: 16px; right: 16px; padding: 10px 16px 10px 12px; font-size: 11px; }
+    .help-menu { bottom: 72px; right: 16px; width: calc(100vw - 32px); max-width: 280px; }
   }
 </style>
 
@@ -6324,34 +6436,142 @@
   <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 </button>
 
-<!-- Reopen button — shown after visitor dismisses chat -->
-<button class="tawk-reopen-btn" id="tawk-reopen-btn" onclick="reopenTawkChat()">
-  <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+<!-- "Need help?" launcher — appears after visitor dismisses chat -->
+<button class="help-launcher-btn" id="help-launcher-btn" onclick="toggleHelpMenu()" aria-haspopup="true" aria-expanded="false">
+  <svg class="help-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
   Need help?
+  <svg class="help-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
 </button>
+
+<!-- Popup menu — FAQ / Email / Live Chat -->
+<div class="help-menu" id="help-menu" role="menu">
+  <div class="help-menu-header">
+    <h4>How can we help?</h4>
+    <p>Pick the option that works best for you.</p>
+  </div>
+  <div class="help-menu-options">
+    <button class="help-menu-option" role="menuitem" onclick="helpMenuChooseFaq()">
+      <div class="help-menu-option-icon">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      </div>
+      <div class="help-menu-option-text">
+        <p class="help-menu-option-title">Browse FAQ</p>
+        <p class="help-menu-option-desc">Quick answers to common questions</p>
+      </div>
+    </button>
+    <a class="help-menu-option" role="menuitem" href="mailto:sales@gloscreations316.com" onclick="helpMenuChooseEmail()">
+      <div class="help-menu-option-icon">
+        <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      </div>
+      <div class="help-menu-option-text">
+        <p class="help-menu-option-title">Email us</p>
+        <p class="help-menu-option-desc">sales@gloscreations316.com · ~24h reply</p>
+      </div>
+    </a>
+    <button class="help-menu-option" id="help-menu-livechat" role="menuitem" onclick="helpMenuChooseLiveChat()" style="display:none;">
+      <div class="help-menu-option-icon">
+        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <div class="help-menu-option-text">
+        <p class="help-menu-option-title">
+          Live chat <span class="help-menu-online-dot"></span>
+        </p>
+        <p class="help-menu-option-desc">Glo's online — chat with her now</p>
+      </div>
+    </button>
+  </div>
+</div>
 
 <script>
   // ============================================
-  // TAWK.TO CHAT — visitor-dismissable widget
+  // TAWK.TO CHAT — dismissable widget + help menu
   // ============================================
-  // Tawk.to doesn't natively let visitors close the chat. We add a small × button
-  // and remember their choice for the browsing session.
+  // The chat bubble has a custom × that hides it. After dismissing, the visitor
+  // sees a "Need help?" button that opens a small menu with FAQ, Email, and
+  // Live Chat options. Live Chat only appears when an agent is actually online.
+  var helpMenuOpen = false;
+
   function dismissTawkChat() {
     if (window.Tawk_API && Tawk_API.hideWidget) {
       Tawk_API.hideWidget();
     }
     document.getElementById('tawk-dismiss-btn').style.display = 'none';
-    document.getElementById('tawk-reopen-btn').classList.add('show');
+    document.getElementById('help-launcher-btn').classList.add('show');
     try { sessionStorage.setItem('gc_tawk_hidden', '1'); } catch(e) {}
   }
-  function reopenTawkChat() {
+
+  function toggleHelpMenu() {
+    var menu = document.getElementById('help-menu');
+    var btn = document.getElementById('help-launcher-btn');
+    helpMenuOpen = !helpMenuOpen;
+    menu.classList.toggle('open', helpMenuOpen);
+    btn.classList.toggle('menu-open', helpMenuOpen);
+    btn.setAttribute('aria-expanded', helpMenuOpen ? 'true' : 'false');
+    if (helpMenuOpen) {
+      // Refresh Live Chat option visibility based on current Tawk.to status
+      updateLiveChatOption();
+    }
+  }
+
+  function closeHelpMenu() {
+    helpMenuOpen = false;
+    document.getElementById('help-menu').classList.remove('open');
+    var btn = document.getElementById('help-launcher-btn');
+    btn.classList.remove('menu-open');
+    btn.setAttribute('aria-expanded', 'false');
+  }
+
+  // Determine if live chat is currently available (Tawk.to status === 'online')
+  function isLiveChatAvailable() {
+    if (!window.Tawk_API) return false;
+    if (typeof Tawk_API.getStatus === 'function') {
+      try {
+        var status = Tawk_API.getStatus();
+        return status === 'online';
+      } catch(e) { return false; }
+    }
+    return false;
+  }
+
+  function updateLiveChatOption() {
+    var item = document.getElementById('help-menu-livechat');
+    if (!item) return;
+    item.style.display = isLiveChatAvailable() ? 'flex' : 'none';
+  }
+
+  function helpMenuChooseFaq() {
+    closeHelpMenu();
+    if (typeof openFaq === 'function') openFaq();
+    if (typeof trackEvent === 'function') trackEvent('help_menu_select', { option: 'faq' });
+  }
+
+  function helpMenuChooseEmail() {
+    // The mailto href handles opening the email — we just track and close
+    closeHelpMenu();
+    if (typeof trackEvent === 'function') trackEvent('help_menu_select', { option: 'email' });
+  }
+
+  function helpMenuChooseLiveChat() {
+    closeHelpMenu();
     if (window.Tawk_API && Tawk_API.showWidget) {
       Tawk_API.showWidget();
+      if (Tawk_API.maximize) setTimeout(function(){ Tawk_API.maximize(); }, 250);
     }
     document.getElementById('tawk-dismiss-btn').style.display = 'flex';
-    document.getElementById('tawk-reopen-btn').classList.remove('show');
+    document.getElementById('help-launcher-btn').classList.remove('show');
     try { sessionStorage.removeItem('gc_tawk_hidden'); } catch(e) {}
+    if (typeof trackEvent === 'function') trackEvent('help_menu_select', { option: 'live_chat' });
   }
+
+  // Close the help menu when clicking outside it
+  document.addEventListener('click', function(e) {
+    if (!helpMenuOpen) return;
+    var menu = document.getElementById('help-menu');
+    var btn = document.getElementById('help-launcher-btn');
+    if (menu && btn && !menu.contains(e.target) && !btn.contains(e.target)) {
+      closeHelpMenu();
+    }
+  });
 
   // After Tawk.to loads, decide what to show based on previous session state
   var Tawk_API = Tawk_API || {};
@@ -6360,11 +6580,18 @@
     try { wasHidden = sessionStorage.getItem('gc_tawk_hidden') === '1'; } catch(e) {}
     if (wasHidden) {
       Tawk_API.hideWidget();
-      document.getElementById('tawk-reopen-btn').classList.add('show');
+      document.getElementById('help-launcher-btn').classList.add('show');
     } else {
       document.getElementById('tawk-dismiss-btn').style.display = 'flex';
     }
+    updateLiveChatOption();
   };
+  // Update live chat option when agent goes online/offline
+  Tawk_API.onAgentJoinChat = updateLiveChatOption;
+  Tawk_API.onAgentLeaveChat = updateLiveChatOption;
+  Tawk_API.onChatStarted = updateLiveChatOption;
+  Tawk_API.onChatEnded = updateLiveChatOption;
+
   // Hide our × button while the chat panel is fully open (so it doesn't overlap)
   Tawk_API.onChatMaximized = function() {
     document.getElementById('tawk-dismiss-btn').style.display = 'none';
