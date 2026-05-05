@@ -634,6 +634,105 @@
   .reviews blockquote { font-size: clamp(22px, 3vw, 32px); font-weight: 300; font-style: italic; line-height: 1.55; margin-bottom: 20px; color: var(--stone-800); }
   .reviews-author { font-family: var(--font-body); font-size: 10.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--stone-400); }
 
+  /* Reviews Carousel */
+  .reviews-carousel { position: relative; min-height: 220px; }
+  .reviews-loading-state { transition: opacity 0.3s; }
+  .reviews-loading-state.hidden { display: none; }
+  .reviews-slides { position: relative; }
+  .review-slide {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+    pointer-events: none;
+  }
+  .review-slide.active {
+    opacity: 1;
+    position: relative;
+    pointer-events: auto;
+  }
+  .review-slide-stars { margin-bottom: 22px; color: var(--stone-700); font-size: 16px; letter-spacing: 4px; }
+  .review-slide blockquote { font-size: clamp(20px, 2.6vw, 28px); font-weight: 300; font-style: italic; line-height: 1.55; margin-bottom: 16px; color: var(--stone-800); }
+  .review-slide-product {
+    display: inline-block;
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--stone-500);
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    border-bottom: 1px solid var(--stone-200);
+    padding-bottom: 1px;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .review-slide-product:hover {
+    color: var(--stone-800);
+    border-color: var(--stone-500);
+  }
+  .review-slide-author { font-family: var(--font-body); font-size: 10.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--stone-400); }
+
+  .reviews-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    margin-top: 28px;
+  }
+  .reviews-arrow {
+    background: white;
+    border: 1px solid var(--stone-300);
+    color: var(--stone-700);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .reviews-arrow:hover {
+    background: var(--stone-900);
+    color: white;
+    border-color: var(--stone-900);
+  }
+  .reviews-arrow svg {
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .reviews-dots {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .reviews-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--stone-300);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .reviews-dot.active {
+    background: var(--stone-900);
+    width: 18px;
+    border-radius: 3px;
+  }
+  .reviews-empty {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--stone-400);
+    font-style: italic;
+  }
+
   /* FAQ Modal */
   .faq-modal-body {
     padding: 40px 36px;
@@ -2749,9 +2848,23 @@
 <section class="reviews">
   <div class="reviews-inner">
     <p class="reviews-tag">Loved by customers</p>
-    <p class="reviews-stars">★ ★ ★ ★ ★</p>
-    <blockquote>"These earrings are the most complimented thing I own. The craftsmanship is unreal — they feel like little pieces of art."</blockquote>
-    <p class="reviews-author">Sarah M. · Verified Customer</p>
+    <div class="reviews-carousel" id="reviews-carousel">
+      <div class="reviews-loading-state" id="reviews-loading">
+        <p class="reviews-stars">★ ★ ★ ★ ★</p>
+        <blockquote>"These earrings are the most complimented thing I own. The craftsmanship is unreal — they feel like little pieces of art."</blockquote>
+        <p class="reviews-author">Sarah M. · Verified Customer</p>
+      </div>
+      <div class="reviews-slides" id="reviews-slides"></div>
+      <div class="reviews-controls" id="reviews-controls" style="display:none;">
+        <button class="reviews-arrow reviews-prev" onclick="reviewsPrev()" aria-label="Previous review">
+          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div class="reviews-dots" id="reviews-dots"></div>
+        <button class="reviews-arrow reviews-next" onclick="reviewsNext()" aria-label="Next review">
+          <svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+        </button>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -4607,6 +4720,8 @@
       renderRecentlySold();
       // Re-render carousel now that products array is populated, so its slides can be clickable
       if (carouselItems && carouselItems.length > 0) renderCarousel();
+      // Load homepage reviews carousel from real customer reviews (async, non-blocking)
+      loadCarouselReviews();
     } else {
       grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--stone-400);font-family:var(--font-body);font-size:13px;">Could not load products. Please try again later.</div>';
     }
@@ -5166,6 +5281,22 @@
       });
   }
 
+  // Privacy: convert "Lisa Sharma" → "Lisa S." so reviewer last names aren't fully exposed.
+  // Handles single names, multi-word last names, hyphenated names, and edge cases gracefully.
+  function abbreviateLastName(fullName) {
+    if (!fullName) return 'Anonymous';
+    var name = String(fullName).trim();
+    if (!name) return 'Anonymous';
+    // If the reviewer entered just one name (e.g. "Lisa"), leave it alone
+    var parts = name.split(/\s+/);
+    if (parts.length < 2) return name;
+    // Keep first name as-is, abbreviate everything after to first letter + period
+    var first = parts[0];
+    var lastInitial = parts[parts.length - 1].charAt(0).toUpperCase();
+    if (!lastInitial) return first;
+    return first + ' ' + lastInitial + '.';
+  }
+
   // Parse Judge.me widget HTML to extract review data
   function parseJudgemeWidget(html) {
     if (!html) return [];
@@ -5211,7 +5342,7 @@
           rating: rating,
           title: titleEl ? titleEl.textContent.trim() : '',
           body: bodyEl ? bodyEl.textContent.trim() : '',
-          author: authorEl ? authorEl.textContent.trim() : 'Anonymous',
+          author: abbreviateLastName(authorEl ? authorEl.textContent.trim() : 'Anonymous'),
           date: dateEl ? (dateEl.getAttribute('data-content') || dateEl.textContent.trim()) : '',
           verified: !!verifiedEl,
           pictures: pictures
@@ -5436,6 +5567,152 @@
         '<p>Polymer clay jewelry is a handcrafted artisan product. While durable for everyday wear, it is not indestructible. Normal wear and tear, including minor surface scratches, are expected over time and are not covered under any warranty. By purchasing and wearing our jewelry, you acknowledge and accept these care guidelines.</p>'
     }
   };
+
+  // ============================================
+  // REVIEWS CAROUSEL — Live customer reviews
+  // ============================================
+  // Pulls real customer reviews from Judge.me across all products and rotates
+  // them in the homepage testimonial section. Falls back to the default
+  // "Sarah M." quote if no real reviews are available yet.
+  var reviewsList = [];
+  var reviewsIndex = 0;
+  var reviewsTimer = null;
+  var REVIEWS_ROTATE_MS = 7000;
+
+  // Find the highest-rated reviews from products and gather them
+  async function loadCarouselReviews() {
+    if (!products || products.length === 0) return;
+    var fetched = [];
+    var fetchPromises = [];
+
+    // Only fetch reviews from products that have ratings (saves API calls)
+    var productsWithRatings = products.filter(function(p) {
+      return p.ratingCount && p.ratingCount > 0;
+    });
+    if (productsWithRatings.length === 0) return;
+
+    for (var i = 0; i < productsWithRatings.length; i++) {
+      (function(product) {
+        fetchPromises.push(new Promise(function(resolve) {
+          fetchReviewText(product.handle, function(reviews) {
+            if (reviews && reviews.length > 0) {
+              for (var j = 0; j < reviews.length; j++) {
+                var r = reviews[j];
+                // Only include reviews that have actual body text and are 4 stars or higher
+                if (r.body && r.body.length > 20 && r.rating >= 4) {
+                  fetched.push({
+                    rating: r.rating,
+                    title: r.title || '',
+                    body: r.body,
+                    author: r.author || 'Anonymous',
+                    date: r.date || '',
+                    productName: product.name,
+                    productHandle: product.handle,
+                    productIndex: products.indexOf(product)
+                  });
+                }
+              }
+            }
+            resolve();
+          });
+        }));
+      })(productsWithRatings[i]);
+    }
+
+    await Promise.all(fetchPromises);
+    if (fetched.length === 0) return; // Keep the default "Sarah M." fallback shown
+
+    // Sort by rating (highest first), then by length (longer reviews are more meaningful)
+    fetched.sort(function(a, b) {
+      if (b.rating !== a.rating) return b.rating - a.rating;
+      return b.body.length - a.body.length;
+    });
+
+    // Cap at 10 reviews to keep the carousel manageable
+    reviewsList = fetched.slice(0, 10);
+    renderReviewsCarousel();
+  }
+
+  function renderReviewsCarousel() {
+    var slides = document.getElementById('reviews-slides');
+    var dots = document.getElementById('reviews-dots');
+    var loading = document.getElementById('reviews-loading');
+    var controls = document.getElementById('reviews-controls');
+    if (!slides || !dots) return;
+
+    if (reviewsList.length === 0) return; // Keep fallback shown
+
+    // Hide the default fallback quote
+    if (loading) loading.classList.add('hidden');
+
+    // Build slides
+    var slidesHtml = '';
+    for (var i = 0; i < reviewsList.length; i++) {
+      var r = reviewsList[i];
+      var stars = '';
+      for (var s = 0; s < 5; s++) {
+        stars += s < r.rating ? '★' : '☆';
+      }
+      slidesHtml += '<div class="review-slide' + (i === 0 ? ' active' : '') + '">';
+      slidesHtml += '<p class="review-slide-stars">' + stars + '</p>';
+      slidesHtml += '<blockquote>"' + escapeHtml(r.body) + '"</blockquote>';
+      slidesHtml += '<a class="review-slide-product" onclick="openModalFromReview(' + r.productIndex + ')">' + escapeHtml(r.productName) + '</a><br>';
+      slidesHtml += '<p class="review-slide-author">' + escapeHtml(r.author) + ' · Verified Customer</p>';
+      slidesHtml += '</div>';
+    }
+    slides.innerHTML = slidesHtml;
+
+    // Build dots (only show dots if more than 1 review)
+    if (reviewsList.length > 1) {
+      var dotsHtml = '';
+      for (var d = 0; d < reviewsList.length; d++) {
+        dotsHtml += '<button class="reviews-dot' + (d === 0 ? ' active' : '') + '" onclick="goToReview(' + d + ')" aria-label="Review ' + (d + 1) + '"></button>';
+      }
+      dots.innerHTML = dotsHtml;
+      controls.style.display = 'flex';
+      startReviewsTimer();
+    } else {
+      controls.style.display = 'none';
+    }
+  }
+
+  function goToReview(index) {
+    reviewsIndex = index;
+    var slides = document.querySelectorAll('.review-slide');
+    var dots = document.querySelectorAll('.reviews-dot');
+    for (var i = 0; i < slides.length; i++) slides[i].classList.toggle('active', i === reviewsIndex);
+    for (var j = 0; j < dots.length; j++) dots[j].classList.toggle('active', j === reviewsIndex);
+    resetReviewsTimer();
+  }
+
+  function reviewsNext() {
+    if (reviewsList.length === 0) return;
+    goToReview((reviewsIndex + 1) % reviewsList.length);
+  }
+
+  function reviewsPrev() {
+    if (reviewsList.length === 0) return;
+    goToReview((reviewsIndex - 1 + reviewsList.length) % reviewsList.length);
+  }
+
+  function startReviewsTimer() {
+    if (reviewsTimer) clearInterval(reviewsTimer);
+    if (reviewsList.length > 1) {
+      reviewsTimer = setInterval(function() { reviewsNext(); }, REVIEWS_ROTATE_MS);
+    }
+  }
+
+  function resetReviewsTimer() {
+    startReviewsTimer();
+  }
+
+  // Open product modal when visitor clicks the product name on a review
+  function openModalFromReview(productIndex) {
+    if (productIndex >= 0 && productIndex < products.length) {
+      trackEvent('review_carousel_product_click', { product_index: productIndex });
+      openModal(productIndex);
+    }
+  }
 
   // ============================================
   // ANNOUNCEMENT BAR ROTATION
