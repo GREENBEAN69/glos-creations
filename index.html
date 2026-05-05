@@ -6300,12 +6300,37 @@
     font-size: 12px;
     font-weight: 500;
     letter-spacing: 0.05em;
-    transition: transform 0.15s, background 0.15s;
+    transition: transform 0.15s, background 0.15s, box-shadow 0.15s;
   }
   .help-launcher-btn.show { display: inline-flex; }
   .help-launcher-btn:hover {
     background: #1c1917;
     transform: translateY(-2px);
+  }
+  /* Online/available state — gentle green that signals "live agent ready" */
+  .help-launcher-btn.online {
+    background: #166534;
+    box-shadow: 0 4px 14px rgba(22,101,52,0.25);
+  }
+  .help-launcher-btn.online:hover {
+    background: #14532d;
+  }
+  /* Pulsing green dot to reinforce live availability */
+  .help-launcher-online-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #4ade80;
+    box-shadow: 0 0 0 2px rgba(74,222,128,0.35);
+    margin-right: 2px;
+    display: none;
+    animation: helpPulse 2s ease-in-out infinite;
+  }
+  .help-launcher-btn.online .help-launcher-online-dot { display: inline-block; }
+  .help-launcher-btn.online .help-icon { display: none; }
+  @keyframes helpPulse {
+    0%, 100% { box-shadow: 0 0 0 2px rgba(74,222,128,0.35); }
+    50% { box-shadow: 0 0 0 6px rgba(74,222,128,0); }
   }
   .help-launcher-btn svg.help-icon {
     width: 16px;
@@ -6438,6 +6463,7 @@
 
 <!-- "Need help?" launcher — appears after visitor dismisses chat -->
 <button class="help-launcher-btn" id="help-launcher-btn" onclick="toggleHelpMenu()" aria-haspopup="true" aria-expanded="false">
+  <span class="help-launcher-online-dot"></span>
   <svg class="help-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
   Need help?
   <svg class="help-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
@@ -6486,9 +6512,10 @@
   // ============================================
   // TAWK.TO CHAT — dismissable widget + help menu
   // ============================================
-  // The chat bubble has a custom × that hides it. After dismissing, the visitor
-  // sees a "Need help?" button that opens a small menu with FAQ, Email, and
-  // Live Chat options. Live Chat only appears when an agent is actually online.
+  // The "Need help?" button is the DEFAULT entry point. The Tawk.to chat bubble
+  // is hidden by default — it only appears when the visitor explicitly clicks
+  // "Live chat" from the help menu. This keeps the homepage clean and gives
+  // visitors a choice of FAQ / Email / Chat instead of forcing chat on them.
   var helpMenuOpen = false;
 
   function dismissTawkChat() {
@@ -6535,8 +6562,10 @@
 
   function updateLiveChatOption() {
     var item = document.getElementById('help-menu-livechat');
-    if (!item) return;
-    item.style.display = isLiveChatAvailable() ? 'flex' : 'none';
+    var launcher = document.getElementById('help-launcher-btn');
+    var available = isLiveChatAvailable();
+    if (item) item.style.display = available ? 'flex' : 'none';
+    if (launcher) launcher.classList.toggle('online', available);
   }
 
   function helpMenuChooseFaq() {
@@ -6573,20 +6602,22 @@
     }
   });
 
-  // After Tawk.to loads, decide what to show based on previous session state
+  // Show the "Need help?" button immediately on page load (don't wait for Tawk to finish loading)
+  // This keeps the entry point consistent and clean even if Tawk.to is slow.
+  document.addEventListener('DOMContentLoaded', function() {
+    var launcher = document.getElementById('help-launcher-btn');
+    if (launcher) launcher.classList.add('show');
+  });
+
+  // Configure Tawk.to: hide its native bubble by default — only shown when visitor picks Live Chat
   var Tawk_API = Tawk_API || {};
   Tawk_API.onLoad = function() {
-    var wasHidden = false;
-    try { wasHidden = sessionStorage.getItem('gc_tawk_hidden') === '1'; } catch(e) {}
-    if (wasHidden) {
-      Tawk_API.hideWidget();
-      document.getElementById('help-launcher-btn').classList.add('show');
-    } else {
-      document.getElementById('tawk-dismiss-btn').style.display = 'flex';
-    }
+    // Always start with Tawk.to widget hidden — our "Need help?" button is the entry point
+    Tawk_API.hideWidget();
+    try { sessionStorage.setItem('gc_tawk_hidden', '1'); } catch(e) {}
     updateLiveChatOption();
   };
-  // Update live chat option when agent goes online/offline
+  // Update live chat option when agent status changes
   Tawk_API.onAgentJoinChat = updateLiveChatOption;
   Tawk_API.onAgentLeaveChat = updateLiveChatOption;
   Tawk_API.onChatStarted = updateLiveChatOption;
@@ -6600,6 +6631,23 @@
     var wasHidden = false;
     try { wasHidden = sessionStorage.getItem('gc_tawk_hidden') === '1'; } catch(e) {}
     if (!wasHidden) document.getElementById('tawk-dismiss-btn').style.display = 'flex';
+  };
+</script>
+
+<script>
+  // ============================================
+  // TAWK.TO PRE-LOAD CONFIG
+  // ============================================
+  // We define Tawk_API BEFORE the Tawk.to script loads so the widget never
+  // shows its native bubble or greeting popups on page load. Our "Need help?"
+  // button is the entry point — Tawk.to is invisible until the visitor picks Live Chat.
+  var Tawk_API = Tawk_API || {};
+  // Hide widget visibility immediately
+  Tawk_API.visitor = Tawk_API.visitor || {};
+  // The single most important hook: hide the widget the moment Tawk.to is ready
+  Tawk_API.onBeforeLoad = function() {
+    // Suppress all auto-greetings and preview popups
+    if (Tawk_API.hideWidget) Tawk_API.hideWidget();
   };
 </script>
 
