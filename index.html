@@ -6345,7 +6345,7 @@
     {
       category: 'Care',
       q: 'Are they waterproof?',
-      a: 'No — please don\'t shower, swim, or wash dishes wearing them. The polymer clay itself can handle a splash, but the metal findings and finishes can be affected by chlorine, salt water, and harsh soaps. Take them off before getting wet.'
+      a: 'No — please don\'t shower or swim wearing them. The polymer clay itself can handle a splash, but the metal findings and finishes can be affected by chlorine, salt water, and harsh soaps. Take them off before getting wet.'
     },
     {
       category: 'Shipping',
@@ -6912,9 +6912,35 @@
   Tawk_API.onLoad = function() {
     updateLiveChatOption();
     syncTawkWidgetVisibility();
+    // Tawk_API.onStatusChange is unreliable — also poll every 30 seconds as a safety net
+    // so the "Need help?" button reflects status changes without requiring a page refresh.
+    startTawkStatusPolling();
   };
 
+  // Polling fallback — checks status every 30 seconds and updates the UI if it changed.
+  // This catches status changes that Tawk_API.onStatusChange misses (e.g., when you log
+  // into the mobile app while a visitor already has the page open).
+  var lastKnownTawkStatus = null;
+  var tawkStatusPollInterval = null;
+  function startTawkStatusPolling() {
+    if (tawkStatusPollInterval) clearInterval(tawkStatusPollInterval);
+    tawkStatusPollInterval = setInterval(function() {
+      if (!window.Tawk_API || typeof Tawk_API.getStatus !== 'function') return;
+      try {
+        var current = Tawk_API.getStatus();
+        if (current !== lastKnownTawkStatus) {
+          console.log('[Glo Status Poll] Status changed:', lastKnownTawkStatus, '→', current);
+          lastKnownTawkStatus = current;
+          updateLiveChatOption();
+          syncTawkWidgetVisibility();
+        }
+      } catch(e) {}
+    }, 30000); // every 30 seconds
+  }
+
   Tawk_API.onStatusChange = function(status) {
+    console.log('[Glo Status] onStatusChange fired:', status);
+    lastKnownTawkStatus = status;
     updateLiveChatOption();
     syncTawkWidgetVisibility();
     // If visitor was in a chat and we just went offline, minimize the chat
