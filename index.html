@@ -4133,7 +4133,25 @@
     var html = '';
     for (var i = 0; i < carouselItems.length; i++) {
       var item = carouselItems[i];
-      html += '<div class="carousel-slide">';
+      // Find this carousel item's index in the main products array so we can open its modal.
+      // Try matching by variantId first, then fall back to product id or handle.
+      var productIndex = -1;
+      for (var k = 0; k < products.length; k++) {
+        if (item.variantId && products[k].variantId === item.variantId) { productIndex = k; break; }
+      }
+      if (productIndex === -1 && item.id) {
+        for (var k2 = 0; k2 < products.length; k2++) {
+          if (products[k2].id === item.id) { productIndex = k2; break; }
+        }
+      }
+      if (productIndex === -1 && item.handle) {
+        for (var k3 = 0; k3 < products.length; k3++) {
+          if (products[k3].handle === item.handle) { productIndex = k3; break; }
+        }
+      }
+      var clickHandler = productIndex >= 0 ? 'onclick="openModal(' + productIndex + ')"' : '';
+      var clickStyle = productIndex >= 0 ? 'cursor:pointer;' : '';
+      html += '<div class="carousel-slide" ' + clickHandler + ' style="' + clickStyle + '">';
       if (item.image) html += '<img src="' + item.image + '" alt="' + item.name + '">';
       html += '<div class="carousel-slide-info">';
       html += '<p class="carousel-slide-tag">New Arrival · ' + item.category + '</p>';
@@ -4264,6 +4282,8 @@
       buildStyleFilters();
       renderProducts('All');
       renderRecentlySold();
+      // Re-render carousel now that products array is populated, so its slides can be clickable
+      if (carouselItems && carouselItems.length > 0) renderCarousel();
     } else {
       grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--stone-400);font-family:var(--font-body);font-size:13px;">Could not load products. Please try again later.</div>';
     }
