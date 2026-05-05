@@ -6525,6 +6525,7 @@
     document.getElementById('tawk-dismiss-btn').style.display = 'none';
     document.getElementById('help-launcher-btn').classList.add('show');
     try { sessionStorage.setItem('gc_tawk_hidden', '1'); } catch(e) {}
+    try { sessionStorage.removeItem('gc_tawk_active'); } catch(e) {}
   }
 
   function toggleHelpMenu() {
@@ -6549,11 +6550,13 @@
   }
 
   // Determine if live chat is currently available (Tawk.to status === 'online')
+  // Tawk.to returns 'online', 'away', or 'offline'. We only want green for 'online'.
   function isLiveChatAvailable() {
     if (!window.Tawk_API) return false;
     if (typeof Tawk_API.getStatus === 'function') {
       try {
         var status = Tawk_API.getStatus();
+        console.log('[Tawk.to status]', status);
         return status === 'online';
       } catch(e) { return false; }
     }
@@ -6582,13 +6585,9 @@
 
   function helpMenuChooseLiveChat() {
     closeHelpMenu();
-    if (window.Tawk_API && Tawk_API.showWidget) {
-      Tawk_API.showWidget();
-      if (Tawk_API.maximize) setTimeout(function(){ Tawk_API.maximize(); }, 250);
+    if (window.Tawk_API && Tawk_API.maximize) {
+      Tawk_API.maximize();
     }
-    document.getElementById('tawk-dismiss-btn').style.display = 'flex';
-    document.getElementById('help-launcher-btn').classList.remove('show');
-    try { sessionStorage.removeItem('gc_tawk_hidden'); } catch(e) {}
     if (typeof trackEvent === 'function') trackEvent('help_menu_select', { option: 'live_chat' });
   }
 
@@ -6609,45 +6608,15 @@
     if (launcher) launcher.classList.add('show');
   });
 
-  // Configure Tawk.to: hide its native bubble by default — only shown when visitor picks Live Chat
+  // Configure Tawk.to event listeners — keep it minimal
   var Tawk_API = Tawk_API || {};
+
   Tawk_API.onLoad = function() {
-    // Always start with Tawk.to widget hidden — our "Need help?" button is the entry point
-    Tawk_API.hideWidget();
-    try { sessionStorage.setItem('gc_tawk_hidden', '1'); } catch(e) {}
     updateLiveChatOption();
   };
-  // Update live chat option when agent status changes
-  Tawk_API.onAgentJoinChat = updateLiveChatOption;
-  Tawk_API.onAgentLeaveChat = updateLiveChatOption;
-  Tawk_API.onChatStarted = updateLiveChatOption;
-  Tawk_API.onChatEnded = updateLiveChatOption;
 
-  // Hide our × button while the chat panel is fully open (so it doesn't overlap)
-  Tawk_API.onChatMaximized = function() {
-    document.getElementById('tawk-dismiss-btn').style.display = 'none';
-  };
-  Tawk_API.onChatMinimized = function() {
-    var wasHidden = false;
-    try { wasHidden = sessionStorage.getItem('gc_tawk_hidden') === '1'; } catch(e) {}
-    if (!wasHidden) document.getElementById('tawk-dismiss-btn').style.display = 'flex';
-  };
-</script>
-
-<script>
-  // ============================================
-  // TAWK.TO PRE-LOAD CONFIG
-  // ============================================
-  // We define Tawk_API BEFORE the Tawk.to script loads so the widget never
-  // shows its native bubble or greeting popups on page load. Our "Need help?"
-  // button is the entry point — Tawk.to is invisible until the visitor picks Live Chat.
-  var Tawk_API = Tawk_API || {};
-  // Hide widget visibility immediately
-  Tawk_API.visitor = Tawk_API.visitor || {};
-  // The single most important hook: hide the widget the moment Tawk.to is ready
-  Tawk_API.onBeforeLoad = function() {
-    // Suppress all auto-greetings and preview popups
-    if (Tawk_API.hideWidget) Tawk_API.hideWidget();
+  Tawk_API.onStatusChange = function(status) {
+    updateLiveChatOption();
   };
 </script>
 
