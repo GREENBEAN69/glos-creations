@@ -6894,14 +6894,15 @@
     // We don't rely on Tawk_API.onLoad because that callback doesn't always fire when the
     // widget is hidden via dashboard settings.
     setTimeout(function() {
-      // Run an immediate first check, then start the interval
+      // Run an immediate first check
       if (window.Tawk_API && typeof Tawk_API.getStatus === 'function') {
         try {
           lastKnownTawkStatus = Tawk_API.getStatus();
           updateLiveChatOption();
         } catch(e) {}
       }
-      startTawkStatusPolling();
+      // Wire up status refresh to happen on natural visitor actions
+      setupActionTriggeredStatusRefresh();
     }, 5000);
   });
 
@@ -6925,30 +6926,92 @@
   Tawk_API.onLoad = function() {
     updateLiveChatOption();
     syncTawkWidgetVisibility();
-    // Tawk_API.onStatusChange is unreliable — also poll every 30 seconds as a safety net
-    // so the "Need help?" button reflects status changes without requiring a page refresh.
-    startTawkStatusPolling();
   };
 
-  // Polling fallback — checks status every 30 seconds and updates the UI if it changed.
-  // This catches status changes that Tawk_API.onStatusChange misses (e.g., when you log
-  // into the mobile app while a visitor already has the page open).
+  // Action-triggered status refresh — every time the visitor does something on the site,
+  // we silently re-check Tawk's status. This is more efficient than constant polling and
+  // updates the button right when they're likely to interact with it.
   var lastKnownTawkStatus = null;
-  var tawkStatusPollInterval = null;
-  function startTawkStatusPolling() {
-    if (tawkStatusPollInterval) clearInterval(tawkStatusPollInterval);
-    tawkStatusPollInterval = setInterval(function() {
-      if (!window.Tawk_API || typeof Tawk_API.getStatus !== 'function') return;
-      try {
+  var lastStatusRefreshTime = 0;
+  var STATUS_REFRESH_THROTTLE_MS = 5000; // Don't refresh more than once every 5 seconds
+
+  function refreshTawkStatus() {
+    if (!window.Tawk_API) return;
+    // Throttle so rapid actions (e.g., scrolling) don't hammer the API
+    var now = Date.now();
+    if (now - lastStatusRefreshTime < STATUS_REFRESH_THROTTLE_MS) return;
+    lastStatusRefreshTime = now;
+
+    try {
+      // Force a reconnection so Tawk pushes a fresh status from their server
+      if (typeof Tawk_API.shutdown === 'function' && typeof Tawk_API.start === 'function') {
+        Tawk_API.shutdown();
+        setTimeout(function() {
+          try { Tawk_API.start(); } catch(e) {}
+          // Re-check status after reconnecting
+          setTimeout(function() {
+            try {
+              var fresh = Tawk_API.getStatus();
+              if (fresh !== lastKnownTawkStatus) {
+                console.log('[Glo Status Refresh] Status changed:', lastKnownTawkStatus, '→', fresh);
+                lastKnownTawkStatus = fresh;
+                updateLiveChatOption();
+                syncTawkWidgetVisibility();
+              }
+            } catch(e) {}
+          }, 1500);
+        }, 300);
+      } else if (typeof Tawk_API.getStatus === 'function') {
+        // Fallback: just check cached status
         var current = Tawk_API.getStatus();
         if (current !== lastKnownTawkStatus) {
-          console.log('[Glo Status Poll] Status changed:', lastKnownTawkStatus, '→', current);
           lastKnownTawkStatus = current;
           updateLiveChatOption();
           syncTawkWidgetVisibility();
         }
-      } catch(e) {}
-    }, 15000); // every 15 seconds
+      }
+    } catch(e) {}
+  }
+
+  // Wire up the refresh to happen on natural visitor actions
+  function setupActionTriggeredStatusRefresh() {
+    // 1. When visitor returns to the tab (most likely time for stale status)
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden) refreshTawkStatus();
+    });
+
+    // 2. When visitor scrolls (active engagement) — debounced via the throttle
+    var scrollHandler = function() { refreshTawkStatus(); };
+    window.addEventListener('scroll', scrollHandler, { passive: true });
+
+    // 3. When visitor opens a product modal (high-intent moment)
+    // We hook into openModal by wrapping it
+    if (typeof window.openModal === 'function') {
+      var originalOpenModal = window.openModal;
+      window.openModal = function() {
+        refreshTawkStatus();
+        return originalOpenModal.apply(this, arguments);
+      };
+    }
+
+    // 4. When visitor opens the cart
+    if (typeof window.toggleCart === 'function') {
+      var originalToggleCart = window.toggleCart;
+      window.toggleCart = function() {
+        refreshTawkStatus();
+        return originalToggleCart.apply(this, arguments);
+      };
+    }
+
+    // 5. When visitor moves their mouse near the bottom-right (where the help button lives)
+    document.addEventListener('mousemove', function(e) {
+      if (e.clientX > window.innerWidth - 200 && e.clientY > window.innerHeight - 200) {
+        refreshTawkStatus();
+      }
+    }, { passive: true });
+
+    // 6. When visitor clicks anywhere on the page
+    document.addEventListener('click', function() { refreshTawkStatus(); }, { passive: true });
   }
 
   Tawk_API.onStatusChange = function(status) {
