@@ -6300,37 +6300,12 @@
     font-size: 12px;
     font-weight: 500;
     letter-spacing: 0.05em;
-    transition: transform 0.15s, background 0.15s, box-shadow 0.15s;
+    transition: transform 0.15s, background 0.15s;
   }
   .help-launcher-btn.show { display: inline-flex; }
   .help-launcher-btn:hover {
     background: #1c1917;
     transform: translateY(-2px);
-  }
-  /* Online/available state — gentle green that signals "live agent ready" */
-  .help-launcher-btn.online {
-    background: #166534;
-    box-shadow: 0 4px 14px rgba(22,101,52,0.25);
-  }
-  .help-launcher-btn.online:hover {
-    background: #14532d;
-  }
-  /* Pulsing green dot to reinforce live availability */
-  .help-launcher-online-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #4ade80;
-    box-shadow: 0 0 0 2px rgba(74,222,128,0.35);
-    margin-right: 2px;
-    display: none;
-    animation: helpPulse 2s ease-in-out infinite;
-  }
-  .help-launcher-btn.online .help-launcher-online-dot { display: inline-block; }
-  .help-launcher-btn.online .help-icon { display: none; }
-  @keyframes helpPulse {
-    0%, 100% { box-shadow: 0 0 0 2px rgba(74,222,128,0.35); }
-    50% { box-shadow: 0 0 0 6px rgba(74,222,128,0); }
   }
   .help-launcher-btn svg.help-icon {
     width: 16px;
@@ -6463,7 +6438,6 @@
 
 <!-- "Need help?" launcher — appears after visitor dismisses chat -->
 <button class="help-launcher-btn" id="help-launcher-btn" onclick="toggleHelpMenu()" aria-haspopup="true" aria-expanded="false">
-  <span class="help-launcher-online-dot"></span>
   <svg class="help-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
   Need help?
   <svg class="help-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
@@ -6525,7 +6499,6 @@
     document.getElementById('tawk-dismiss-btn').style.display = 'none';
     document.getElementById('help-launcher-btn').classList.add('show');
     try { sessionStorage.setItem('gc_tawk_hidden', '1'); } catch(e) {}
-    try { sessionStorage.removeItem('gc_tawk_active'); } catch(e) {}
   }
 
   function toggleHelpMenu() {
@@ -6550,13 +6523,11 @@
   }
 
   // Determine if live chat is currently available (Tawk.to status === 'online')
-  // Tawk.to returns 'online', 'away', or 'offline'. We only want green for 'online'.
   function isLiveChatAvailable() {
     if (!window.Tawk_API) return false;
     if (typeof Tawk_API.getStatus === 'function') {
       try {
         var status = Tawk_API.getStatus();
-        console.log('[Tawk.to status]', status);
         return status === 'online';
       } catch(e) { return false; }
     }
@@ -6565,10 +6536,8 @@
 
   function updateLiveChatOption() {
     var item = document.getElementById('help-menu-livechat');
-    var launcher = document.getElementById('help-launcher-btn');
-    var available = isLiveChatAvailable();
-    if (item) item.style.display = available ? 'flex' : 'none';
-    if (launcher) launcher.classList.toggle('online', available);
+    if (!item) return;
+    item.style.display = isLiveChatAvailable() ? 'flex' : 'none';
   }
 
   function helpMenuChooseFaq() {
@@ -6585,9 +6554,13 @@
 
   function helpMenuChooseLiveChat() {
     closeHelpMenu();
-    if (window.Tawk_API && Tawk_API.maximize) {
-      Tawk_API.maximize();
+    if (window.Tawk_API && Tawk_API.showWidget) {
+      Tawk_API.showWidget();
+      if (Tawk_API.maximize) setTimeout(function(){ Tawk_API.maximize(); }, 250);
     }
+    document.getElementById('tawk-dismiss-btn').style.display = 'flex';
+    document.getElementById('help-launcher-btn').classList.remove('show');
+    try { sessionStorage.removeItem('gc_tawk_hidden'); } catch(e) {}
     if (typeof trackEvent === 'function') trackEvent('help_menu_select', { option: 'live_chat' });
   }
 
@@ -6608,43 +6581,28 @@
     if (launcher) launcher.classList.add('show');
   });
 
-  // Configure Tawk.to event listeners
+  // Configure Tawk.to: hide its native bubble by default — only shown when visitor picks Live Chat
   var Tawk_API = Tawk_API || {};
-
-  // Hide the Tawk.to chat bubble when status is anything other than 'online'
-  // (This complements the dashboard "Hide on desktop/mobile" settings — code-level safety net.)
-  function syncTawkWidgetVisibility() {
-    if (!window.Tawk_API) return;
-    var available = isLiveChatAvailable();
-    if (available) {
-      // Online: keep the widget hidden too (only show when visitor explicitly clicks Live Chat)
-      // The dashboard "Hide on desktop/mobile" setting handles this automatically.
-    } else {
-      // Offline/Away: ensure the widget is hidden as a safety net
-      if (Tawk_API.hideWidget) Tawk_API.hideWidget();
-    }
-  }
-
   Tawk_API.onLoad = function() {
+    // Always start with Tawk.to widget hidden — our "Need help?" button is the entry point
+    Tawk_API.hideWidget();
+    try { sessionStorage.setItem('gc_tawk_hidden', '1'); } catch(e) {}
     updateLiveChatOption();
-    syncTawkWidgetVisibility();
   };
+  // Update live chat option when agent status changes
+  Tawk_API.onAgentJoinChat = updateLiveChatOption;
+  Tawk_API.onAgentLeaveChat = updateLiveChatOption;
+  Tawk_API.onChatStarted = updateLiveChatOption;
+  Tawk_API.onChatEnded = updateLiveChatOption;
 
-  Tawk_API.onStatusChange = function(status) {
-    updateLiveChatOption();
-    syncTawkWidgetVisibility();
-    // If visitor was in a chat and we just went offline, minimize the chat
-    if (status !== 'online' && Tawk_API.minimize) {
-      Tawk_API.minimize();
-    }
+  // Hide our × button while the chat panel is fully open (so it doesn't overlap)
+  Tawk_API.onChatMaximized = function() {
+    document.getElementById('tawk-dismiss-btn').style.display = 'none';
   };
-
-  // When the chat is minimized after a conversation, re-hide if we're offline
   Tawk_API.onChatMinimized = function() {
-    syncTawkWidgetVisibility();
-  };
-  Tawk_API.onChatEnded = function() {
-    syncTawkWidgetVisibility();
+    var wasHidden = false;
+    try { wasHidden = sessionStorage.getItem('gc_tawk_hidden') === '1'; } catch(e) {}
+    if (!wasHidden) document.getElementById('tawk-dismiss-btn').style.display = 'flex';
   };
 </script>
 
