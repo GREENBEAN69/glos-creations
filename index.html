@@ -6246,6 +6246,136 @@
   renderFaq();
 </script>
 
+<!-- Custom dismiss button styles for Tawk.to widget -->
+<style>
+  /* Small × button that lets visitors dismiss the chat widget for this session */
+  .tawk-dismiss-btn {
+    position: fixed;
+    bottom: 86px;
+    right: 22px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #3a3633;
+    border: 2px solid white;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    cursor: pointer;
+    z-index: 1000000001;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: transform 0.15s, background 0.15s;
+  }
+  .tawk-dismiss-btn:hover {
+    background: #1c1917;
+    transform: scale(1.1);
+  }
+  .tawk-dismiss-btn svg {
+    width: 11px;
+    height: 11px;
+    stroke: white;
+    fill: none;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+  }
+  /* Subtle "Need help?" reopen button after dismissal */
+  .tawk-reopen-btn {
+    position: fixed;
+    bottom: 22px;
+    right: 22px;
+    padding: 10px 18px 10px 14px;
+    background: #3a3633;
+    color: white;
+    border: none;
+    border-radius: 24px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+    cursor: pointer;
+    z-index: 1000000000;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    transition: transform 0.15s, background 0.15s;
+  }
+  .tawk-reopen-btn.show { display: inline-flex; }
+  .tawk-reopen-btn:hover {
+    background: #1c1917;
+    transform: translateY(-2px);
+  }
+  .tawk-reopen-btn svg {
+    width: 16px;
+    height: 16px;
+    stroke: white;
+    fill: none;
+    stroke-width: 2;
+  }
+  @media (max-width: 600px) {
+    .tawk-dismiss-btn { bottom: 76px; right: 16px; }
+    .tawk-reopen-btn { bottom: 16px; right: 16px; padding: 9px 14px 9px 12px; font-size: 11px; }
+  }
+</style>
+
+<!-- Custom dismiss button overlaid on Tawk.to widget -->
+<button class="tawk-dismiss-btn" id="tawk-dismiss-btn" onclick="dismissTawkChat()" aria-label="Hide chat" title="Hide chat">
+  <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+</button>
+
+<!-- Reopen button — shown after visitor dismisses chat -->
+<button class="tawk-reopen-btn" id="tawk-reopen-btn" onclick="reopenTawkChat()">
+  <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+  Need help?
+</button>
+
+<script>
+  // ============================================
+  // TAWK.TO CHAT — visitor-dismissable widget
+  // ============================================
+  // Tawk.to doesn't natively let visitors close the chat. We add a small × button
+  // and remember their choice for the browsing session.
+  function dismissTawkChat() {
+    if (window.Tawk_API && Tawk_API.hideWidget) {
+      Tawk_API.hideWidget();
+    }
+    document.getElementById('tawk-dismiss-btn').style.display = 'none';
+    document.getElementById('tawk-reopen-btn').classList.add('show');
+    try { sessionStorage.setItem('gc_tawk_hidden', '1'); } catch(e) {}
+  }
+  function reopenTawkChat() {
+    if (window.Tawk_API && Tawk_API.showWidget) {
+      Tawk_API.showWidget();
+    }
+    document.getElementById('tawk-dismiss-btn').style.display = 'flex';
+    document.getElementById('tawk-reopen-btn').classList.remove('show');
+    try { sessionStorage.removeItem('gc_tawk_hidden'); } catch(e) {}
+  }
+
+  // After Tawk.to loads, decide what to show based on previous session state
+  var Tawk_API = Tawk_API || {};
+  Tawk_API.onLoad = function() {
+    var wasHidden = false;
+    try { wasHidden = sessionStorage.getItem('gc_tawk_hidden') === '1'; } catch(e) {}
+    if (wasHidden) {
+      Tawk_API.hideWidget();
+      document.getElementById('tawk-reopen-btn').classList.add('show');
+    } else {
+      document.getElementById('tawk-dismiss-btn').style.display = 'flex';
+    }
+  };
+  // Hide our × button while the chat panel is fully open (so it doesn't overlap)
+  Tawk_API.onChatMaximized = function() {
+    document.getElementById('tawk-dismiss-btn').style.display = 'none';
+  };
+  Tawk_API.onChatMinimized = function() {
+    var wasHidden = false;
+    try { wasHidden = sessionStorage.getItem('gc_tawk_hidden') === '1'; } catch(e) {}
+    if (!wasHidden) document.getElementById('tawk-dismiss-btn').style.display = 'flex';
+  };
+</script>
+
 <!--Start of Tawk.to Script-->
 <script type="text/javascript">
 var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
