@@ -634,7 +634,184 @@
   .reviews blockquote { font-size: clamp(22px, 3vw, 32px); font-weight: 300; font-style: italic; line-height: 1.55; margin-bottom: 20px; color: var(--stone-800); }
   .reviews-author { font-family: var(--font-body); font-size: 10.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--stone-400); }
 
-  /* Behind The Clay - Instagram Stories Section */
+  /* FAQ Modal */
+  .faq-modal-body {
+    padding: 40px 36px;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+  .faq-tag {
+    text-align: center;
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--stone-500);
+    margin-bottom: 12px;
+  }
+  .faq-modal-title {
+    text-align: center;
+    font-size: clamp(28px, 3.5vw, 38px);
+    font-weight: 300;
+    margin-bottom: 14px;
+    color: var(--stone-900);
+  }
+  .faq-modal-title em { font-weight: 300; font-style: italic; }
+  .faq-desc {
+    text-align: center;
+    font-family: var(--font-body);
+    font-size: 13.5px;
+    color: var(--stone-600);
+    margin-bottom: 28px;
+    line-height: 1.6;
+  }
+  .faq-desc a { color: var(--stone-700); text-decoration: underline; }
+
+  .faq-search-wrap {
+    position: relative;
+    margin-bottom: 24px;
+  }
+  .faq-search {
+    width: 100%;
+    padding: 14px 18px 14px 46px;
+    border: 1px solid var(--stone-200);
+    border-radius: 12px;
+    background: white;
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--stone-800);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+    box-sizing: border-box;
+  }
+  .faq-search:focus {
+    border-color: var(--stone-400);
+    box-shadow: 0 0 0 3px rgba(212, 165, 116, 0.15);
+  }
+  .faq-search::placeholder { color: var(--stone-400); }
+  .faq-search-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    stroke: var(--stone-500);
+    fill: none;
+    stroke-width: 2;
+    pointer-events: none;
+  }
+  .faq-search-clear {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--stone-200);
+    border: none;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+  .faq-search-clear.visible { display: flex; }
+  .faq-search-clear:hover { background: var(--stone-300); }
+  .faq-search-clear svg { width: 12px; height: 12px; stroke: var(--stone-700); fill: none; stroke-width: 2; }
+
+  .faq-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .faq-item {
+    background: var(--stone-50);
+    border: 1px solid var(--stone-200);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .faq-item.open {
+    border-color: var(--stone-300);
+    background: white;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  }
+  .faq-item.hidden { display: none; }
+  .faq-question {
+    width: 100%;
+    padding: 16px 20px;
+    background: transparent;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--stone-800);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    line-height: 1.5;
+    transition: background 0.15s;
+  }
+  .faq-question:hover { background: rgba(255,255,255,0.5); }
+  .faq-question-text { flex: 1; }
+  .faq-question-icon {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    stroke: var(--stone-500);
+    fill: none;
+    stroke-width: 2;
+    transition: transform 0.25s;
+  }
+  .faq-item.open .faq-question-icon { transform: rotate(45deg); stroke: var(--stone-700); }
+  .faq-answer {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+  .faq-item.open .faq-answer { max-height: 500px; }
+  .faq-answer-inner {
+    padding: 0 20px 18px 20px;
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--stone-600);
+    line-height: 1.7;
+  }
+  .faq-answer-inner p { margin-bottom: 8px; }
+  .faq-answer-inner p:last-child { margin-bottom: 0; }
+  .faq-answer-inner a { color: var(--stone-800); text-decoration: underline; }
+
+  .faq-no-results {
+    display: none;
+    text-align: center;
+    padding: 28px 20px;
+    background: var(--stone-50);
+    border: 1px solid var(--stone-200);
+    border-radius: 12px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--stone-500);
+  }
+  .faq-no-results.visible { display: block; }
+  .faq-no-results a { color: var(--stone-800); text-decoration: underline; }
+
+  .faq-highlight {
+    background: rgba(212, 165, 116, 0.25);
+    padding: 0 2px;
+    border-radius: 2px;
+  }
+
+  @media (max-width: 600px) {
+    .faq-modal-body { padding: 30px 22px; }
+    .faq-question { padding: 14px 16px; font-size: 13.5px; }
+    .faq-answer-inner { padding: 0 16px 16px 16px; }
+  }
+
+
   .stories-section { background: var(--stone-900); color: var(--stone-50); padding: 80px 0 88px; text-align: center; position: relative; overflow: hidden; }
   .stories-section::before {
     content: '';
@@ -1392,16 +1569,20 @@
   .modal {
     background: var(--stone-50);
     border-radius: 20px;
-    max-width: 900px;
+    max-width: 1100px;
     width: 92%;
     max-height: 90vh;
     overflow-y: auto;
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 90px 1fr 1fr;
     position: relative;
     box-shadow: 0 20px 60px rgba(0,0,0,0.15);
     animation: modalIn 0.3s ease;
   }
+  /* When the product has only one image, hide the thumb rail and use 2-column layout */
+  .modal.single-image { grid-template-columns: 1fr 1fr; }
+  .modal.single-image .modal-thumbs { display: none; }
+  .modal.single-image .modal-image { border-radius: 20px 0 0 20px; }
   @keyframes modalIn {
     from { opacity: 0; transform: scale(0.95) translateY(10px); }
     to { opacity: 1; transform: scale(1) translateY(0); }
@@ -1424,12 +1605,54 @@
   }
   .modal-close:hover { background: white; }
   .modal-close svg { width: 18px; height: 18px; stroke: var(--stone-700); fill: none; stroke-width: 1.5; }
+
+  /* Thumbnail rail */
+  .modal-thumbs {
+    background: var(--stone-50);
+    border-radius: 20px 0 0 20px;
+    padding: 16px 8px 16px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+    align-items: stretch;
+    height: 540px;
+    max-height: 540px;
+  }
+  .modal-thumb {
+    width: 70px;
+    height: 70px;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    background: var(--stone-100);
+    border: 2px solid transparent;
+    padding: 0;
+    flex-shrink: 0;
+    flex-grow: 0;
+    flex-basis: 70px;
+    transition: border-color 0.2s, opacity 0.2s;
+    opacity: 0.65;
+    position: relative;
+  }
+  .modal-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.2s;
+  }
+  .modal-thumb:hover { opacity: 1; }
+  .modal-thumb:hover img { transform: scale(1.06); }
+  .modal-thumb.active { border-color: #d4a574; opacity: 1; }
+
   .modal-image {
     background: var(--stone-100);
-    border-radius: 20px 0 0 20px;
     overflow: hidden;
     position: relative;
-    min-height: 400px;
+    height: 540px;
+    min-height: 540px;
+    max-height: 540px;
   }
   .modal-image img {
     width: 100%;
@@ -1438,6 +1661,9 @@
     display: block;
     cursor: zoom-in;
   }
+
+  /* Hide old zoom lens entirely — feature removed */
+  .zoom-lens { display: none !important; }
 
   /* Lightbox */
   .lightbox {
@@ -1850,13 +2076,36 @@
       grid-template-columns: 1fr;
       max-height: 95vh;
     }
-    .modal-image {
-      border-radius: 20px 20px 0 0;
-      min-height: 280px;
-      max-height: 350px;
+    .modal.single-image {
+      grid-template-columns: 1fr;
     }
-    .modal-info { padding: 24px 20px 32px; }
+    .modal-thumbs {
+      grid-row: 2;
+      flex-direction: row;
+      border-radius: 0;
+      padding: 10px 16px;
+      gap: 8px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      background: var(--stone-50);
+    }
+    .modal-thumb {
+      width: 60px;
+      height: 60px;
+      flex-basis: 60px;
+    }
+    .modal-image {
+      grid-row: 1;
+      border-radius: 20px 20px 0 0;
+      min-height: 300px;
+      max-height: 380px;
+    }
+    .modal.single-image .modal-image {
+      border-radius: 20px 20px 0 0;
+    }
+    .modal-info { padding: 24px 20px 32px; grid-row: 3; }
     .modal-title { font-size: 26px; }
+    .zoom-lens { display: none !important; }
   }
 
   /* Cart Drawer */
@@ -2376,6 +2625,7 @@
       <div class="nav-links">
         <a href="#shop">Shop</a>
         <a href="#about">About</a>
+        <a href="#" onclick="openFaq();return false;">FAQ</a>
         <a href="#contact">Contact</a>
       </div>
     </div>
@@ -2401,6 +2651,7 @@
   <div class="mobile-nav" id="mobile-nav">
     <a href="#shop" onclick="document.getElementById('mobile-nav').classList.remove('show')">Shop</a>
     <a href="#about" onclick="document.getElementById('mobile-nav').classList.remove('show')">About</a>
+    <a href="#" onclick="document.getElementById('mobile-nav').classList.remove('show');openFaq();return false;">FAQ</a>
     <a href="#contact" onclick="document.getElementById('mobile-nav').classList.remove('show')">Contact</a>
     <a href="#" onclick="openInstagram();return false;"  style="display:flex;align-items:center;gap:8px;">
       <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#d62976;fill:none;stroke-width:1.5;"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="#d62976" stroke="none"/></svg>
@@ -2655,6 +2906,36 @@
   </div>
 </div>
 
+<!-- FAQ Modal -->
+<div class="modal-overlay" id="faq-overlay" onclick="if(event.target===this)closeFaq()">
+  <div class="modal" style="grid-template-columns:1fr;max-width:720px;">
+    <button class="modal-close" onclick="closeFaq()">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="faq-modal-body">
+      <p class="faq-tag">Got questions?</p>
+      <h2 class="faq-modal-title">Frequently <em>asked.</em></h2>
+      <p class="faq-desc">Everything you might want to know — about materials, shipping, custom orders, and care. Can't find your answer? <a href="mailto:sales@gloscreations316.com">Email us</a> or DM on Instagram.</p>
+
+      <div class="faq-search-wrap">
+        <svg class="faq-search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" class="faq-search" id="faq-search" placeholder="Search questions..." oninput="filterFaq(this.value)" autocomplete="off">
+        <button class="faq-search-clear" id="faq-search-clear" onclick="clearFaqSearch()" aria-label="Clear search">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="faq-list" id="faq-list">
+        <!-- Populated by JS from faqData -->
+      </div>
+
+      <div class="faq-no-results" id="faq-no-results">
+        No questions match that search. <a href="mailto:sales@gloscreations316.com">Email us</a> and we'll add it!
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Login Modal -->
 <div class="login-overlay" id="login-overlay" onclick="if(event.target===this)closeLoginModal()">
   <div class="login-modal">
@@ -2840,6 +3121,7 @@
     <button class="modal-close" onclick="closeModal()">
       <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
+    <div class="modal-thumbs" id="modal-thumbs"></div>
     <div class="modal-image" id="modal-image"></div>
     <div class="modal-info">
       <p class="modal-category" id="modal-category"></p>
@@ -4408,9 +4690,37 @@
 
   function renderModalImage() {
     var container = document.getElementById('modal-image');
+    var thumbs = document.getElementById('modal-thumbs');
+    var modalEl = document.getElementById('product-modal');
+
+    // Toggle single-image class on the modal so layout collapses to 2 columns when only 1 image
+    if (modalEl) {
+      if (modalImages.length <= 1) {
+        modalEl.classList.add('single-image');
+      } else {
+        modalEl.classList.remove('single-image');
+      }
+    }
+
+    // Render thumbnail rail
+    if (thumbs) {
+      if (modalImages.length > 1) {
+        var thumbHtml = '';
+        for (var i = 0; i < modalImages.length; i++) {
+          thumbHtml += '<button class="modal-thumb' + (i === modalImageIndex ? ' active' : '') +
+            '" onmouseenter="previewModalImage(' + i + ')" onmouseleave="restoreModalImage()" onclick="changeModalImage(' + i + ')" aria-label="View image ' + (i + 1) + '">' +
+            '<img src="' + modalImages[i] + '" alt="Thumbnail ' + (i + 1) + '"></button>';
+        }
+        thumbs.innerHTML = thumbHtml;
+      } else {
+        thumbs.innerHTML = '';
+      }
+    }
+
+    // Render main image
     var html = '';
     if (modalImages.length > 0) {
-      html += '<img src="' + modalImages[modalImageIndex] + '" alt="' + modalProduct.name + '" onclick="openLightbox(' + modalImageIndex + ')">';
+      html += '<img id="modal-main-img" src="' + modalImages[modalImageIndex] + '" alt="' + modalProduct.name + '" onclick="openLightbox(' + modalImageIndex + ')">';
       if (modalImages.length > 1) {
         // Image counter
         html += '<div class="modal-img-counter">' + (modalImageIndex + 1) + ' / ' + modalImages.length + '</div>';
@@ -4420,12 +4730,6 @@
         // Right arrow
         html += '<button class="modal-img-arrow modal-img-next" onclick="event.stopPropagation();changeModalImage(' + ((modalImageIndex + 1) % modalImages.length) + ')">';
         html += '<svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></button>';
-        // Dots
-        html += '<div class="modal-image-nav">';
-        for (var i = 0; i < modalImages.length; i++) {
-          html += '<button class="modal-img-dot' + (i === modalImageIndex ? ' active' : '') + '" onclick="event.stopPropagation();changeModalImage(' + i + ')"></button>';
-        }
-        html += '</div>';
       }
     } else {
       html += '<div style="display:flex;align-items:center;justify-content:center;height:100%;"><div style="width:120px;height:120px;border-radius:50%;background:var(--stone-200);opacity:0.5;"></div></div>';
@@ -4436,6 +4740,21 @@
   function changeModalImage(index) {
     modalImageIndex = index;
     renderModalImage();
+  }
+
+  // Hover-preview from thumbnails: temporarily show that image as the main, without changing index
+  var modalThumbHoverIndex = null;
+  function previewModalImage(index) {
+    if (index === modalImageIndex) return;
+    modalThumbHoverIndex = index;
+    var img = document.getElementById('modal-main-img');
+    if (img && modalImages[index]) img.src = modalImages[index];
+  }
+  function restoreModalImage() {
+    if (modalThumbHoverIndex === null) return;
+    modalThumbHoverIndex = null;
+    var img = document.getElementById('modal-main-img');
+    if (img && modalImages[modalImageIndex]) img.src = modalImages[modalImageIndex];
   }
 
   // ============================================
@@ -5720,6 +6039,202 @@
     drawTryonCanvas();
   }
 
+  // ============================================
+  // FAQ SECTION
+  // ============================================
+  // To edit FAQ: just change the questions/answers below. They render automatically on page load.
+  // The 'category' is used internally for organization and helps with search matching.
+  var faqData = [
+    {
+      category: 'Materials',
+      q: 'Are these earrings hypoallergenic?',
+      a: 'Yes! All Glo\'s Creations earrings use hypoallergenic, sensitive-skin-safe stainless steel posts and findings. The polymer clay itself is non-toxic and safe for most sensitive ears. If you have a known nickel allergy, you can wear these with confidence.'
+    },
+    {
+      category: 'Materials',
+      q: 'What is polymer clay made of? Is it safe?',
+      a: 'Polymer clay is a non-toxic, oven-cured modeling material made primarily of PVC particles in a plasticizer. Once baked and cured, it becomes solid and durable. It\'s used widely in fine art and jewelry-making. Each piece is hand-sculpted, baked, sealed, and finished to last.'
+    },
+    {
+      category: 'Materials',
+      q: 'Will these break easily?',
+      a: 'No — once cured, polymer clay is quite durable. That said, all jewelry needs some care. Avoid dropping them on hard surfaces, sleeping in them, or pulling them sharply. With normal wear, your pieces will last for years.'
+    },
+    {
+      category: 'Care',
+      q: 'How do I care for my polymer clay earrings?',
+      a: '<p>A few simple tips to keep them looking beautiful:</p><p>• Store separately in a small pouch or jewelry box to prevent scratches<br>• Avoid water, lotions, perfumes, and harsh chemicals<br>• Remove before swimming, showering, or working out<br>• Clean gently with a soft, dry cloth if needed<br>• Don\'t expose to extreme heat (e.g., leaving in a hot car)</p>'
+    },
+    {
+      category: 'Care',
+      q: 'Are they waterproof?',
+      a: 'No — please don\'t shower, swim, or wash dishes wearing them. The polymer clay itself can handle a splash, but the metal findings and finishes can be affected by chlorine, salt water, and harsh soaps. Take them off before getting wet.'
+    },
+    {
+      category: 'Shipping',
+      q: 'How long until my order ships?',
+      a: 'Orders typically ship within 2–3 business days. You\'ll receive a tracking email once your package is on its way. Standard shipping ($5) usually arrives in 3–5 business days. Priority shipping ($9) typically arrives in 2–3 business days. Free shipping on orders over $50 (continental US).'
+    },
+    {
+      category: 'Shipping',
+      q: 'Do you ship internationally?',
+      a: 'Currently we ship within the United States only. International shipping is something we hope to offer soon — follow us on Instagram for updates!'
+    },
+    {
+      category: 'Shipping',
+      q: 'Can I track my order?',
+      a: 'Yes! You\'ll receive an email with tracking information as soon as your order ships. You can also log into your account on this site to view your order status anytime.'
+    },
+    {
+      category: 'Custom Orders',
+      q: 'Do you take custom orders?',
+      a: 'Sometimes! Custom orders depend on availability and the complexity of your idea. Email <a href="mailto:sales@gloscreations316.com">sales@gloscreations316.com</a> with what you have in mind — colors, style, occasion — and we\'ll let you know what\'s possible.'
+    },
+    {
+      category: 'Custom Orders',
+      q: 'Can I request a piece in a different color?',
+      a: 'Reach out and ask! Many of our designs can be made in alternate color palettes when supplies allow. Email us with the design you love and the colors you\'re thinking of.'
+    },
+    {
+      category: 'Returns',
+      q: 'What is your return policy?',
+      a: '<p>Because each piece is handmade and one-of-a-kind, we don\'t accept returns on individual orders. However, if your item arrives damaged or defective, we\'ll absolutely make it right.</p><p>Email <a href="mailto:sales@gloscreations316.com">sales@gloscreations316.com</a> within 7 days of delivery with photos of the issue and we\'ll replace it or refund your purchase.</p>'
+    },
+    {
+      category: 'Returns',
+      q: 'What if I have an allergic reaction?',
+      a: 'We\'re so sorry that happened. Even with hypoallergenic materials, sensitivities vary. Email us within 7 days with details and we\'ll work with you on a refund or exchange.'
+    },
+    {
+      category: 'About',
+      q: 'What does "3:16" in your name mean?',
+      a: 'It\'s a reference to Deuteronomy 31:6 — "Be strong and courageous. Do not be afraid or terrified because of them, for the LORD your God goes with you; He will never leave you nor forsake you." It\'s a verse that reminds me of my faith and is the heart behind every piece.'
+    },
+    {
+      category: 'About',
+      q: 'Are these one-of-a-kind?',
+      a: 'Each piece is hand-sculpted in small batches, so no two pieces are exactly identical. Even within a single design, the marbling, color blending, and finish vary slightly — making your pair unique to you.'
+    },
+    {
+      category: 'About',
+      q: 'How can I stay updated on new pieces?',
+      a: 'Follow us on Instagram <a href="https://instagram.com/gloscreations31_6" target="_blank" rel="noopener">@gloscreations31_6</a> for first looks at new drops, behind-the-scenes content, and exclusive previews. New pieces are posted there before anywhere else.'
+    }
+  ];
+
+  function renderFaq() {
+    var list = document.getElementById('faq-list');
+    if (!list) return;
+    var html = '';
+    for (var i = 0; i < faqData.length; i++) {
+      var item = faqData[i];
+      html += '<div class="faq-item" data-faq-index="' + i + '" data-faq-category="' + item.category.toLowerCase() + '">' +
+        '<button class="faq-question" onclick="toggleFaq(' + i + ')" aria-expanded="false">' +
+          '<span class="faq-question-text">' + item.q + '</span>' +
+          '<svg class="faq-question-icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
+        '</button>' +
+        '<div class="faq-answer">' +
+          '<div class="faq-answer-inner">' + item.a + '</div>' +
+        '</div>' +
+      '</div>';
+    }
+    list.innerHTML = html;
+  }
+
+  function toggleFaq(index) {
+    var item = document.querySelector('.faq-item[data-faq-index="' + index + '"]');
+    if (!item) return;
+    var btn = item.querySelector('.faq-question');
+    var isOpen = item.classList.contains('open');
+    item.classList.toggle('open');
+    if (btn) btn.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+    if (!isOpen) {
+      trackEvent('faq_open', { question: faqData[index].q });
+    }
+  }
+
+  function filterFaq(query) {
+    query = (query || '').trim().toLowerCase();
+    var items = document.querySelectorAll('.faq-item');
+    var noResults = document.getElementById('faq-no-results');
+    var clearBtn = document.getElementById('faq-search-clear');
+    var visibleCount = 0;
+
+    if (clearBtn) clearBtn.classList.toggle('visible', query.length > 0);
+
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      var idx = parseInt(item.getAttribute('data-faq-index'), 10);
+      var faq = faqData[idx];
+      var haystack = (faq.q + ' ' + faq.a + ' ' + faq.category).toLowerCase();
+      var matches = !query || haystack.indexOf(query) !== -1;
+      item.classList.toggle('hidden', !matches);
+      if (matches) visibleCount++;
+
+      // Highlight matched text in the question
+      var questionTextEl = item.querySelector('.faq-question-text');
+      if (questionTextEl) {
+        if (!query) {
+          questionTextEl.textContent = faq.q;
+        } else {
+          questionTextEl.innerHTML = highlightMatch(faq.q, query);
+        }
+      }
+
+      // Auto-expand items when there's a query (helps user see the answer faster)
+      if (query && visibleCount <= 3 && matches) {
+        item.classList.add('open');
+        var btn = item.querySelector('.faq-question');
+        if (btn) btn.setAttribute('aria-expanded', 'true');
+      } else if (!query) {
+        item.classList.remove('open');
+        var btn2 = item.querySelector('.faq-question');
+        if (btn2) btn2.setAttribute('aria-expanded', 'false');
+      }
+    }
+
+    if (noResults) noResults.classList.toggle('visible', visibleCount === 0 && query.length > 0);
+
+    if (query) {
+      trackEvent('faq_search', { query: query, results_count: visibleCount });
+    }
+  }
+
+  function highlightMatch(text, query) {
+    if (!query) return escapeHtml(text);
+    var lower = text.toLowerCase();
+    var qLower = query.toLowerCase();
+    var idx = lower.indexOf(qLower);
+    if (idx === -1) return escapeHtml(text);
+    return escapeHtml(text.substring(0, idx)) +
+      '<span class="faq-highlight">' + escapeHtml(text.substring(idx, idx + query.length)) + '</span>' +
+      escapeHtml(text.substring(idx + query.length));
+  }
+
+  function clearFaqSearch() {
+    var input = document.getElementById('faq-search');
+    if (input) {
+      input.value = '';
+      filterFaq('');
+      input.focus();
+    }
+  }
+
+  function openFaq() {
+    document.getElementById('faq-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    trackEvent('faq_open_modal', {});
+    // Reset state on open
+    var input = document.getElementById('faq-search');
+    if (input) input.value = '';
+    filterFaq('');
+  }
+
+  function closeFaq() {
+    document.getElementById('faq-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
   loadWishlist();
   checkSession();
   fetchNewArrivals();
@@ -5728,6 +6243,21 @@
   startIgPopupTimer();
   renderIgBubbles();
   fetchIgPosts();
+  renderFaq();
 </script>
+
+<!--Start of Tawk.to Script-->
+<script type="text/javascript">
+var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
+(function(){
+var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
+s1.async=true;
+s1.src='https://embed.tawk.to/69fa458d090d301c347c5ea8/1jnspvc8g';
+s1.charset='UTF-8';
+s1.setAttribute('crossorigin','*');
+s0.parentNode.insertBefore(s1,s0);
+})();
+</script>
+<!--End of Tawk.to Script-->
 </body>
 </html>
