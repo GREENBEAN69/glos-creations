@@ -6842,17 +6842,9 @@
       platform = isIos() ? 'ios' : 'android';
     }
 
-    // If Android user clicks Android button AND we have the deferred prompt, use native install
-    if (platform === 'android' && deferredInstallPrompt) {
-      deferredInstallPrompt.prompt();
-      deferredInstallPrompt.userChoice.then(function(result) {
-        console.log('[PWA] User choice:', result.outcome);
-        deferredInstallPrompt = null;
-      });
-      return;
-    }
-
-    // Otherwise show the manual instructions modal for the requested platform
+    // Always show the instructions modal — it has the green "Install" button
+    // at the top when Chrome's native prompt is available, and falls back to
+    // manual steps otherwise.
     showInstallInstructions(platform);
   }
 
@@ -6861,17 +6853,45 @@
     var iosSteps = document.getElementById('pwa-steps-ios');
     var androidSteps = document.getElementById('pwa-steps-android');
     var title = document.getElementById('pwa-install-title');
+    var nativeBtn = document.getElementById('pwa-native-install-btn');
+    var orDivider = document.getElementById('pwa-or-divider');
 
     if (platform === 'android') {
       if (iosSteps) iosSteps.style.display = 'none';
       if (androidSteps) androidSteps.style.display = 'block';
       if (title) title.innerHTML = 'Install <em>on Android</em>';
+      // Show the native install button only if Chrome has fired beforeinstallprompt
+      var hasPrompt = !!deferredInstallPrompt;
+      if (nativeBtn) nativeBtn.classList.toggle('show', hasPrompt);
+      if (orDivider) orDivider.classList.toggle('show', hasPrompt);
     } else {
       if (iosSteps) iosSteps.style.display = 'block';
       if (androidSteps) androidSteps.style.display = 'none';
       if (title) title.innerHTML = 'Install <em>on iPhone</em>';
     }
     if (modal) modal.classList.add('open');
+  }
+
+  // Trigger Chrome's native install prompt from inside the instructions modal
+  function triggerNativeInstall() {
+    if (!deferredInstallPrompt) {
+      console.log('[PWA] Native install prompt not available');
+      return;
+    }
+    if (typeof trackEvent === 'function') trackEvent('pwa_native_install_clicked', {});
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.then(function(result) {
+      console.log('[PWA] User choice:', result.outcome);
+      if (result.outcome === 'accepted') {
+        closePwaInstallModal();
+      }
+      deferredInstallPrompt = null;
+      // Hide the native button since the prompt has been used
+      var nativeBtn = document.getElementById('pwa-native-install-btn');
+      var orDivider = document.getElementById('pwa-or-divider');
+      if (nativeBtn) nativeBtn.classList.remove('show');
+      if (orDivider) orDivider.classList.remove('show');
+    });
   }
 
   function closePwaInstallModal() {
@@ -7669,6 +7689,55 @@ s0.parentNode.insertBefore(s1,s0);
     vertical-align: middle;
   }
   .pwa-install-step-icon svg { width: 13px; height: 13px; stroke: var(--stone-700); fill: none; stroke-width: 2; }
+
+  /* Native install button inside Android instructions modal */
+  .pwa-native-install-btn {
+    display: none; /* shown via JS only when prompt is available */
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 14px 20px;
+    background: #166534;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    margin-bottom: 14px;
+    box-shadow: 0 4px 14px rgba(22,101,52,0.25);
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  }
+  .pwa-native-install-btn:hover {
+    background: #14532d;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(22,101,52,0.35);
+  }
+  .pwa-native-install-btn.show { display: inline-flex; }
+  .pwa-native-install-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke: white;
+    fill: none;
+    stroke-width: 2;
+    flex-shrink: 0;
+  }
+  .pwa-or-divider {
+    display: none;
+    text-align: center;
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--stone-400);
+    margin: 4px 0 16px;
+    letter-spacing: 0.05em;
+    font-style: italic;
+  }
+  .pwa-or-divider.show { display: block; }
+
   .pwa-install-perks {
     font-family: var(--font-body);
     font-size: 12px;
@@ -7743,6 +7812,11 @@ s0.parentNode.insertBefore(s1,s0);
 
     <!-- Android Steps -->
     <div class="pwa-install-steps" id="pwa-steps-android" style="display:none;">
+      <button class="pwa-native-install-btn" id="pwa-native-install-btn" onclick="triggerNativeInstall()">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Install Glo's Creations
+      </button>
+      <p class="pwa-or-divider" id="pwa-or-divider">— or follow these steps manually —</p>
       <div class="pwa-install-step">
         <span class="pwa-install-step-num">1</span>
         <span>Open this site in <strong>Chrome</strong> on your Android phone</span>
