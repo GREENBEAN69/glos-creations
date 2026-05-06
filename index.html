@@ -8575,8 +8575,18 @@
 
   function helpMenuChooseLiveChat() {
     closeHelpMenu();
-    if (window.Tawk_API && Tawk_API.maximize) {
-      Tawk_API.maximize();
+    if (window.Tawk_API) {
+      // Mark this as a user-initiated open so the visibility sync doesn't immediately re-hide it
+      userInitiatedChatOpen = true;
+      // Show widget if hidden, then maximize it
+      if (Tawk_API.showWidget) {
+        try { Tawk_API.showWidget(); } catch(e) {}
+      }
+      if (Tawk_API.maximize) {
+        try { Tawk_API.maximize(); } catch(e) {}
+      }
+      // Clear the flag after the chat has had time to fully open
+      setTimeout(function() { userInitiatedChatOpen = false; }, 3000);
     }
     if (typeof trackEvent === 'function') trackEvent('help_menu_select', { option: 'live_chat' });
   }
@@ -8617,11 +8627,16 @@
 
   // Configure Tawk.to event listeners
   var Tawk_API = Tawk_API || {};
+  // Tracks when user explicitly clicked "Live chat" — prevents auto-hide from
+  // closing the chat immediately after they open it.
+  var userInitiatedChatOpen = false;
 
   // Hide the Tawk.to chat bubble when status is anything other than 'online'
   // (This complements the dashboard "Hide on desktop/mobile" settings — code-level safety net.)
   function syncTawkWidgetVisibility() {
     if (!window.Tawk_API) return;
+    // If the user just clicked Live Chat, don't interfere — let it open
+    if (userInitiatedChatOpen) return;
     var available = isLiveChatAvailable();
     if (available) {
       // Online: keep the widget hidden too (only show when visitor explicitly clicks Live Chat)
@@ -8632,9 +8647,20 @@
     }
   }
 
+  Tawk_API.onBeforeLoad = function() {
+    // Hide the widget as early as possible to prevent a flash on slow connections
+    if (Tawk_API.hideWidget) {
+      try { Tawk_API.hideWidget(); } catch(e) {}
+    }
+  };
+
   Tawk_API.onLoad = function() {
+    // Always hide the Tawk widget on page load — only appears when visitor explicitly
+    // clicks "Live chat" from the help menu (which calls showWidget + maximize).
+    if (Tawk_API.hideWidget) {
+      try { Tawk_API.hideWidget(); } catch(e) {}
+    }
     updateLiveChatOption();
-    syncTawkWidgetVisibility();
   };
 
   // Action-triggered status refresh — every time the visitor does something on the site,
@@ -8696,19 +8722,20 @@
     console.log('[Glo Status] onStatusChange fired:', status);
     lastKnownTawkStatus = status;
     updateLiveChatOption();
-    syncTawkWidgetVisibility();
-    // If visitor was in a chat and we just went offline, minimize the chat
-    if (status !== 'online' && Tawk_API.minimize) {
-      Tawk_API.minimize();
-    }
+    // Don't auto-minimize here — that was closing chats that the user just opened
   };
 
-  // When the chat is minimized after a conversation, re-hide if we're offline
+  // When the chat is minimized or ended, hide the widget bubble entirely.
+  // Visitor goes back to the "Need help?" menu as the only entry point.
   Tawk_API.onChatMinimized = function() {
-    syncTawkWidgetVisibility();
+    if (Tawk_API.hideWidget) {
+      try { Tawk_API.hideWidget(); } catch(e) {}
+    }
   };
   Tawk_API.onChatEnded = function() {
-    syncTawkWidgetVisibility();
+    if (Tawk_API.hideWidget) {
+      try { Tawk_API.hideWidget(); } catch(e) {}
+    }
   };
 </script>
 
