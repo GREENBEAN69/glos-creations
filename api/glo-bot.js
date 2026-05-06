@@ -7599,7 +7599,7 @@
     border-radius: 24px;
     box-shadow: 0 4px 14px rgba(0,0,0,0.18);
     cursor: pointer;
-    z-index: 1999999999;
+    z-index: 9990;
     display: none;
     align-items: center;
     gap: 8px;
@@ -7978,7 +7978,7 @@
     border-radius: 14px;
     box-shadow: 0 12px 40px rgba(0,0,0,0.18);
     border: 1px solid var(--stone-200);
-    z-index: 2000000000; /* Above all other UI to guarantee click-through */
+    z-index: 9991;
     overflow: hidden;
     opacity: 0;
     transform: translateY(8px) scale(0.97);
@@ -8028,6 +8028,8 @@
     position: relative;
     z-index: 2;
   }
+  /* Inner content is non-interactive so the button itself always catches the click */
+  .help-menu-option > * { pointer-events: none; }
   .help-menu-option:hover { background: var(--stone-50); }
   .help-menu-option-icon {
     width: 36px;
@@ -8088,27 +8090,15 @@
     .help-menu.open {
       transform: translate(-50%, -50%) scale(1);
     }
-    /* Show backdrop on mobile when menu is open */
-    .help-menu-backdrop.open {
-      display: block;
+    /* No backdrop — menu floats above the page; tap outside to close handled by JS */
+    .help-menu-backdrop, .help-menu-backdrop.open {
+      display: none !important;
     }
   }
-  /* Backdrop — only visible on mobile */
+  /* Backdrop disabled entirely — was causing click-through issues on mobile */
   .help-menu-backdrop {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.4);
-    z-index: 1999999998; /* Just below launcher and menu */
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
-    opacity: 0;
-    transition: opacity 0.2s;
-    pointer-events: none;
-  }
-  .help-menu-backdrop.open {
-    opacity: 1;
-    pointer-events: auto;
+    display: none !important;
+    pointer-events: none !important;
   }
 </style>
 
@@ -8269,28 +8259,28 @@
   }
 
   // Determine if live chat is currently available.
-  // Tawk.to returns 'online', 'away', or 'offline'.
-  // We show the live chat option when online OR away (away = agent is signed in
-  // but inactive — customers can still leave a message and get a reply).
-  // Only hide when explicitly 'offline'.
+  // Tawk.to returns 'online', 'away', 'offline', or sometimes empty string when its session is broken.
+  // Strategy: hide ONLY when explicitly 'offline'. For online/away/empty, show the option —
+  // worst case the customer reaches a "leave a message" form, which is fine.
   function isLiveChatAvailable() {
     if (!window.Tawk_API) {
-      console.log('[Glo Status Check] Tawk_API not loaded');
-      return false;
+      console.log('[Glo Status Check] Tawk_API not loaded — defaulting to AVAILABLE');
+      return true; // optimistic default: show the option
     }
     if (typeof Tawk_API.getStatus === 'function') {
       try {
         var status = Tawk_API.getStatus();
-        var available = (status === 'online' || status === 'away');
-        console.log('[Glo Status Check] Tawk reports status:', status, '— Live chat will be:', available ? 'AVAILABLE' : 'HIDDEN');
+        // Only hide when EXPLICITLY offline. Empty/unknown = show.
+        var available = (status !== 'offline');
+        console.log('[Glo Status Check] Tawk reports status:', status || '(empty)', '— Live chat will be:', available ? 'AVAILABLE' : 'HIDDEN');
         return available;
       } catch(e) {
-        console.log('[Glo Status Check] Error reading status:', e);
-        return false;
+        console.log('[Glo Status Check] Error reading status — defaulting to AVAILABLE:', e);
+        return true;
       }
     }
-    console.log('[Glo Status Check] getStatus function not available');
-    return false;
+    console.log('[Glo Status Check] getStatus not available — defaulting to AVAILABLE');
+    return true;
   }
 
   function updateLiveChatOption() {
@@ -8692,45 +8682,14 @@
     } catch(e) {}
   }
 
-  // Wire up the refresh to happen on natural visitor actions
+  // Wire up the refresh to happen ONLY when the help menu opens — not on every click.
+  // The previous version refreshed on every click/scroll/etc which broke Tawk and
+  // intercepted clicks on the menu, making options unclickable on mobile.
   function setupActionTriggeredStatusRefresh() {
-    // 1. When visitor returns to the tab (most likely time for stale status)
+    // Only refresh when visitor returns to the tab — safe, infrequent
     document.addEventListener('visibilitychange', function() {
       if (!document.hidden) refreshTawkStatus();
     });
-
-    // 2. When visitor scrolls (active engagement) — debounced via the throttle
-    var scrollHandler = function() { refreshTawkStatus(); };
-    window.addEventListener('scroll', scrollHandler, { passive: true });
-
-    // 3. When visitor opens a product modal (high-intent moment)
-    // We hook into openModal by wrapping it
-    if (typeof window.openModal === 'function') {
-      var originalOpenModal = window.openModal;
-      window.openModal = function() {
-        refreshTawkStatus();
-        return originalOpenModal.apply(this, arguments);
-      };
-    }
-
-    // 4. When visitor opens the cart
-    if (typeof window.toggleCart === 'function') {
-      var originalToggleCart = window.toggleCart;
-      window.toggleCart = function() {
-        refreshTawkStatus();
-        return originalToggleCart.apply(this, arguments);
-      };
-    }
-
-    // 5. When visitor moves their mouse near the bottom-right (where the help button lives)
-    document.addEventListener('mousemove', function(e) {
-      if (e.clientX > window.innerWidth - 200 && e.clientY > window.innerHeight - 200) {
-        refreshTawkStatus();
-      }
-    }, { passive: true });
-
-    // 6. When visitor clicks anywhere on the page
-    document.addEventListener('click', function() { refreshTawkStatus(); }, { passive: true });
   }
 
   Tawk_API.onStatusChange = function(status) {
