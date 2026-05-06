@@ -3263,7 +3263,7 @@
     <a href="#about" onclick="document.getElementById('mobile-nav').classList.remove('show')">About</a>
     <a href="#" onclick="document.getElementById('mobile-nav').classList.remove('show');openFaq();return false;">FAQ</a>
     <a href="#contact" onclick="document.getElementById('mobile-nav').classList.remove('show')">Contact</a>
-    <a href="#" onclick="event.stopPropagation();document.getElementById('mobile-nav').classList.remove('show');toggleHelpMenu();return false;" style="display:flex;align-items:center;gap:8px;">
+    <a href="#" onclick="document.getElementById('mobile-nav').classList.remove('show');toggleHelpMenu();return false;" style="display:flex;align-items:center;gap:8px;">
       <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--stone-700);fill:none;stroke-width:1.5;"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
       Need Help?
     </a>
@@ -8240,9 +8240,9 @@
       // Refresh Live Chat option visibility based on current Tawk.to status
       updateLiveChatOption();
       // Set a flag to prevent the same click from closing the menu via the
-      // document-level click-outside handler. 350ms covers the mobile tap delay.
+      // document-level click-outside handler. The flag clears 50ms later.
       helpMenuJustOpened = true;
-      setTimeout(function() { helpMenuJustOpened = false; }, 350);
+      setTimeout(function() { helpMenuJustOpened = false; }, 50);
     }
   }
 
