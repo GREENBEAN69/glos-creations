@@ -8008,7 +8008,7 @@
     margin: 0;
     line-height: 1.4;
   }
-  .help-menu-options { padding: 6px; position: relative; z-index: 2; }
+  .help-menu-options { padding: 6px; }
   .help-menu-option {
     width: 100%;
     background: transparent;
@@ -8024,9 +8024,6 @@
     transition: background 0.12s;
     color: var(--stone-800);
     text-decoration: none;
-    pointer-events: auto;
-    position: relative;
-    z-index: 2;
   }
   .help-menu-option:hover { background: var(--stone-50); }
   .help-menu-option-icon {
@@ -8075,7 +8072,7 @@
     /* Hide the floating "Need help?" button on mobile — it's accessed via hamburger menu instead */
     .help-launcher-btn,
     .help-launcher-btn.show { display: none !important; }
-    /* When menu is triggered from hamburger, center it nicely on screen with solid background */
+    /* When menu is triggered from hamburger, center it nicely on screen */
     .help-menu {
       bottom: auto;
       top: 50%;
@@ -8083,39 +8080,25 @@
       left: 50%;
       transform: translate(-50%, -50%) scale(0.97);
       width: calc(100vw - 32px);
-      max-width: 340px;
-      background: #ffffff !important;
-      box-shadow: 0 25px 60px rgba(0,0,0,0.35) !important;
+      max-width: 320px;
     }
     .help-menu.open {
       transform: translate(-50%, -50%) scale(1);
     }
-    /* Menu options need to be fully opaque for readability */
-    .help-menu-options { background: #ffffff; }
-    .help-menu-option {
-      color: var(--stone-900) !important;
-      background: transparent;
-    }
-    .help-menu-option-title { color: var(--stone-900) !important; opacity: 1 !important; }
-    .help-menu-option-desc { color: var(--stone-600) !important; opacity: 1 !important; }
-    .help-menu-header { background: #ffffff; }
-    .help-menu-header h4 { color: var(--stone-900) !important; }
-    .help-menu-header p { color: var(--stone-600) !important; }
-    /* Show backdrop on mobile when menu is open for proper modal effect */
-    .help-menu-backdrop, .help-menu-backdrop.open {
-      display: block !important;
-    }
+    /* Show backdrop on mobile when menu is open */
     .help-menu-backdrop.open {
-      opacity: 1 !important;
+      display: block;
     }
   }
-  /* Mobile backdrop - dims background when menu is open */
+  /* Backdrop — only visible on mobile */
   .help-menu-backdrop {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.5);
+    background: rgba(0,0,0,0.4);
     z-index: 9988;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
     opacity: 0;
     transition: opacity 0.2s;
     pointer-events: none;
@@ -8157,9 +8140,7 @@
         <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
-    <div class="glo-bot-messages" id="glo-bot-messages">
-      <!-- Messages get appended here dynamically -->
-    </div>
+    <div class="glo-bot-messages" id="glo-bot-messages"></div>
     <div class="glo-bot-quick-prompts" id="glo-bot-quick-prompts">
       <button class="glo-bot-prompt" onclick="askGloBot('Are these waterproof?')">Are these waterproof?</button>
       <button class="glo-bot-prompt" onclick="askGloBot('How long until my order ships?')">Shipping time?</button>
@@ -8266,7 +8247,7 @@
       // Set a flag to prevent the same click from closing the menu via the
       // document-level click-outside handler. The flag clears 50ms later.
       helpMenuJustOpened = true;
-      setTimeout(function() { helpMenuJustOpened = false; }, 400);
+      setTimeout(function() { helpMenuJustOpened = false; }, 50);
     }
   }
 
@@ -8282,29 +8263,35 @@
     }
   }
 
-  // Determine if live chat is currently available.
-  // Tawk.to returns 'online', 'away', 'offline', or sometimes empty string when its session is broken.
-  // Strategy: hide ONLY when explicitly 'offline'. For online/away/empty, show the option —
-  // worst case the customer reaches a "leave a message" form, which is fine.
+  // Determine if live chat is currently available (Tawk.to status === 'online')
+  // Tawk.to returns 'online', 'away', or 'offline'. We only want green for 'online'.
   function isLiveChatAvailable() {
+    // Comprehensive diagnostic logging to debug status detection
+    console.log('[Glo Status DIAGNOSTIC] ===== Live chat check =====');
+    console.log('[Glo Status DIAGNOSTIC] window.Tawk_API exists:', !!window.Tawk_API);
     if (!window.Tawk_API) {
-      console.log('[Glo Status Check] Tawk_API not loaded — defaulting to AVAILABLE');
-      return true; // optimistic default: show the option
+      console.log('[Glo Status DIAGNOSTIC] Tawk_API not loaded — returning FALSE');
+      return false;
     }
+    console.log('[Glo Status DIAGNOSTIC] getStatus is a function:', typeof Tawk_API.getStatus === 'function');
+    console.log('[Glo Status DIAGNOSTIC] All Tawk_API methods:', Object.keys(Tawk_API || {}).join(', '));
+
     if (typeof Tawk_API.getStatus === 'function') {
       try {
         var status = Tawk_API.getStatus();
-        // Only hide when EXPLICITLY offline. Empty/unknown = show.
-        var available = (status !== 'offline');
-        console.log('[Glo Status Check] Tawk reports status:', status || '(empty)', '— Live chat will be:', available ? 'AVAILABLE' : 'HIDDEN');
-        return available;
+        console.log('[Glo Status DIAGNOSTIC] Raw status returned:', JSON.stringify(status));
+        console.log('[Glo Status DIAGNOSTIC] Status type:', typeof status);
+        console.log('[Glo Status DIAGNOSTIC] Status === "online":', status === 'online');
+        var isOnline = status === 'online';
+        console.log('[Glo Status DIAGNOSTIC] Final decision:', isOnline ? 'AVAILABLE (will show)' : 'HIDDEN (will hide)');
+        return isOnline;
       } catch(e) {
-        console.log('[Glo Status Check] Error reading status — defaulting to AVAILABLE:', e);
-        return true;
+        console.log('[Glo Status DIAGNOSTIC] Error calling getStatus:', e.message);
+        return false;
       }
     }
-    console.log('[Glo Status Check] getStatus not available — defaulting to AVAILABLE');
-    return true;
+    console.log('[Glo Status DIAGNOSTIC] getStatus not available — returning FALSE');
+    return false;
   }
 
   function updateLiveChatOption() {
@@ -8609,12 +8596,13 @@
   document.addEventListener('click', function(e) {
     if (!helpMenuOpen) return;
     if (helpMenuJustOpened) return; // ignore the click that opened the menu
-    // Use closest() — it checks if e.target is inside ANY ancestor matching the selector.
-    // More reliable than .contains() on mobile where touch events can have weird targets.
-    if (e.target.closest && (e.target.closest('#help-menu') || e.target.closest('#help-launcher-btn') || e.target.closest('.mobile-livechat-btn'))) {
-      return; // click was inside the menu or launcher, don't close
+    var menu = document.getElementById('help-menu');
+    var btn = document.getElementById('help-launcher-btn');
+    var inMenu = menu && menu.contains(e.target);
+    var inBtn = btn && btn.contains(e.target);
+    if (!inMenu && !inBtn) {
+      closeHelpMenu();
     }
-    closeHelpMenu();
   });
 
   // Show the "Need help?" button immediately on page load (don't wait for Tawk to finish loading)
