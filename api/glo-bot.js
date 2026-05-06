@@ -1,195 +1,9110 @@
-// /api/glo-bot.js
-// Vercel Serverless Function — Glo's Assistant AI proxy
-//
-// Receives questions from the website and forwards them to Anthropic's Claude API.
-// The API key stays secret on the server (NEVER exposed to the browser).
-//
-// Setup:
-// 1. Add ANTHROPIC_API_KEY to Vercel environment variables
-//    (Project Settings → Environment Variables)
-// 2. Deploy this file to /api/glo-bot.js in your Vercel project
-//
-// Security:
-// - API key never leaves the server
-// - Per-IP rate limiting: max 10 questions per hour
-// - Hard token cap to prevent runaway costs
-// - System prompt strictly constrains what Claude can say
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
-// Simple in-memory rate limiter (resets when serverless function cold-starts)
-// For higher traffic, swap this for Vercel KV or Upstash Redis.
-var rateLimitStore = {};
-var RATE_LIMIT_MAX = 10;          // max requests per IP per window
-var RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour in ms
+<!-- ===== SEO Meta Tags ===== -->
+<title>Glo's Creations 3:16 · Handcrafted Polymer Clay Jewelry & Earrings</title>
+<meta name="description" content="Handmade polymer clay earrings, necklaces, and jewelry designed and sculpted by hand. Lightweight, hypoallergenic, and one-of-a-kind pieces. Free shipping on orders $50+. Inspired by Deuteronomy 31:6.">
+<meta name="keywords" content="polymer clay earrings, handmade jewelry, polymer clay jewelry, lightweight earrings, statement earrings, faith jewelry, christian jewelry, handcrafted earrings, small batch jewelry, glo's creations, deuteronomy 31:6, polymer clay studs, dangle earrings, hypoallergenic earrings">
+<meta name="author" content="Glo's Creations 3:16">
+<link rel="canonical" href="https://gloscreations316.com/">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="googlebot" content="index, follow">
 
-function checkRateLimit(ip) {
-  var now = Date.now();
-  var record = rateLimitStore[ip];
-  if (!record || now - record.firstRequest > RATE_LIMIT_WINDOW) {
-    rateLimitStore[ip] = { firstRequest: now, count: 1 };
-    return { allowed: true, remaining: RATE_LIMIT_MAX - 1 };
+<!-- Geo tags for local SEO -->
+<meta name="geo.region" content="US-GA">
+<meta name="geo.placename" content="Cherokee County, Georgia">
+
+<!-- ===== Open Graph (Facebook, LinkedIn, iMessage previews) ===== -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Glo's Creations 3:16">
+<meta property="og:title" content="Glo's Creations 3:16 · Handcrafted Polymer Clay Jewelry">
+<meta property="og:description" content="Handmade polymer clay earrings and jewelry designed and sculpted by hand. Each piece is one of a kind. ✨">
+<meta property="og:url" content="https://gloscreations316.com/">
+<meta property="og:image" content="https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/logo.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Glo's Creations 3:16 — Handcrafted Polymer Clay Jewelry">
+<meta property="og:locale" content="en_US">
+
+<!-- ===== Twitter Card ===== -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Glo's Creations 3:16 · Handcrafted Polymer Clay Jewelry">
+<meta name="twitter:description" content="Handmade polymer clay earrings designed and sculpted by hand. Each piece is one of a kind. ✨">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/logo.png">
+
+<!-- ===== Schema.org Structured Data — tells Google we're a jewelry store ===== -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Store",
+  "@id": "https://gloscreations316.com/#store",
+  "name": "Glo's Creations 3:16",
+  "alternateName": "Glo's Creations",
+  "description": "Handmade polymer clay jewelry designed and sculpted with care. Each piece is one of a kind.",
+  "url": "https://gloscreations316.com/",
+  "logo": "https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/logo.png",
+  "image": "https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/logo.png",
+  "telephone": "",
+  "email": "sales@gloscreations316.com",
+  "priceRange": "$$",
+  "currenciesAccepted": "USD",
+  "paymentAccepted": "Credit Card, Debit Card, Apple Pay, Google Pay, Shop Pay",
+  "address": {
+    "@type": "PostalAddress",
+    "addressRegion": "GA",
+    "addressCountry": "US"
+  },
+  "sameAs": [
+    "https://www.instagram.com/gloscreations31_6"
+  ],
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://gloscreations316.com/?search={search_term_string}",
+    "query-input": "required name=search_term_string"
   }
-  if (record.count >= RATE_LIMIT_MAX) {
-    return { allowed: false, remaining: 0, resetIn: RATE_LIMIT_WINDOW - (now - record.firstRequest) };
-  }
-  record.count++;
-  return { allowed: true, remaining: RATE_LIMIT_MAX - record.count };
 }
+</script>
 
-// Strict system prompt — controls what Claude is allowed to say.
-// This is the most important part: it keeps the bot on-brand and prevents
-// it from making promises, hallucinating policies, or going off-topic.
-var SYSTEM_PROMPT = "You are Glo's Assistant, a friendly customer service helper for Glo's Creations 3:16 — a small handmade polymer clay jewelry shop run by Glo, based in Cherokee County, Georgia. The store name references Deuteronomy 31:6: 'Be strong and courageous.'\n\n" +
-"YOUR ROLE:\n" +
-"- Answer customer questions about products, materials, shipping, returns, and the website's features\n" +
-"- Be warm, concise, and on-brand: think helpful, kind, slightly elevated tone\n" +
-"- Use 1-3 short paragraphs maximum (this is a chat widget, not an essay)\n" +
-"- Use light, occasional emojis (✨ 💛) — not in every message\n\n" +
-"WHAT YOU KNOW:\n" +
-"- All jewelry is handmade polymer clay, lightweight, generally hypoallergenic\n" +
-"- Each piece is one-of-a-kind\n" +
-"- Materials: polymer clay + metal findings (hooks/studs)\n" +
-"- Care: don't shower/swim wearing them; chlorine, salt water, and harsh soaps can affect findings\n" +
-"- Shipping: typically 2-5 business days to ship; delivered via USPS\n" +
-"- Returns: customers can email sales@gloscreations316.com to start a return. Each piece is one-of-a-kind, so refunds/exchanges are evaluated case-by-case.\n" +
-"- Local pickup: not currently offered — all orders ship via USPS\n" +
-"- Custom orders: customers can email to inquire about color variations of existing designs\n" +
-"- Virtual Try-On: real-time face detection runs ENTIRELY on the customer's device — no facial data is collected, stored, or transmitted\n" +
-"- The site is also installable as a free PWA (Progressive Web App) on iPhone (Safari) and Android (Chrome)\n" +
-"- Email: sales@gloscreations316.com\n" +
-"- Instagram: @gloscreations31_6\n\n" +
-"SITE NAVIGATION HELP — guide customers to features:\n" +
-"- View all products: scroll down on homepage to the shop section, or use the navigation menu\n" +
-"- Save a favorite: tap the heart icon on any product card to add to wishlist\n" +
-"- View wishlist: tap the heart icon in the top navigation\n" +
-"- Sign in / create account: tap the person icon in the top navigation\n" +
-"- View cart: tap the bag/cart icon in the top right\n" +
-"- Try on earrings virtually: open any earring product → tap '✨ Virtual Try-On' button\n" +
-"- See product details: tap any product card to open the full view with multiple photos\n" +
-"- Filter products by category: use the category filter buttons above the product grid\n" +
-"- Read reviews: each product modal shows customer reviews; the homepage also has a rotating reviews carousel\n" +
-"- Contact via live chat: tap 'Need help?' (bottom-left of screen) — live chat shows green when Glo is available\n" +
-"- Install the app: scroll to the 'Get the App' section near the bottom of the homepage\n" +
-"- Read full FAQ: tap 'Need help?' → 'Browse FAQ'\n\n" +
-"STRICT RULES — NEVER VIOLATE:\n" +
-"1. NEVER make promises about specific delivery dates, refunds, exchanges, custom orders, or discounts. Direct customers to email sales@gloscreations316.com for those.\n" +
-"2. NEVER invent policies, prices, or product details you weren't told. If you don't know something, say 'I'm not sure — please email Glo at sales@gloscreations316.com and she'll personally help you.'\n" +
-"3. NEVER discuss competitors, other stores, or unrelated topics. Politely redirect: 'I can only help with questions about Glo's Creations — is there anything I can help you with about our shop?'\n" +
-"4. NEVER provide medical, legal, financial, or professional advice. If asked about allergic reactions, say: 'If you have concerns about a reaction, please consult a healthcare provider. For sensitivity questions about our products, email Glo directly.'\n" +
-"5. NEVER pretend to be human or claim to be Glo herself. You're 'Glo's Assistant.'\n" +
-"6. NEVER quote specific prices unless explicitly given to you. Direct customers to the product pages.\n" +
-"7. NEVER help with anything that isn't customer service for this jewelry shop. Politely redirect.\n" +
-"8. NEVER use foul language, off-color humor, or share personal opinions on politics, religion, or controversial topics. The shop name has Christian roots but you keep tone secular and welcoming.\n\n" +
-"WHEN UNSURE: Always end uncertain answers with: 'For the most accurate answer, please email Glo at sales@gloscreations316.com — she replies within 24 hours.'\n\n" +
-"WHEN ASKED ABOUT COMPLAINTS, DAMAGED ITEMS, OR PROBLEMS: Express empathy briefly, then say: 'I'm so sorry that happened. Please email sales@gloscreations316.com with photos and your order number — Glo will personally take care of you.'";
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Glo's Creations 3:16",
+  "legalName": "Marjoel LLC",
+  "url": "https://gloscreations316.com/",
+  "logo": "https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/logo.png",
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "email": "sales@gloscreations316.com",
+    "contactType": "Customer Service",
+    "availableLanguage": "English"
+  },
+  "sameAs": [
+    "https://www.instagram.com/gloscreations31_6"
+  ]
+}
+</script>
 
-module.exports = async function handler(req, res) {
-  // CORS headers — only allow your own domain to call this endpoint
-  var allowedOrigins = [
-    'https://gloscreations316.com',
-    'https://www.gloscreations316.com',
-    'https://glos-creations.vercel.app'
-  ];
-  var origin = req.headers.origin || '';
-  if (allowedOrigins.indexOf(origin) !== -1) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "Glo's Creations 3:16",
+  "url": "https://gloscreations316.com/",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://gloscreations316.com/?search={search_term_string}",
+    "query-input": "required name=search_term_string"
   }
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+}
+</script>
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+<!-- PWA Manifest -->
+<link rel="manifest" href="/manifest.json?v=3">
+
+<!-- Theme color (matches stone-900 for browser chrome on Android) -->
+<meta name="theme-color" content="#1c1917">
+
+<!-- Apple-specific PWA tags -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Glo's Creations">
+<link rel="apple-touch-icon" href="https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/icon.png?v=3">
+<link rel="apple-touch-icon" sizes="152x152" href="https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/icon.png?v=3">
+<link rel="apple-touch-icon" sizes="180x180" href="https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/icon.png?v=3">
+<link rel="apple-touch-icon" sizes="167x167" href="https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/icon.png?v=3">
+
+<!-- Standard favicon -->
+<link rel="icon" type="image/png" href="https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/icon.png?v=3">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet">
+
+<!-- Google Analytics 4 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-JDYYGYT60T"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('consent', 'default', {
+    'ad_storage': 'denied',
+    'ad_user_data': 'denied',
+    'ad_personalization': 'denied',
+    'analytics_storage': 'denied'
+  });
+  gtag('config', 'G-JDYYGYT60T', { 'anonymize_ip': true });
+  function trackEvent(name, params) {
+    try { gtag('event', name, params || {}); } catch(e) {}
   }
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+</script>
+
+<style>
+  :root {
+    --stone-50: #fafaf9;
+    --stone-100: #f5f5f4;
+    --stone-200: #e7e5e4;
+    --stone-300: #d6d3d1;
+    --stone-400: #a8a29e;
+    --stone-500: #78716c;
+    --stone-600: #57534e;
+    --stone-700: #44403c;
+    --stone-800: #292524;
+    --stone-900: #1c1917;
+    --font-display: 'Cormorant Garamond', Georgia, serif;
+    --font-body: 'Outfit', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--font-display);
+    background: var(--stone-50);
+    color: var(--stone-900);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  a { text-decoration: none; color: inherit; }
+  button { cursor: pointer; }
+
+  /* Announcement */
+  .announcement {
+    background: var(--stone-900);
+    color: var(--stone-200);
+    text-align: center;
+    padding: 11px 16px;
+    font-family: var(--font-body);
+    font-size: 10.5px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+  }
+  .announcement-track {
+    display: flex;
+    transition: transform 0.5s ease;
+  }
+  .announcement-slide {
+    min-width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .announcement-slide a {
+    color: var(--stone-200);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .announcement-slide a:hover { color: white; }
+  .announcement-slide svg {
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.5;
+    flex-shrink: 0;
+  }
+  .announcement-dots {
+    position: absolute;
+    bottom: 3px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 4px;
+  }
+  .announcement-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+  .announcement-dot.active { background: rgba(255,255,255,0.8); }
+
+  /* Nav */
+  .nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(250,250,249,0.95);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--stone-200);
+  }
+  .nav-inner {
+    max-width: 1280px; margin: 0 auto; padding: 0 40px;
+    display: flex; justify-content: space-between;
+    align-items: center; height: 56px;
+  }
+  .nav-left { display: flex; align-items: center; }
+  .nav-links {
+    display: flex; gap: 32px;
+    font-family: var(--font-body); font-size: 10.5px;
+    letter-spacing: 0.15em; text-transform: uppercase;
+  }
+  .nav-links a { color: var(--stone-600); transition: color 0.2s; white-space: nowrap; }
+  .nav-links a:hover { color: var(--stone-900); }
+  .nav-logo {
+    text-align: center; font-size: 22px;
+    white-space: nowrap; padding: 0 24px;
+  }
+  .brand-glos { font-style: italic; font-weight: 400; }
+  .brand-creations { font-weight: 300; }
+  .brand-316 {
+    font-family: var(--font-body); font-size: 11px;
+    font-weight: 400; letter-spacing: 0.1em;
+    vertical-align: super; margin-left: 2px; color: var(--stone-500);
+  }
+  .nav-right { display: flex; align-items: center; justify-content: flex-end; }
+  .nav-icon {
+    background: none; border: none; color: var(--stone-600);
+    padding: 6px; display: flex; align-items: center; transition: color 0.2s;
+  }
+  .nav-icon:hover { color: var(--stone-900); }
+  .nav-icon svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  .mobile-menu-btn { display: none; background: none; border: none; color: var(--stone-700); padding: 6px; }
+  .mobile-menu-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; }
+
+  /* Mobile-only live chat shortcut — appears next to the hamburger but only when online */
+  .mobile-livechat-btn {
+    display: none; /* hidden by default; only shown on mobile when status is online */
+    align-items: center;
+    gap: 6px;
+    background: #166534;
+    color: white;
+    border: none;
+    border-radius: 16px;
+    padding: 5px 10px 5px 8px;
+    margin-left: 8px;
+    font-family: var(--font-body);
+    font-size: 9.5px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    box-shadow: 0 2px 6px rgba(22,101,52,0.25);
+    cursor: pointer;
+    transition: background 0.15s, transform 0.15s;
+    white-space: nowrap;
+  }
+  .mobile-livechat-btn:hover, .mobile-livechat-btn:active {
+    background: #14532d;
+    transform: scale(1.03);
+  }
+  /* Show on mobile only when .online is applied */
+  .mobile-livechat-btn.online { display: inline-flex; }
+  .mobile-livechat-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #4ade80;
+    box-shadow: 0 0 0 2px rgba(74,222,128,0.35);
+    animation: mobileChatPulse 2s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  @keyframes mobileChatPulse {
+    0%, 100% { box-shadow: 0 0 0 2px rgba(74,222,128,0.35); }
+    50% { box-shadow: 0 0 0 5px rgba(74,222,128,0); }
+  }
+  .mobile-livechat-text { line-height: 1; }
+  /* Only render mobile chat button on mobile screens */
+  @media (min-width: 769px) {
+    .mobile-livechat-btn { display: none !important; }
+  }
+  .mobile-nav { display: none; background: var(--stone-50); border-bottom: 1px solid var(--stone-200); padding: 16px 20px 20px; }
+  .mobile-nav.show { display: block; }
+  .mobile-nav a { display: block; padding: 10px 0; font-family: var(--font-body); font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--stone-700); }
+
+  /* Hero */
+  .hero {
+    max-width: 1280px; margin: 0 auto; padding: 40px 40px 88px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center;
+  }
+  .hero-tag { font-family: var(--font-body); font-size: 10.5px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--stone-400); margin-bottom: 20px; }
+  .hero h1 { font-size: clamp(44px, 6vw, 80px); line-height: 0.95; font-weight: 300; margin-bottom: 28px; }
+  .hero h1 em { font-weight: 300; font-style: italic; }
+  .hero-desc { color: var(--stone-500); font-size: 17px; line-height: 1.7; max-width: 400px; margin-bottom: 36px; }
+  .hero-actions { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: var(--stone-900); color: var(--stone-50);
+    padding: 15px 28px; font-family: var(--font-body);
+    font-size: 10.5px; letter-spacing: 0.18em; text-transform: uppercase;
+    border: none; transition: background 0.25s;
+  }
+  .btn-primary:hover { background: var(--stone-700); }
+  .btn-primary svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; }
+  .btn-text {
+    font-family: var(--font-body); font-size: 10.5px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--stone-600);
+    border-bottom: 1px solid var(--stone-400); padding-bottom: 3px;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .btn-text:hover { color: var(--stone-900); border-color: var(--stone-900); }
+  .hero-visual { position: relative; }
+  .hero-image {
+    aspect-ratio: 4/5;
+    background: linear-gradient(145deg, var(--stone-100), var(--stone-200), var(--stone-100));
+    position: relative; overflow: hidden;
+  }
+  .hero-image-art { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .hero-circle-lg { width: 180px; height: 180px; border-radius: 50%; background: linear-gradient(135deg, rgba(255,255,255,0.7), var(--stone-300)); box-shadow: 0 20px 60px rgba(0,0,0,0.08); position: relative; }
+  .hero-circle-sm-1 { width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, var(--stone-50), var(--stone-200)); box-shadow: 0 10px 30px rgba(0,0,0,0.06); position: absolute; top: 40px; right: -36px; }
+  .hero-circle-sm-2 { width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, var(--stone-100), var(--stone-300)); box-shadow: 0 10px 30px rgba(0,0,0,0.06); position: absolute; bottom: -12px; left: -20px; }
+  .hero-badge { position: absolute; bottom: -20px; left: -16px; background: white; padding: 14px 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid var(--stone-100); }
+  .hero-badge-label { font-family: var(--font-body); font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--stone-400); margin-bottom: 3px; }
+  .hero-badge-text { font-size: 13px; font-style: italic; color: var(--stone-700); }
+
+  /* Carousel */
+  .carousel {
+    position: relative;
+    aspect-ratio: 5/6;
+    overflow: hidden;
+    background: var(--stone-50);
+    border-radius: 24px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.08);
+  }
+  .carousel-track {
+    display: flex;
+    height: 100%;
+    transition: transform 0.5s ease;
+  }
+  .carousel-slide {
+    min-width: 100%;
+    height: 100%;
+    position: relative;
+    cursor: pointer;
+  }
+  .carousel-slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 15%;
+  }
+  .carousel-slide::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    box-shadow: inset 0 0 60px 20px rgba(250,250,249,0.4);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .carousel-slide-info {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--stone-50);
+    padding: 14px 24px;
+    color: var(--stone-900);
+    z-index: 2;
+  }
+  .carousel-slide-tag {
+    font-family: var(--font-body);
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--stone-400);
+    margin-bottom: 4px;
+  }
+  .carousel-slide-name {
+    font-size: 18px;
+    font-style: italic;
+    font-weight: 400;
+    margin-bottom: 2px;
+    color: var(--stone-900);
+  }
+  .carousel-slide-price {
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--stone-600);
+    margin-bottom: 0;
+    display: inline;
+  }
+  .carousel-slide-btn {
+    display: inline-block;
+    font-family: var(--font-body);
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--stone-50);
+    background: var(--stone-900);
+    padding: 8px 18px;
+    border-radius: 20px;
+    transition: background 0.2s;
+    border: none;
+    float: right;
+    margin-top: -2px;
+  }
+  .carousel-slide-btn:hover {
+    background: var(--stone-700);
+  }
+  .carousel-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255,255,255,0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, transform 0.2s;
+    z-index: 2;
+  }
+  .carousel-arrow:hover { background: rgba(255,255,255,0.95); transform: translateY(-50%) scale(1.05); }
+  .carousel-arrow svg {
+    width: 18px;
+    height: 18px;
+    stroke: var(--stone-800);
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .carousel-prev { left: 12px; }
+  .carousel-next { right: 12px; }
+  .carousel-dots {
+    position: absolute;
+    bottom: 68px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 3;
+  }
+  .carousel-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.5);
+    border: none;
+    padding: 0;
+    transition: all 0.3s;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  }
+  .carousel-dot.active {
+    background: white;
+    width: 24px;
+    border-radius: 4px;
+  }
+  .carousel-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--stone-400);
   }
 
-  // Verify origin — extra protection against abuse
-  if (allowedOrigins.indexOf(origin) === -1) {
-    return res.status(403).json({ error: 'Not authorized' });
+  /* Trust Bar */
+  .trust-bar { border-top: 1px solid var(--stone-200); border-bottom: 1px solid var(--stone-200); padding: 28px 0; }
+  .trust-bar-inner { max-width: 1280px; margin: 0 auto; padding: 0 40px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; text-align: center; }
+  .trust-label { font-family: var(--font-body); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--stone-700); margin-bottom: 3px; }
+  .trust-sub { font-size: 12px; color: var(--stone-400); font-style: italic; }
+
+  /* Shop */
+  .shop { max-width: 1280px; margin: 0 auto; padding: 72px 40px 88px; }
+  .shop-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 40px; flex-wrap: wrap; gap: 20px; }
+  .shop-tag { font-family: var(--font-body); font-size: 10.5px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--stone-400); margin-bottom: 12px; }
+  .shop h2 { font-size: clamp(36px, 4.5vw, 56px); font-weight: 300; }
+  .shop h2 em { font-weight: 300; font-style: italic; }
+  .filters { display: flex; gap: 6px; flex-wrap: wrap; }
+  .filter-btn {
+    padding: 9px 18px; font-family: var(--font-body); font-size: 10px;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    border: 1px solid var(--stone-300); background: transparent;
+    color: var(--stone-600); transition: all 0.2s;
+  }
+  .filter-btn:hover { border-color: var(--stone-700); color: var(--stone-900); }
+  .filter-btn.active { background: var(--stone-900); color: var(--stone-50); border-color: var(--stone-900); }
+  .products-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px; }
+
+  /* Sort & Filter Bar */
+  .sort-bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .sort-select {
+    padding: 8px 14px;
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--stone-700);
+    background: white;
+    border: 1px solid var(--stone-300);
+    border-radius: 8px;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2378716c' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 30px;
+    transition: border-color 0.2s;
+  }
+  .sort-select:hover { border-color: var(--stone-500); }
+  .sort-select:focus { border-color: var(--stone-700); }
+  .sort-results {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--stone-400);
+    margin-left: auto;
+  }
+  .style-filters {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .style-btn {
+    padding: 6px 14px;
+    font-family: var(--font-body);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--stone-500);
+    background: transparent;
+    border: 1px solid var(--stone-200);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .style-btn:hover { border-color: var(--stone-500); color: var(--stone-700); }
+  .style-btn.active { background: var(--stone-900); color: white; border-color: var(--stone-900); }
+  .product-card { cursor: pointer; transition: transform 0.2s; }
+  .product-card:hover { transform: translateY(-2px); }
+  .product-card:hover .product-overlay { transform: translateY(0); }
+  .product-card:hover .product-wish { opacity: 1; }
+  .product-card:hover .product-img-wrap img { transform: scale(1.03); }
+  .product-img-wrap { aspect-ratio: 1; background: var(--stone-100); position: relative; overflow: hidden; margin-bottom: 14px; border-radius: 16px; border: none; }
+  .product-img-wrap img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s; }
+  .product-placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .product-placeholder-circle { width: 50%; height: 50%; border-radius: 50%; background: var(--stone-200); opacity: 0.5; }
+  .product-wish { position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.85); backdrop-filter: blur(4px); border: none; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; }
+  .product-wish svg { width: 15px; height: 15px; stroke: var(--stone-700); fill: none; stroke-width: 1.5; }
+
+  /* Virtual Try-On Badges */
+  .tryon-badge-card {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    color: var(--stone-800);
+    font-family: var(--font-body);
+    font-size: 9.5px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 5px 10px;
+    border-radius: 12px;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 500;
+    transition: opacity 0.25s;
+  }
+  .product-card:hover .tryon-badge-card { opacity: 0; pointer-events: none; }
+
+  /* Photo count badge */
+  .photo-count-badge {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    background: rgba(0,0,0,0.5);
+    color: white;
+    font-family: var(--font-body);
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: opacity 0.25s;
+  }
+  .product-card:hover .photo-count-badge { opacity: 0; pointer-events: none; }
+
+  .tryon-badge-modal {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: linear-gradient(135deg, #f5f0e8, #ede4d6);
+    color: var(--stone-700);
+    font-family: var(--font-body);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 5px 11px;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    font-weight: 500;
+    border: 1px solid rgba(212, 165, 116, 0.3);
+  }
+  .product-overlay { position: absolute; bottom: 0; left: 0; right: 0; background: var(--stone-900); color: white; padding: 12px; font-family: var(--font-body); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; text-align: center; transform: translateY(100%); transition: transform 0.25s; border: none; width: 100%; border-radius: 0 0 16px 16px; }
+  .product-type { font-family: var(--font-body); font-size: 9.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--stone-400); margin-bottom: 3px; }
+  .product-name { font-size: 17px; font-style: italic; margin-bottom: 3px; color: var(--stone-800); }
+  .product-price { font-family: var(--font-body); font-size: 13px; color: var(--stone-600); }
+  .shop-cta { text-align: center; margin-top: 56px; }
+
+  /* Recently Sold */
+  .recently-sold {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 56px 40px 72px;
+    border-top: 1px solid var(--stone-200);
+    display: none;
+  }
+  .recently-sold.has-items { display: block; }
+  .recently-sold-header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  .recently-sold-tag {
+    font-family: var(--font-body);
+    font-size: 10.5px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--stone-400);
+    margin-bottom: 12px;
+  }
+  .recently-sold h2 {
+    font-size: clamp(28px, 3vw, 38px);
+    font-weight: 300;
+    color: var(--stone-700);
+    margin-bottom: 10px;
+  }
+  .recently-sold h2 em { font-weight: 300; font-style: italic; }
+  .recently-sold-desc {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--stone-500);
+    line-height: 1.6;
+    max-width: 460px;
+    margin: 0 auto;
+  }
+  .sold-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 28px;
+  }
+  .sold-card {
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    position: relative;
+  }
+  .sold-card:hover { transform: translateY(-4px); }
+  .sold-img-wrap {
+    aspect-ratio: 1;
+    background: var(--stone-100);
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 14px;
+    border-radius: 2px;
+  }
+  .sold-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.55;
+    filter: saturate(0.7);
+    transition: opacity 0.3s ease;
+  }
+  .sold-card:hover .sold-img-wrap img { opacity: 0.7; }
+  .sold-img-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(245,245,244,0.15) 0%, rgba(245,245,244,0.45) 100%);
+    pointer-events: none;
+  }
+  .sold-tag {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    color: var(--stone-700);
+    font-family: var(--font-body);
+    font-size: 9.5px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    padding: 6px 12px;
+    border-radius: 2px;
+    font-weight: 500;
+  }
+  .sold-card-info { text-align: center; }
+  .sold-card-category {
+    font-family: var(--font-body);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--stone-400);
+    margin-bottom: 6px;
+  }
+  .sold-card-name {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 400;
+    color: var(--stone-600);
+    margin-bottom: 4px;
+    font-style: italic;
+  }
+  .sold-card-price {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--stone-400);
+    text-decoration: line-through;
   }
 
-  // Rate limiting by IP
-  var ip = (req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'unknown').split(',')[0].trim();
-  var limit = checkRateLimit(ip);
-  if (!limit.allowed) {
-    var minutes = Math.ceil(limit.resetIn / 60000);
-    return res.status(429).json({
-      error: 'Rate limit exceeded',
-      message: 'You\'ve asked a lot of questions! Please wait ' + minutes + ' minutes, or email sales@gloscreations316.com.'
-    });
+  /* About */
+  .about { background: var(--stone-100); padding: 72px 0 88px; }
+  .about-inner { max-width: 1280px; margin: 0 auto; padding: 0 40px; display: grid; grid-template-columns: 2fr 3fr; gap: 48px; align-items: center; }
+  .about-image { aspect-ratio: 3/4; background: linear-gradient(145deg, var(--stone-200), var(--stone-300)); position: relative; overflow: hidden; border-radius: 50%; max-width: 360px; margin: 0 auto; }
+  .about-image img { width: 100%; height: 100%; object-fit: cover; object-position: center 20%; display: block; mask-image: radial-gradient(ellipse 70% 65% at center, black 50%, transparent 100%); -webkit-mask-image: radial-gradient(ellipse 70% 65% at center, black 50%, transparent 100%); }
+  .about-image-circle { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .about-image-circle div { width: 120px; height: 120px; border-radius: 50%; background: rgba(255,255,255,0.4); }
+  .about-tag { font-family: var(--font-body); font-size: 10.5px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--stone-400); margin-bottom: 20px; }
+  .about h2 { font-size: clamp(36px, 4.5vw, 56px); font-weight: 300; margin-bottom: 28px; line-height: 1.1; }
+  .about h2 em { font-weight: 300; font-style: italic; }
+  .about-text { color: var(--stone-600); font-size: 17px; line-height: 1.75; max-width: 500px; }
+  .about-text p { margin-bottom: 16px; }
+  .about-text p:last-of-type { font-style: italic; color: var(--stone-500); }
+
+  /* Reviews */
+  .reviews { padding: 72px 0 88px; text-align: center; }
+  .reviews-inner { max-width: 720px; margin: 0 auto; padding: 0 40px; }
+  .reviews-tag { font-family: var(--font-body); font-size: 10.5px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--stone-400); margin-bottom: 16px; }
+  .reviews-stars { margin-bottom: 28px; color: var(--stone-700); font-size: 16px; letter-spacing: 4px; }
+  .reviews blockquote { font-size: clamp(22px, 3vw, 32px); font-weight: 300; font-style: italic; line-height: 1.55; margin-bottom: 20px; color: var(--stone-800); }
+  .reviews-author { font-family: var(--font-body); font-size: 10.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--stone-400); }
+
+  /* Reviews Carousel */
+  .reviews-carousel { position: relative; min-height: 220px; }
+  .reviews-loading-state { transition: opacity 0.3s; }
+  .reviews-loading-state.hidden { display: none; }
+  .reviews-slides { position: relative; }
+  .review-slide {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+    pointer-events: none;
+  }
+  .review-slide.active {
+    opacity: 1;
+    position: relative;
+    pointer-events: auto;
+  }
+  .review-slide-stars { margin-bottom: 22px; color: var(--stone-700); font-size: 16px; letter-spacing: 4px; }
+  .review-slide blockquote { font-size: clamp(20px, 2.6vw, 28px); font-weight: 300; font-style: italic; line-height: 1.55; margin-bottom: 16px; color: var(--stone-800); }
+  .review-slide-product {
+    display: inline-block;
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--stone-500);
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    border-bottom: 1px solid var(--stone-200);
+    padding-bottom: 1px;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .review-slide-product:hover {
+    color: var(--stone-800);
+    border-color: var(--stone-500);
+  }
+  .review-slide-author { font-family: var(--font-body); font-size: 10.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--stone-400); }
+
+  .reviews-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    margin-top: 28px;
+  }
+  .reviews-arrow {
+    background: white;
+    border: 1px solid var(--stone-300);
+    color: var(--stone-700);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .reviews-arrow:hover {
+    background: var(--stone-900);
+    color: white;
+    border-color: var(--stone-900);
+  }
+  .reviews-arrow svg {
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .reviews-dots {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .reviews-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--stone-300);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .reviews-dot.active {
+    background: var(--stone-900);
+    width: 18px;
+    border-radius: 3px;
+  }
+  .reviews-empty {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--stone-400);
+    font-style: italic;
   }
 
-  // Validate input
-  var body = req.body || {};
-  var question = (body.question || '').trim();
-  if (!question || question.length < 2 || question.length > 500) {
-    return res.status(400).json({ error: 'Invalid question' });
+  /* FAQ Modal */
+  .faq-modal-body {
+    padding: 40px 36px;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+  .faq-tag {
+    text-align: center;
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--stone-500);
+    margin-bottom: 12px;
+  }
+  .faq-modal-title {
+    text-align: center;
+    font-size: clamp(28px, 3.5vw, 38px);
+    font-weight: 300;
+    margin-bottom: 14px;
+    color: var(--stone-900);
+  }
+  .faq-modal-title em { font-weight: 300; font-style: italic; }
+  .faq-desc {
+    text-align: center;
+    font-family: var(--font-body);
+    font-size: 13.5px;
+    color: var(--stone-600);
+    margin-bottom: 28px;
+    line-height: 1.6;
+  }
+  .faq-desc a { color: var(--stone-700); text-decoration: underline; }
+
+  .faq-search-wrap {
+    position: relative;
+    margin-bottom: 24px;
+  }
+  .faq-search {
+    width: 100%;
+    padding: 14px 18px 14px 46px;
+    border: 1px solid var(--stone-200);
+    border-radius: 12px;
+    background: white;
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--stone-800);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+    box-sizing: border-box;
+  }
+  .faq-search:focus {
+    border-color: var(--stone-400);
+    box-shadow: 0 0 0 3px rgba(212, 165, 116, 0.15);
+  }
+  .faq-search::placeholder { color: var(--stone-400); }
+  .faq-search-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    stroke: var(--stone-500);
+    fill: none;
+    stroke-width: 2;
+    pointer-events: none;
+  }
+  .faq-search-clear {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--stone-200);
+    border: none;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+  .faq-search-clear.visible { display: flex; }
+  .faq-search-clear:hover { background: var(--stone-300); }
+  .faq-search-clear svg { width: 12px; height: 12px; stroke: var(--stone-700); fill: none; stroke-width: 2; }
+
+  .faq-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .faq-item {
+    background: var(--stone-50);
+    border: 1px solid var(--stone-200);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .faq-item.open {
+    border-color: var(--stone-300);
+    background: white;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  }
+  .faq-item.hidden { display: none; }
+  .faq-question {
+    width: 100%;
+    padding: 16px 20px;
+    background: transparent;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--stone-800);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    line-height: 1.5;
+    transition: background 0.15s;
+  }
+  .faq-question:hover { background: rgba(255,255,255,0.5); }
+  .faq-question-text { flex: 1; }
+  .faq-question-icon {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    stroke: var(--stone-500);
+    fill: none;
+    stroke-width: 2;
+    transition: transform 0.25s;
+  }
+  .faq-item.open .faq-question-icon { transform: rotate(45deg); stroke: var(--stone-700); }
+  .faq-answer {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+  .faq-item.open .faq-answer { max-height: 500px; }
+  .faq-answer-inner {
+    padding: 0 20px 18px 20px;
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--stone-600);
+    line-height: 1.7;
+  }
+  .faq-answer-inner p { margin-bottom: 8px; }
+  .faq-answer-inner p:last-child { margin-bottom: 0; }
+  .faq-answer-inner a { color: var(--stone-800); text-decoration: underline; }
+
+  .faq-no-results {
+    display: none;
+    text-align: center;
+    padding: 28px 20px;
+    background: var(--stone-50);
+    border: 1px solid var(--stone-200);
+    border-radius: 12px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--stone-500);
+  }
+  .faq-no-results.visible { display: block; }
+  .faq-no-results a { color: var(--stone-800); text-decoration: underline; }
+
+  .faq-highlight {
+    background: rgba(212, 165, 116, 0.25);
+    padding: 0 2px;
+    border-radius: 2px;
   }
 
-  // Verify API key is set
-  var apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    console.error('[Glo Bot] ANTHROPIC_API_KEY not set in environment');
-    return res.status(500).json({
-      error: 'Service unavailable',
-      message: "I'm having trouble reaching my brain right now. Please email sales@gloscreations316.com — Glo will get back to you within 24 hours."
-    });
+  @media (max-width: 600px) {
+    .faq-modal-body { padding: 30px 22px; }
+    .faq-question { padding: 14px 16px; font-size: 13.5px; }
+    .faq-answer-inner { padding: 0 16px 16px 16px; }
   }
 
-  // Call Anthropic API
-  try {
-    var response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 400,
-        system: SYSTEM_PROMPT,
-        messages: [
-          { role: 'user', content: question }
-        ]
-      })
-    });
 
-    if (!response.ok) {
-      var errorText = await response.text();
-      console.error('[Glo Bot] Anthropic API error:', response.status, errorText);
-      return res.status(500).json({
-        error: 'API error',
-        message: "Something went sideways. Please try emailing sales@gloscreations316.com."
+  .stories-section { background: var(--stone-900); color: var(--stone-50); padding: 80px 0 88px; text-align: center; position: relative; overflow: hidden; }
+  .stories-section::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(circle at 20% 30%, rgba(238, 42, 123, 0.08), transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(98, 40, 215, 0.06), transparent 50%);
+    pointer-events: none;
+  }
+  .stories-inner { max-width: 1100px; margin: 0 auto; padding: 0 40px; position: relative; z-index: 1; }
+  .stories-tag { font-family: var(--font-body); font-size: 10.5px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--stone-400); margin-bottom: 14px; }
+  .stories-section h2 {
+    font-size: clamp(28px, 3.5vw, 44px);
+    font-weight: 300;
+    margin-bottom: 12px;
+    background: linear-gradient(
+      90deg,
+      #f9ce34 0%,
+      #ee2a7b 25%,
+      #6228d7 50%,
+      #ee2a7b 75%,
+      #f9ce34 100%
+    );
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    animation: igGradientFlow 6s linear infinite;
+  }
+  .stories-section h2 em { font-weight: 300; font-style: italic; }
+  @keyframes igGradientFlow {
+    0%   { background-position: 0% 50%; }
+    100% { background-position: -200% 50%; }
+  }
+  .stories-desc { color: var(--stone-400); font-size: 14px; margin-bottom: 44px; line-height: 1.6; max-width: 480px; margin-left: auto; margin-right: auto; }
+  .stories-row {
+    display: flex;
+    gap: 28px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 48px;
+  }
+  .story-bubble {
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    transition: transform 0.3s ease;
+  }
+  .story-bubble:hover { transform: translateY(-4px); }
+  .story-bubble-ring {
+    width: 92px;
+    height: 92px;
+    border-radius: 50%;
+    padding: 3px;
+    background: linear-gradient(135deg, #f9ce34 0%, #ee2a7b 50%, #6228d7 100%);
+    position: relative;
+  }
+  .story-bubble-ring::before {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border-radius: 50%;
+    background: var(--stone-900);
+  }
+  .story-bubble-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+    background: var(--stone-800);
+  }
+  .story-bubble-inner img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+  }
+  .story-bubble-inner.loading {
+    background: linear-gradient(135deg, #2a2620, #1c1917);
+  }
+  .story-bubble-play-icon {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--stone-900);
+    border: 2px solid white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+  }
+  .story-bubble-play-icon svg {
+    width: 10px;
+    height: 10px;
+    fill: white;
+  }
+  .story-bubble-label {
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    color: var(--stone-300);
+    max-width: 100px;
+    line-height: 1.3;
+  }
+  .stories-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 26px;
+    background: linear-gradient(135deg, #f9ce34 0%, #ee2a7b 50%, #6228d7 100%);
+    color: white;
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    font-weight: 500;
+    border: none;
+    border-radius: 6px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+  }
+  .stories-cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(238, 42, 123, 0.3);
+  }
+  .stories-cta svg { width: 14px; height: 14px; stroke: white; fill: none; stroke-width: 2; }
+  .stories-handle {
+    margin-top: 14px;
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: var(--stone-500);
+    text-transform: uppercase;
+  }
+  .stories-handle a { color: var(--stone-300); transition: color 0.2s; }
+  .stories-handle a:hover { color: var(--stone-100); }
+
+  /* Story Viewer (Fullscreen with IG Embed) */
+  .story-viewer {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.92);
+    z-index: 10000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .story-viewer.open { display: flex; }
+  .story-viewer-content {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    max-height: 95vh;
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+  }
+  .story-viewer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--stone-200);
+    background: white;
+  }
+  .story-viewer-meta { display: flex; align-items: center; gap: 10px; }
+  .story-viewer-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f9ce34 0%, #ee2a7b 50%, #6228d7 100%);
+    padding: 2px;
+  }
+  .story-viewer-avatar img {
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    background: white;
+    border: 2px solid white;
+  }
+  .story-viewer-name {
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--stone-900);
+  }
+  .story-viewer-time {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--stone-500);
+  }
+  .story-viewer-close {
+    background: none;
+    border: none;
+    color: var(--stone-700);
+    font-size: 28px;
+    line-height: 1;
+    padding: 4px 8px;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  .story-viewer-close:hover { color: var(--stone-900); }
+  .story-embed-wrap {
+    flex: 1;
+    overflow-y: auto;
+    background: white;
+    min-height: 400px;
+    max-height: 60vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+  .story-embed-wrap blockquote.instagram-media {
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+  .story-embed-loader {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 400px;
+    width: 100%;
+    color: var(--stone-400);
+    font-family: var(--font-body);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .story-viewer-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-top: 1px solid var(--stone-200);
+    background: var(--stone-50);
+  }
+  .story-nav-btn {
+    background: white;
+    border: 1px solid var(--stone-300);
+    color: var(--stone-700);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  .story-nav-btn:hover {
+    background: var(--stone-900);
+    color: white;
+    border-color: var(--stone-900);
+  }
+  .story-nav-btn svg {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+  }
+  .story-nav-counter {
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: var(--stone-500);
+    text-transform: uppercase;
+  }
+  .story-viewer-cta {
+    padding: 14px 16px 16px;
+    background: white;
+    border-top: 1px solid var(--stone-200);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .story-viewer-view-btn {
+    width: 100%;
+    padding: 12px 20px;
+    background: white;
+    color: var(--stone-900);
+    border: 1px solid var(--stone-900);
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .story-viewer-view-btn:hover {
+    background: var(--stone-900);
+    color: white;
+  }
+  .story-viewer-follow-btn {
+    width: 100%;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #f9ce34 0%, #ee2a7b 50%, #6228d7 100%);
+    color: white;
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-weight: 500;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: transform 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .story-viewer-follow-btn:hover { transform: translateY(-1px); }
+  .story-viewer-follow-btn svg { width: 14px; height: 14px; stroke: white; fill: none; stroke-width: 2; }
+  @media (max-width: 480px) {
+    .story-viewer { padding: 0; }
+    .story-viewer-content {
+      max-width: 100%;
+      max-height: 100%;
+      height: 100%;
+      border-radius: 0;
+    }
+    .story-embed-wrap { max-height: none; }
+    .stories-row { gap: 14px; }
+    .story-bubble-ring { width: 76px; height: 76px; }
+  }
+
+
+  /* Login Modal */
+  .login-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 250;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  .login-overlay.open { display: flex; align-items: center; justify-content: center; }
+  .login-modal {
+    background: var(--stone-50);
+    border-radius: 20px;
+    max-width: 560px;
+    width: 92%;
+    padding: 36px 32px;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    animation: modalIn 0.3s ease;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .login-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--stone-100);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .login-close:hover { background: var(--stone-200); }
+  .login-close svg { width: 18px; height: 18px; stroke: var(--stone-700); fill: none; stroke-width: 1.5; }
+  .login-title {
+    font-size: 28px;
+    font-weight: 300;
+    font-style: italic;
+    margin-bottom: 8px;
+    color: var(--stone-900);
+  }
+  .login-subtitle {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--stone-500);
+    margin-bottom: 28px;
+  }
+  .login-field {
+    margin-bottom: 16px;
+  }
+  .login-label {
+    display: block;
+    font-family: var(--font-body);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--stone-500);
+    margin-bottom: 6px;
+  }
+  .login-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--stone-300);
+    border-radius: 10px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--stone-900);
+    background: white;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .login-input:focus { border-color: var(--stone-700); }
+  .login-btn {
+    width: 100%;
+    background: var(--stone-900);
+    color: white;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-top: 8px;
+    transition: background 0.2s;
+  }
+  .login-btn:hover { background: var(--stone-700); }
+  .login-btn:disabled { background: var(--stone-400); cursor: not-allowed; }
+  .login-error {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: #b45309;
+    margin-top: 12px;
+    display: none;
+  }
+  .login-toggle {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--stone-500);
+    text-align: center;
+    margin-top: 20px;
+  }
+  .login-toggle a {
+    color: var(--stone-800);
+    border-bottom: 1px solid var(--stone-300);
+    cursor: pointer;
+  }
+  .login-toggle a:hover { color: var(--stone-900); border-color: var(--stone-900); }
+  .nav-user-name {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--stone-600);
+    margin-right: 8px;
+    white-space: nowrap;
+  }
+  .nav-user-name span {
+    color: var(--stone-900);
+    font-weight: 500;
+  }
+  .nav-logout {
+    background: none;
+    border: none;
+    font-family: var(--font-body);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--stone-400);
+    margin-right: 12px;
+    transition: color 0.2s;
+    padding: 4px;
+  }
+  .nav-logout:hover { color: var(--stone-900); }
+
+  .order-card {
+    border: 1px solid var(--stone-200);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    transition: border-color 0.2s;
+  }
+  .order-card:hover { border-color: var(--stone-400); }
+  .order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .order-number {
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--stone-800);
+  }
+  .order-status {
+    font-family: var(--font-body);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 12px;
+    background: var(--stone-100);
+    color: var(--stone-600);
+  }
+  .order-status.fulfilled { background: #ecfdf5; color: #166534; }
+  .order-status.unfulfilled { background: #fef9c3; color: #854d0e; }
+  .order-date {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--stone-400);
+    margin-bottom: 10px;
+  }
+  .order-items {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+  .order-item-thumb {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--stone-100);
+  }
+  .order-item-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .order-total {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--stone-700);
+    display: flex;
+    justify-content: space-between;
+  }
+  .order-total span:last-child { font-weight: 500; color: var(--stone-900); }
+  .orders-empty {
+    text-align: center;
+    padding: 32px 0;
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--stone-400);
+  }
+  .orders-loading {
+    text-align: center;
+    padding: 32px 0;
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--stone-400);
+  }
+
+  /* Account Tabs */
+  .acct-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--stone-200);
+    margin-bottom: 20px;
+    margin-top: 4px;
+  }
+  .acct-tab {
+    flex: 1;
+    padding: 10px 4px;
+    font-family: var(--font-body);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--stone-400);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    text-align: center;
+    transition: color 0.2s, border-color 0.2s;
+    white-space: nowrap;
+  }
+  .acct-tab:hover { color: var(--stone-700); }
+  .acct-tab.active { color: var(--stone-900); border-bottom-color: var(--stone-900); }
+  .acct-panel { display: none; }
+  .acct-panel.active { display: block; }
+
+  /* Profile */
+  .profile-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--stone-100);
+  }
+  .profile-label {
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--stone-400);
+  }
+  .profile-value {
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--stone-800);
+  }
+
+  /* Wishlist */
+  .wish-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .wish-card {
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--stone-100);
+    cursor: pointer;
+    transition: transform 0.2s;
+    position: relative;
+  }
+  .wish-card:hover { transform: translateY(-2px); }
+  .wish-card img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+  .wish-card-info { padding: 8px 10px; }
+  .wish-card-name { font-size: 12px; font-style: italic; color: var(--stone-800); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wish-card-price { font-family: var(--font-body); font-size: 11px; color: var(--stone-500); }
+  .wish-remove {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.85);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: var(--stone-600);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .wish-card:hover .wish-remove { opacity: 1; }
+
+  /* Addresses */
+  .addr-card {
+    border: 1px solid var(--stone-200);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 10px;
+    position: relative;
+  }
+  .addr-card p { font-family: var(--font-body); font-size: 13px; color: var(--stone-700); line-height: 1.6; }
+  .addr-default {
+    font-family: var(--font-body);
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #166534;
+    background: #ecfdf5;
+    padding: 3px 10px;
+    border-radius: 10px;
+    display: inline-block;
+    margin-bottom: 8px;
+  }
+  .addr-actions { display: flex; gap: 12px; margin-top: 10px; }
+  .addr-actions button {
+    background: none;
+    border: none;
+    font-family: var(--font-body);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--stone-400);
+    padding: 0;
+    transition: color 0.2s;
+  }
+  .addr-actions button:hover { color: var(--stone-900); }
+
+  /* Virtual Try-On */
+  /* Try-On Consent Modal */
+  .tryon-consent-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 10000020;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .tryon-consent-overlay.open { display: flex; }
+  .tryon-consent-modal {
+    background: white;
+    border-radius: 18px;
+    max-width: 460px;
+    width: 100%;
+    padding: 32px 28px 24px;
+    max-height: 92vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.3);
+    animation: modalIn 0.3s ease;
+  }
+  .tryon-consent-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--stone-100);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .tryon-consent-close:hover { background: var(--stone-200); }
+  .tryon-consent-close svg {
+    width: 14px;
+    height: 14px;
+    stroke: var(--stone-700);
+    fill: none;
+    stroke-width: 2;
+  }
+  .tryon-consent-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #1c1917 0%, #44403c 100%);
+    margin: 0 auto 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 22px rgba(28,25,23,0.25);
+  }
+  .tryon-consent-title {
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 300;
+    text-align: center;
+    color: var(--stone-900);
+    margin-bottom: 6px;
+  }
+  .tryon-consent-title em { font-style: italic; }
+  .tryon-consent-subtitle {
+    font-family: var(--font-body);
+    font-size: 13px;
+    text-align: center;
+    color: var(--stone-500);
+    margin-bottom: 22px;
+  }
+  .tryon-consent-points {
+    background: var(--stone-50);
+    border-radius: 14px;
+    padding: 18px 16px;
+    margin-bottom: 18px;
+    border: 1px solid var(--stone-200);
+  }
+  .tryon-consent-point {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin-bottom: 14px;
+  }
+  .tryon-consent-point:last-child { margin-bottom: 0; }
+  .tryon-consent-bullet {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    background: white;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    border: 1px solid var(--stone-200);
+  }
+  .tryon-consent-point strong {
+    display: block;
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--stone-900);
+    margin-bottom: 2px;
+    font-weight: 500;
+  }
+  .tryon-consent-point p {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--stone-600);
+    line-height: 1.5;
+    margin: 0;
+  }
+  .tryon-consent-footnote {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--stone-500);
+    line-height: 1.6;
+    text-align: center;
+    margin-bottom: 18px;
+  }
+  .tryon-consent-footnote a {
+    color: var(--stone-700);
+    text-decoration: underline;
+  }
+  .tryon-consent-actions {
+    display: flex;
+    gap: 10px;
+  }
+  .tryon-consent-decline,
+  .tryon-consent-accept {
+    flex: 1;
+    padding: 13px 16px;
+    border-radius: 10px;
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    border: none;
+  }
+  .tryon-consent-decline {
+    background: var(--stone-100);
+    color: var(--stone-700);
+    border: 1px solid var(--stone-200);
+  }
+  .tryon-consent-decline:hover { background: var(--stone-200); }
+  .tryon-consent-accept {
+    background: var(--stone-900);
+    color: white;
+  }
+  .tryon-consent-accept:hover { background: #2a2521; transform: translateY(-1px); }
+  @media (max-width: 600px) {
+    .tryon-consent-modal { padding: 26px 20px 20px; }
+    .tryon-consent-title { font-size: 22px; }
+    .tryon-consent-actions { flex-direction: column-reverse; }
+  }
+
+  .tryon-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 350;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  .tryon-overlay.open { display: flex; align-items: center; justify-content: center; }
+  .tryon-modal {
+    background: var(--stone-50);
+    border-radius: 20px;
+    max-width: 700px;
+    width: 94%;
+    max-height: 92vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    animation: modalIn 0.3s ease;
+  }
+  .tryon-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--stone-200);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .tryon-title { font-family: var(--font-body); font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--stone-800); }
+  .tryon-close { width: 36px; height: 36px; border-radius: 50%; background: var(--stone-100); border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .tryon-close:hover { background: var(--stone-200); }
+  .tryon-close svg { width: 18px; height: 18px; stroke: var(--stone-700); fill: none; stroke-width: 1.5; }
+  .tryon-body { padding: 24px; text-align: center; }
+  .tryon-canvas-wrap { position: relative; display: inline-block; max-width: 100%; border-radius: 16px; overflow: hidden; background: var(--stone-100); }
+  .tryon-canvas-wrap canvas { display: block; max-width: 100%; border-radius: 16px; }
+  .tryon-controls { padding: 20px 24px; border-top: 1px solid var(--stone-200); display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .tryon-btn { padding: 12px 24px; font-family: var(--font-body); font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; border-radius: 10px; border: none; cursor: pointer; transition: background 0.2s; }
+  .tryon-btn-primary { background: var(--stone-900); color: white; }
+  .tryon-btn-primary:hover { background: var(--stone-700); }
+  .tryon-btn-secondary { background: transparent; color: var(--stone-700); border: 1px solid var(--stone-300); }
+  .tryon-btn-secondary:hover { border-color: var(--stone-700); }
+  .tryon-upload-area { border: 2px dashed var(--stone-300); border-radius: 16px; padding: 48px 24px; cursor: pointer; transition: border-color 0.2s, background 0.2s; margin-bottom: 16px; }
+  .tryon-upload-area:hover { border-color: var(--stone-500); background: var(--stone-100); }
+  .tryon-upload-text { font-family: var(--font-body); font-size: 13px; color: var(--stone-500); margin-bottom: 4px; }
+  .tryon-upload-sub { font-family: var(--font-body); font-size: 11px; color: var(--stone-400); }
+  .tryon-loading { padding: 40px; text-align: center; font-family: var(--font-body); font-size: 13px; color: var(--stone-400); }
+  .tryon-earring-size { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 16px; font-family: var(--font-body); font-size: 11px; color: var(--stone-500); }
+  .tryon-size-slider { width: 120px; accent-color: var(--stone-700); }
+  .tryon-product-name { font-size: 16px; font-style: italic; color: var(--stone-800); margin-bottom: 16px; }
+  @media (max-width: 768px) {
+    .tryon-modal { width: 98%; max-height: 95vh; border-radius: 16px; }
+    .tryon-body { padding: 16px; }
+    .tryon-upload-area { padding: 32px 16px; }
+  }
+
+  /* Product Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 300;
+    opacity: 0;
+    transition: opacity 0.3s;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  .modal-overlay.open { display: flex; opacity: 1; align-items: center; justify-content: center; }
+  .modal {
+    background: var(--stone-50);
+    border-radius: 20px;
+    max-width: 1100px;
+    width: 92%;
+    max-height: 90vh;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: 90px 1fr 1fr;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    animation: modalIn 0.3s ease;
+  }
+  /* When the product has only one image, hide the thumb rail and use 2-column layout */
+  .modal.single-image { grid-template-columns: 1fr 1fr; }
+  .modal.single-image .modal-thumbs { display: none; }
+  .modal.single-image .modal-image { border-radius: 20px 0 0 20px; }
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.95) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(4px);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    transition: background 0.2s;
+  }
+  .modal-close:hover { background: white; }
+  .modal-close svg { width: 18px; height: 18px; stroke: var(--stone-700); fill: none; stroke-width: 1.5; }
+
+  /* Thumbnail rail */
+  .modal-thumbs {
+    background: var(--stone-50);
+    border-radius: 20px 0 0 20px;
+    padding: 16px 8px 16px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+    align-items: stretch;
+    height: 540px;
+    max-height: 540px;
+  }
+  .modal-thumb {
+    width: 70px;
+    height: 70px;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    background: var(--stone-100);
+    border: 2px solid transparent;
+    padding: 0;
+    flex-shrink: 0;
+    flex-grow: 0;
+    flex-basis: 70px;
+    transition: border-color 0.2s, opacity 0.2s;
+    opacity: 0.65;
+    position: relative;
+  }
+  .modal-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.2s;
+  }
+  .modal-thumb:hover { opacity: 1; }
+  .modal-thumb:hover img { transform: scale(1.06); }
+  .modal-thumb.active { border-color: #d4a574; opacity: 1; }
+
+  .modal-image {
+    background: var(--stone-100);
+    overflow: hidden;
+    position: relative;
+    height: 540px;
+    min-height: 540px;
+    max-height: 540px;
+  }
+  .modal-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    cursor: zoom-in;
+  }
+
+  /* Hide old zoom lens entirely — feature removed */
+  .zoom-lens { display: none !important; }
+
+  /* Lightbox */
+  .lightbox {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.92);
+    z-index: 400;
+    align-items: center;
+    justify-content: center;
+    cursor: zoom-out;
+  }
+  .lightbox.open { display: flex; }
+  .lightbox img {
+    max-width: 92%;
+    max-height: 92vh;
+    object-fit: contain;
+    border-radius: 8px;
+  }
+  .lightbox-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .lightbox-close svg { width: 20px; height: 20px; stroke: white; fill: none; stroke-width: 1.5; }
+  .lightbox-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .lightbox-arrow:hover { background: rgba(255,255,255,0.3); }
+  .lightbox-arrow svg { width: 20px; height: 20px; stroke: white; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .lightbox-prev { left: 16px; }
+  .lightbox-next { right: 16px; }
+  .lightbox-counter {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: rgba(255,255,255,0.6);
+  }
+  .modal-img-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 2;
+    transition: background 0.2s, transform 0.2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  .modal-img-arrow:hover { background: white; transform: translateY(-50%) scale(1.05); }
+  .modal-img-arrow svg { width: 18px; height: 18px; stroke: var(--stone-800); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .modal-img-prev { left: 12px; }
+  .modal-img-next { right: 12px; }
+  .modal-img-counter {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: rgba(0,0,0,0.5);
+    color: white;
+    font-family: var(--font-body);
+    font-size: 11px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    z-index: 2;
+    letter-spacing: 0.05em;
+  }
+  .modal-image-nav {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+  }
+  .modal-img-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.5);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  }
+  .modal-img-dot.active {
+    background: white;
+    width: 24px;
+    border-radius: 5px;
+  }
+  .modal-info {
+    padding: 40px 36px;
+    display: flex;
+    flex-direction: column;
+  }
+  .modal-category {
+    font-family: var(--font-body);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--stone-400);
+    margin-bottom: 8px;
+  }
+  .modal-title {
+    font-size: 32px;
+    font-weight: 300;
+    font-style: italic;
+    color: var(--stone-900);
+    margin-bottom: 8px;
+    line-height: 1.2;
+  }
+  .modal-price {
+    font-family: var(--font-body);
+    font-size: 20px;
+    color: var(--stone-700);
+    margin-bottom: 24px;
+    font-weight: 400;
+  }
+  .modal-divider {
+    height: 1px;
+    background: var(--stone-200);
+    margin-bottom: 24px;
+  }
+  .modal-desc-label {
+    font-family: var(--font-body);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--stone-400);
+    margin-bottom: 10px;
+  }
+  .modal-desc {
+    font-size: 15px;
+    color: var(--stone-600);
+    line-height: 1.7;
+    margin-bottom: 32px;
+    flex: 1;
+  }
+  .modal-qty-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .modal-qty-label {
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--stone-500);
+  }
+  .modal-qty-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid var(--stone-300);
+    border-radius: 8px;
+    padding: 4px 8px;
+  }
+  .modal-qty-btn {
+    width: 30px;
+    height: 30px;
+    border: none;
+    background: transparent;
+    font-size: 16px;
+    color: var(--stone-700);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+  }
+  .modal-qty-btn:hover { color: var(--stone-900); }
+  .modal-qty-num {
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--stone-800);
+    min-width: 24px;
+    text-align: center;
+  }
+  .modal-add-btn {
+    width: 100%;
+    background: var(--stone-900);
+    color: white;
+    padding: 16px;
+    border: none;
+    border-radius: 12px;
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    transition: background 0.2s;
+  }
+  .modal-add-btn:hover { background: var(--stone-700); }
+
+  /* Reviews — Judge.me */
+  .modal-rating-row {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    margin-top: -8px;
+  }
+  .modal-rating-row.has-reviews { display: flex; }
+  .stars-display {
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
+  }
+  .stars-display svg {
+    width: 14px;
+    height: 14px;
+    fill: var(--stone-300);
+  }
+  .stars-display svg.filled { fill: #d4a574; }
+  .modal-rating-text {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--stone-500);
+    letter-spacing: 0.02em;
+  }
+  .modal-rating-text strong { color: var(--stone-700); font-weight: 500; margin-right: 4px; }
+  .modal-rating-text a {
+    color: var(--stone-500);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+  .modal-reviews-section {
+    margin-top: 28px;
+    padding-top: 28px;
+    border-top: 1px solid var(--stone-200);
+    display: none;
+  }
+  .modal-reviews-section.has-reviews { display: block; }
+  .modal-reviews-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .modal-reviews-title {
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--stone-700);
+  }
+  .modal-reviews-summary {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--stone-500);
+  }
+  .review-item {
+    padding: 16px 0;
+    border-bottom: 1px solid var(--stone-100);
+  }
+  .review-item:last-child { border-bottom: none; }
+  .review-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .review-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .review-stars { display: inline-flex; gap: 1px; }
+  .review-stars svg {
+    width: 12px;
+    height: 12px;
+    fill: var(--stone-300);
+  }
+  .review-stars svg.filled { fill: #d4a574; }
+  .review-author {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--stone-700);
+    font-weight: 500;
+  }
+  .review-verified {
+    font-family: var(--font-body);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #6d9e6d;
+    background: #ebf3eb;
+    padding: 2px 6px;
+    border-radius: 2px;
+  }
+  .review-date {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--stone-400);
+  }
+  .review-title {
+    font-family: var(--font-display);
+    font-size: 16px;
+    color: var(--stone-900);
+    font-weight: 400;
+    margin-bottom: 4px;
+    margin-top: 4px;
+  }
+  .review-body {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--stone-600);
+    line-height: 1.6;
+  }
+  .review-photos {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+  .review-photo {
+    width: 64px;
+    height: 64px;
+    border-radius: 4px;
+    object-fit: cover;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  .review-photo:hover { transform: scale(1.05); }
+  .reviews-loading {
+    text-align: center;
+    padding: 20px 0;
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--stone-400);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  .reviews-show-more {
+    display: block;
+    margin: 16px auto 0;
+    background: none;
+    border: 1px solid var(--stone-300);
+    color: var(--stone-700);
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 10px 22px;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+  .reviews-show-more:hover {
+    background: var(--stone-900);
+    color: white;
+    border-color: var(--stone-900);
+  }
+
+  /* Mini stars on Recently Sold cards */
+  .sold-card-stars {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    margin-top: 4px;
+  }
+  .sold-card-stars.has-reviews { display: inline-flex; }
+  .sold-card-stars svg {
+    width: 10px;
+    height: 10px;
+    fill: var(--stone-300);
+  }
+  .sold-card-stars svg.filled { fill: #d4a574; }
+  .sold-card-stars-count {
+    font-family: var(--font-body);
+    font-size: 10px;
+    color: var(--stone-400);
+    margin-left: 2px;
+  }
+
+  @media (max-width: 768px) {
+    .modal {
+      display: flex !important;
+      flex-direction: column !important;
+      grid-template-columns: none !important;
+      grid-template-rows: none !important;
+      max-height: 95vh !important;
+      align-items: stretch !important;
+    }
+    .modal.single-image {
+      display: flex !important;
+      flex-direction: column !important;
+    }
+    .modal-image {
+      order: 1 !important;
+      width: 100% !important;
+      border-radius: 20px 20px 0 0 !important;
+      height: 380px !important;
+      min-height: 380px !important;
+      max-height: 380px !important;
+      flex-shrink: 0 !important;
+      flex-grow: 0 !important;
+      aspect-ratio: auto !important;
+    }
+    .modal-image img {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+      background: var(--stone-50) !important;
+    }
+    .modal-thumbs {
+      order: 2 !important;
+      width: 100% !important;
+      flex-direction: row !important;
+      border-radius: 0 !important;
+      padding: 10px 16px !important;
+      gap: 8px !important;
+      overflow-x: auto !important;
+      overflow-y: hidden !important;
+      background: var(--stone-50) !important;
+      flex-shrink: 0 !important;
+      flex-grow: 0 !important;
+      max-height: 84px !important;
+      grid-row: auto !important;
+    }
+    .modal-thumb {
+      width: 60px !important;
+      height: 60px !important;
+      flex-basis: 60px !important;
+      flex-shrink: 0 !important;
+    }
+    .modal.single-image .modal-image {
+      border-radius: 20px 20px 0 0 !important;
+    }
+    .modal-info {
+      order: 3 !important;
+      padding: 20px 20px 28px !important;
+      width: 100% !important;
+      flex-grow: 0 !important;
+      flex-shrink: 1 !important;
+      flex-basis: auto !important;
+      margin: 0 !important;
+      grid-row: auto !important;
+    }
+    .modal-title { font-size: 26px !important; }
+    .zoom-lens { display: none !important; }
+  }
+
+  /* Cart Drawer */
+  .cart-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 200;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .cart-overlay.open { display: block; opacity: 1; }
+  .cart-drawer {
+    position: fixed;
+    top: 0;
+    right: -420px;
+    width: 400px;
+    max-width: 90vw;
+    height: 100vh;
+    background: var(--stone-50);
+    z-index: 201;
+    display: flex;
+    flex-direction: column;
+    transition: right 0.35s ease;
+    box-shadow: -8px 0 30px rgba(0,0,0,0.1);
+  }
+  .cart-drawer.open { right: 0; }
+  .cart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--stone-200);
+  }
+  .cart-title {
+    font-family: var(--font-body);
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--stone-800);
+  }
+  .cart-close {
+    background: none;
+    border: none;
+    color: var(--stone-600);
+    padding: 4px;
+    transition: color 0.2s;
+  }
+  .cart-close:hover { color: var(--stone-900); }
+  .cart-close svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+  .cart-items {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 24px;
+  }
+  .cart-empty {
+    text-align: center;
+    padding: 60px 0;
+    color: var(--stone-400);
+    font-family: var(--font-body);
+    font-size: 13px;
+  }
+  .cart-item {
+    display: flex;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--stone-100);
+  }
+  .cart-item-img {
+    width: 80px;
+    height: 80px;
+    border-radius: 12px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: var(--stone-100);
+  }
+  .cart-item-img img { width: 100%; height: 100%; object-fit: cover; }
+  .cart-item-info { flex: 1; }
+  .cart-item-name {
+    font-size: 15px;
+    font-style: italic;
+    color: var(--stone-800);
+    margin-bottom: 4px;
+  }
+  .cart-item-price {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--stone-600);
+    margin-bottom: 8px;
+  }
+  .cart-item-qty {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .cart-qty-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid var(--stone-300);
+    background: transparent;
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--stone-700);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.2s;
+  }
+  .cart-qty-btn:hover { border-color: var(--stone-700); }
+  .cart-qty-num {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--stone-800);
+    min-width: 20px;
+    text-align: center;
+  }
+  .cart-item-remove {
+    background: none;
+    border: none;
+    font-family: var(--font-body);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--stone-400);
+    margin-left: auto;
+    padding: 4px 0;
+    transition: color 0.2s;
+  }
+  .cart-item-remove:hover { color: var(--stone-900); }
+  .cart-footer {
+    padding: 20px 24px;
+    border-top: 1px solid var(--stone-200);
+  }
+  .cart-subtotal {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--stone-700);
+  }
+  .cart-subtotal-amount {
+    font-weight: 500;
+    color: var(--stone-900);
+  }
+  .cart-checkout-btn {
+    width: 100%;
+    background: var(--stone-900);
+    color: white;
+    padding: 15px;
+    border: none;
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    border-radius: 8px;
+    transition: background 0.2s;
+  }
+  .cart-checkout-btn:hover { background: var(--stone-700); }
+  .cart-checkout-btn:disabled { background: var(--stone-300); cursor: not-allowed; }
+
+  .saved-item {
+    display: flex;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--stone-100);
+    align-items: center;
+  }
+  .saved-item:last-child { border-bottom: none; }
+  .saved-item-img {
+    width: 52px;
+    height: 52px;
+    border-radius: 8px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: var(--stone-100);
+  }
+  .saved-item-img img { width: 100%; height: 100%; object-fit: cover; }
+  .saved-item-info { flex: 1; }
+  .saved-item-name {
+    font-size: 13px;
+    font-style: italic;
+    color: var(--stone-800);
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .saved-item-price {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--stone-500);
+  }
+  .saved-item-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .saved-item-btn {
+    background: none;
+    border: none;
+    font-family: var(--font-body);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 4px 0;
+    transition: color 0.2s;
+    white-space: nowrap;
+  }
+  .saved-move-btn { color: var(--stone-700); }
+  .saved-move-btn:hover { color: var(--stone-900); }
+  .saved-remove-btn { color: var(--stone-400); }
+  .saved-remove-btn:hover { color: var(--stone-900); }
+
+  .cart-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: var(--stone-900);
+    color: white;
+    font-family: var(--font-body);
+    font-size: 9px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    display: none;
+  }
+  .cart-badge.show { display: flex; }
+  .added-toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--stone-900);
+    color: white;
+    font-family: var(--font-body);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    padding: 14px 28px;
+    border-radius: 8px;
+    z-index: 300;
+    transition: transform 0.3s ease;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  }
+  .added-toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* Footer */
+  .footer { border-top: 1px solid var(--stone-200); padding: 56px 0; }
+
+  /* Get the App Banner */
+  .get-app-banner {
+    background: linear-gradient(135deg, #f5f0e8 0%, #ede4d6 100%);
+    padding: 64px 0;
+    border-top: 1px solid var(--stone-200);
+  }
+  .get-app-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 40px;
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 48px;
+    align-items: center;
+  }
+  .get-app-content {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+  }
+  .get-app-icon-preview {
+    flex-shrink: 0;
+    width: 100px;
+    height: 100px;
+    border-radius: 22px;
+    background: white;
+    box-shadow: 0 12px 32px rgba(28,25,23,0.15), 0 2px 6px rgba(28,25,23,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px;
+    transition: transform 0.3s ease;
+  }
+  .get-app-icon-preview:hover { transform: rotate(-3deg) scale(1.05); }
+  .get-app-icon-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  .get-app-text { flex: 1; }
+  .get-app-tag {
+    font-family: var(--font-body);
+    font-size: 10.5px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--stone-500);
+    margin-bottom: 12px;
+  }
+  .get-app-banner h2 {
+    font-family: var(--font-display);
+    font-size: clamp(28px, 3.5vw, 42px);
+    font-weight: 300;
+    color: var(--stone-900);
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+  .get-app-banner h2 em { font-weight: 300; font-style: italic; }
+  .get-app-desc {
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--stone-600);
+    line-height: 1.6;
+    max-width: 480px;
+  }
+  .get-app-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .get-app-btn {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--stone-900);
+    color: white;
+    border: none;
+    border-radius: 14px;
+    padding: 14px 22px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+    text-decoration: none;
+    min-width: 220px;
+  }
+  .get-app-btn:hover {
+    background: #2a2521;
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(28,25,23,0.25);
+  }
+  .get-app-btn-icon {
+    width: 28px;
+    height: 28px;
+    fill: white;
+    stroke: white;
+    stroke-width: 0;
+    flex-shrink: 0;
+  }
+  .get-app-btn-ios .get-app-btn-icon {
+    fill: white;
+    stroke: none;
+  }
+  .get-app-btn-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.1;
+    text-align: left;
+  }
+  .get-app-btn-label {
+    font-family: var(--font-body);
+    font-size: 9.5px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 3px;
+  }
+  .get-app-btn-platform {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 400;
+    color: white;
+    font-style: italic;
+  }
+
+  @media (max-width: 900px) {
+    .get-app-inner {
+      grid-template-columns: 1fr;
+      gap: 36px;
+      text-align: center;
+    }
+    .get-app-content {
+      flex-direction: column;
+      gap: 20px;
+    }
+    .get-app-text { text-align: center; }
+    .get-app-desc { margin: 0 auto; }
+    .get-app-buttons {
+      flex-direction: row;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+  }
+  @media (max-width: 600px) {
+    .get-app-banner { padding: 48px 0; }
+    .get-app-inner { padding: 0 20px; }
+    .get-app-icon-preview { width: 84px; height: 84px; padding: 12px; border-radius: 18px; }
+    .get-app-buttons { flex-direction: column; align-items: stretch; }
+    .get-app-btn { min-width: 0; padding: 13px 18px; }
+    .get-app-btn-platform { font-size: 19px; }
+  }
+
+  .footer-inner { max-width: 1280px; margin: 0 auto; padding: 0 40px; }
+  .footer-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 36px; margin-bottom: 40px; }
+  .footer-brand { font-size: 20px; font-style: italic; margin-bottom: 12px; }
+  .footer-brand-desc { font-size: 13.5px; color: var(--stone-500); line-height: 1.6; }
+  .footer-col-title { font-family: var(--font-body); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--stone-800); margin-bottom: 14px; }
+  .footer-col ul { list-style: none; }
+  .footer-col li { margin-bottom: 8px; }
+  .footer-col a { font-size: 13.5px; color: var(--stone-500); transition: color 0.2s; }
+  .footer-col a:hover { color: var(--stone-900); }
+  .footer-social { display: flex; gap: 8px; }
+  .footer-social a { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: 1px solid var(--stone-300); color: var(--stone-600); transition: border-color 0.2s, color 0.2s; }
+  .footer-social a:hover { border-color: var(--stone-700); color: var(--stone-900); }
+  .footer-social a svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+  .footer-bottom { border-top: 1px solid var(--stone-200); padding-top: 20px; display: flex; justify-content: space-between; align-items: center; font-family: var(--font-body); font-size: 11px; color: var(--stone-400); }
+  .footer-bottom-links { display: flex; gap: 20px; }
+  .footer-bottom-links a { color: var(--stone-400); transition: color 0.2s; }
+  .footer-bottom-links a:hover { color: var(--stone-900); }
+
+  /* Cookie Consent */
+  .cookie-banner {
+    position: fixed;
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+    max-width: 520px;
+    margin: 0 auto;
+    background: var(--stone-900);
+    color: var(--stone-100);
+    padding: 18px 22px;
+    border-radius: 8px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+    z-index: 9999;
+    font-family: var(--font-body);
+    font-size: 13px;
+    line-height: 1.5;
+    display: none;
+    transform: translateY(120%);
+    transition: transform 0.4s ease;
+  }
+  .cookie-banner.show { display: block; transform: translateY(0); }
+  .cookie-banner p { margin-bottom: 12px; color: var(--stone-300); }
+  .cookie-banner a { color: var(--stone-100); text-decoration: underline; }
+  .cookie-banner-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+  .cookie-btn {
+    flex: 1;
+    min-width: 110px;
+    padding: 9px 14px;
+    border-radius: 4px;
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    border: none;
+    transition: all 0.2s;
+  }
+  .cookie-btn-accept {
+    background: var(--stone-100);
+    color: var(--stone-900);
+  }
+  .cookie-btn-accept:hover { background: white; }
+  .cookie-btn-decline {
+    background: transparent;
+    color: var(--stone-300);
+    border: 1px solid var(--stone-600);
+  }
+  .cookie-btn-decline:hover { border-color: var(--stone-400); color: var(--stone-100); }
+
+  /* Instagram Follow Popup */
+  .ig-popup {
+    position: fixed;
+    bottom: 24px;
+    left: 24px;
+    width: 340px;
+    max-width: calc(100vw - 32px);
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.18);
+    z-index: 9999;
+    overflow: hidden;
+    display: none;
+    transform: translateY(20px) scale(0.95);
+    opacity: 0;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+    border: 1px solid var(--stone-200);
+  }
+  .ig-popup.show {
+    display: block;
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  .ig-popup-header {
+    background: linear-gradient(135deg, #f9ce34 0%, #ee2a7b 50%, #6228d7 100%);
+    height: 6px;
+  }
+  .ig-popup-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--stone-100);
+    color: var(--stone-600);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    line-height: 1;
+    transition: all 0.2s;
+  }
+  .ig-popup-close:hover {
+    background: var(--stone-200);
+    color: var(--stone-900);
+  }
+  .ig-popup-body {
+    padding: 28px 24px 22px;
+    text-align: center;
+  }
+  .ig-popup-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #f9ce34 0%, #ee2a7b 50%, #6228d7 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    box-shadow: 0 8px 20px rgba(238, 42, 123, 0.25);
+  }
+  .ig-popup-icon svg {
+    width: 30px;
+    height: 30px;
+    stroke: white;
+    fill: none;
+    stroke-width: 2;
+  }
+  .ig-popup h3 {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 400;
+    color: var(--stone-900);
+    margin-bottom: 8px;
+    line-height: 1.3;
+  }
+  .ig-popup p {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--stone-600);
+    line-height: 1.6;
+    margin-bottom: 20px;
+  }
+  .ig-popup-btn {
+    display: block;
+    width: 100%;
+    padding: 13px 20px;
+    background: linear-gradient(135deg, #f9ce34 0%, #ee2a7b 50%, #6228d7 100%);
+    color: white;
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-weight: 500;
+    border: none;
+    border-radius: 6px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    margin-bottom: 10px;
+  }
+  .ig-popup-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(238, 42, 123, 0.3);
+  }
+  .ig-popup-handle {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--stone-500);
+    letter-spacing: 0.05em;
+  }
+  .ig-popup-dismiss {
+    background: none;
+    border: none;
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--stone-400);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-top: 6px;
+    padding: 4px 10px;
+    transition: color 0.2s;
+  }
+  .ig-popup-dismiss:hover { color: var(--stone-700); }
+  @media (max-width: 480px) {
+    .ig-popup {
+      bottom: 12px;
+      left: 12px;
+      right: 12px;
+      width: auto;
+    }
+  }
+
+  /* Animations */
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+  .fade-in { animation: fadeUp 0.7s ease-out forwards; }
+  .d1 { animation-delay: 0.05s; opacity: 0; }
+  .d2 { animation-delay: 0.15s; opacity: 0; }
+  .d3 { animation-delay: 0.25s; opacity: 0; }
+  .d4 { animation-delay: 0.35s; opacity: 0; }
+
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .products-grid { grid-template-columns: repeat(3, 1fr); }
+    .sold-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 768px) {
+    .carousel-slide::after { display: none; }
+    .nav-links { display: none; }
+    .mobile-menu-btn { display: block; }
+    .nav-inner { padding: 0 20px; grid-template-columns: auto 1fr auto; }
+    .nav-logo { font-size: 18px; }
+    .hero { grid-template-columns: 1fr; padding: 40px 20px 56px; gap: 36px; }
+    .hero h1 { font-size: 40px; }
+    .hero-visual { max-width: 360px; }
+    .trust-bar-inner { grid-template-columns: repeat(2, 1fr); padding: 0 20px; gap: 16px; }
+    .shop { padding: 48px 20px 60px; }
+    .products-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .sold-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .recently-sold { padding: 40px 20px 56px; }
+    .shop-header { flex-direction: column; align-items: flex-start; }
+    .about-inner { grid-template-columns: 1fr; padding: 0 20px; }
+    .about-image { max-width: 300px; }
+    .reviews-inner { padding: 0 20px; }
+    .stories-inner { padding: 0 20px; }
+    .footer-inner { padding: 0 20px; }
+    .footer-grid { grid-template-columns: 1fr 1fr; gap: 28px; }
+    .footer-bottom { flex-direction: column; gap: 12px; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="announcement">
+  <div class="announcement-track" id="announce-track">
+    <div class="announcement-slide">Free shipping on orders over $50 (continental US) · Handmade with love</div>
+    <div class="announcement-slide">
+      <a href="#" onclick="openInstagram();return false;">
+        <svg viewBox="0 0 24 24" style="stroke:#d62976;"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="#d62976" stroke="none"/></svg>
+        Follow us on Instagram @gloscreations31_6
+      </a>
+    </div>
+  </div>
+  <div class="announcement-dots">
+    <button class="announcement-dot active" onclick="goToAnnounce(0)"></button>
+    <button class="announcement-dot" onclick="goToAnnounce(1)"></button>
+  </div>
+</div>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="nav-left">
+      <button class="mobile-menu-btn" onclick="document.getElementById('mobile-nav').classList.toggle('show')" aria-label="Menu">
+        <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <button class="mobile-livechat-btn" id="mobile-livechat-btn" onclick="helpMenuChooseLiveChat();return false;" aria-label="Live chat">
+        <span class="mobile-livechat-dot"></span>
+        <span class="mobile-livechat-text">Live Chat</span>
+      </button>
+      <div class="nav-links">
+        <a href="#shop">Shop</a>
+        <a href="#about">About</a>
+        <a href="#" onclick="openFaq();return false;">FAQ</a>
+        <a href="#contact">Contact</a>
+      </div>
+    </div>
+    <div class="nav-right">
+      <span class="nav-user-name" id="nav-user" style="display:none;">Hi, <span id="nav-user-name"></span></span>
+      <button class="nav-icon" id="nav-wishlist-btn" onclick="openLoginModal();setTimeout(function(){switchAcctTab('wishlist',document.querySelectorAll('.acct-tab')[2])},100);" title="My Wishlist" style="display:none;margin-right:4px;position:relative;">
+        <svg viewBox="0 0 24 24" style="stroke:#e11d48;"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+        <span class="cart-badge" id="wish-badge" style="background:#e11d48;">0</span>
+      </button>
+      <button class="nav-logout" id="nav-logout" onclick="logoutCustomer()" style="display:none;">Log out</button>
+      <a href="#" onclick="openInstagram();return false;"  class="nav-icon" title="Follow us on Instagram" style="margin-right:4px;min-width:32px;min-height:32px;display:flex;align-items:center;justify-content:center;">
+        <svg viewBox="0 0 24 24" style="stroke:#d62976;width:20px;height:20px;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="#d62976" stroke="none"/></svg>
+      </a>
+      <button class="nav-icon" id="nav-account-btn" title="My Account" onclick="openLoginModal()" style="margin-right:8px;">
+        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </button>
+      <button class="nav-icon" title="Cart" onclick="toggleCart()" style="position:relative;">
+        <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        <span class="cart-badge" id="cart-badge">0</span>
+      </button>
+    </div>
+  </div>
+  <div class="mobile-nav" id="mobile-nav">
+    <a href="#shop" onclick="document.getElementById('mobile-nav').classList.remove('show')">Shop</a>
+    <a href="#about" onclick="document.getElementById('mobile-nav').classList.remove('show')">About</a>
+    <a href="#" onclick="document.getElementById('mobile-nav').classList.remove('show');openFaq();return false;">FAQ</a>
+    <a href="#contact" onclick="document.getElementById('mobile-nav').classList.remove('show')">Contact</a>
+    <a href="#" onclick="document.getElementById('mobile-nav').classList.remove('show');toggleHelpMenu();return false;" style="display:flex;align-items:center;gap:8px;">
+      <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--stone-700);fill:none;stroke-width:1.5;"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      Need Help?
+    </a>
+    <a href="#" onclick="openInstagram();return false;"  style="display:flex;align-items:center;gap:8px;">
+      <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#d62976;fill:none;stroke-width:1.5;"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="#d62976" stroke="none"/></svg>
+      Follow us on Instagram
+    </a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div>
+    <img src="https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/logo.png" alt="Glo's Creations - Deuteronomy 31:6" style="max-width:400px;width:100%;margin-bottom:0;" class="fade-in d1">
+    <h1 class="fade-in d2" style="margin-top:8px;">Wearable<br><em>artistry,</em><br>made by hand.</h1>
+    <p class="hero-desc fade-in d3">Each piece is sculpted, shaped, and finished one at a time — small batch jewelry designed to feel like nothing else.</p>
+    <div class="hero-actions fade-in d4">
+      <a href="#shop" class="btn-primary">Shop the Collection <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+      <a href="#about" class="btn-text">Our Story</a>
+    </div>
+  </div>
+  <div class="hero-visual fade-in d3">
+    <div class="carousel" id="carousel">
+      <div class="carousel-track" id="carousel-track"></div>
+      <button class="carousel-arrow carousel-prev" onclick="carouselPrev()" aria-label="Previous">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <button class="carousel-arrow carousel-next" onclick="carouselNext()" aria-label="Next">
+        <svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+      </button>
+      <div class="carousel-dots" id="carousel-dots"></div>
+    </div>
+  </div>
+</section>
+
+<section class="trust-bar">
+  <div class="trust-bar-inner">
+    <div><p class="trust-label">Handmade</p><p class="trust-sub">One at a time</p></div>
+    <div><p class="trust-label">Lightweight</p><p class="trust-sub">Comfortable wear</p></div>
+    <div><p class="trust-label">Hypoallergenic</p><p class="trust-sub">Sensitive-skin safe</p></div>
+    <div><p class="trust-label">Small Batch</p><p class="trust-sub">Limited editions</p></div>
+  </div>
+</section>
+
+<section class="shop" id="shop">
+  <div class="shop-header">
+    <div>
+      <p class="shop-tag">The Collection</p>
+      <h2>Shop <em>pieces</em></h2>
+    </div>
+    <div class="filters" id="filters-container">
+      <button class="filter-btn active" onclick="filterProducts('All', this)">All</button>
+    </div>
+  </div>
+  <div class="sort-bar" id="sort-bar">
+    <select class="sort-select" id="sort-select" onchange="applyFilters()">
+      <option value="featured">Featured</option>
+      <option value="newest">Newest</option>
+      <option value="price-low">Price: Low to High</option>
+      <option value="price-high">Price: High to Low</option>
+      <option value="name-az">Name: A to Z</option>
+    </select>
+    <div class="style-filters" id="style-filters">
+      <button class="style-btn active" onclick="setStyleFilter('all', this)">All Styles</button>
+    </div>
+    <span class="sort-results" id="sort-results"></span>
+  </div>
+  <div class="products-grid" id="products-grid"></div>
+  <div class="shop-cta">
+    <a href="https://glos-creations-2.myshopify.com/collections/all" class="btn-text" target="_blank">View All Pieces →</a>
+  </div>
+</section>
+
+<section class="recently-sold" id="recently-sold-section">
+  <div class="recently-sold-header">
+    <p class="recently-sold-tag">Recently sold</p>
+    <h2>Found their <em>forever home.</em></h2>
+    <p class="recently-sold-desc">Each piece is one-of-a-kind. These have already gone home with someone — but new pieces drop often. Follow along to catch the next one.</p>
+  </div>
+  <div class="sold-grid" id="sold-grid"></div>
+</section>
+
+<section class="about" id="about">
+  <div class="about-inner">
+    <div class="about-image"><img src="https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/about.jpg" alt="Glo and her husband" style="width:100%;height:100%;object-fit:cover;"></div>
+    <div>
+      <p class="about-tag">Meet the Maker</p>
+      <h2>Hi, I'm <em>Glo</em>.</h2>
+      <div class="about-text">
+        <p>Glo's Creations 3:16 began at a small kitchen table with a block of clay and an idea — that jewelry should feel as personal as the person wearing it.</p>
+        <p>Every piece in this shop is hand-sculpted in small batches. No two are exactly alike. I love working with neutral, soft palettes that go with everything and feel quietly special.</p>
+        <p>Thank you for supporting handmade.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="reviews">
+  <div class="reviews-inner">
+    <p class="reviews-tag">Loved by customers</p>
+    <div class="reviews-carousel" id="reviews-carousel">
+      <div class="reviews-loading-state" id="reviews-loading">
+        <p class="reviews-stars">★ ★ ★ ★ ★</p>
+        <blockquote>"These earrings are the most complimented thing I own. The craftsmanship is unreal — they feel like little pieces of art."</blockquote>
+        <p class="reviews-author">Sarah M. · Verified Customer</p>
+      </div>
+      <div class="reviews-slides" id="reviews-slides"></div>
+      <div class="reviews-controls" id="reviews-controls" style="display:none;">
+        <button class="reviews-arrow reviews-prev" onclick="reviewsPrev()" aria-label="Previous review">
+          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div class="reviews-dots" id="reviews-dots"></div>
+        <button class="reviews-arrow reviews-next" onclick="reviewsNext()" aria-label="Next review">
+          <svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="stories-section" id="contact">
+  <div class="stories-inner">
+    <p class="stories-tag">Behind the clay</p>
+    <h2>Latest from the <em>'gram.</em></h2>
+    <p class="stories-desc">Real posts, real pieces, real life. Tap any to see it on Instagram — and follow along while you're there.</p>
+    <div class="stories-row" id="stories-row">
+      <!-- Bubbles populated by JS -->
+    </div>
+    <button class="stories-cta" onclick="popupFollowInstagram()">
+      <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+      Follow for daily looks
+    </button>
+    <p class="stories-handle"><a href="#" onclick="popupFollowInstagram();return false;">@gloscreations31_6</a></p>
+  </div>
+</section>
+
+<!-- Story Viewer (Fullscreen with Real IG Embed) -->
+<div class="story-viewer" id="story-viewer">
+  <div class="story-viewer-content" id="story-viewer-content">
+    <div class="story-viewer-header">
+      <div class="story-viewer-meta">
+        <div class="story-viewer-avatar">
+          <img src="https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/logo.png" alt="Glo's Creations">
+        </div>
+        <div>
+          <div class="story-viewer-name">gloscreations31_6</div>
+          <div class="story-viewer-time" id="story-viewer-time">on Instagram</div>
+        </div>
+      </div>
+      <button class="story-viewer-close" onclick="closeStory()" aria-label="Close">×</button>
+    </div>
+    <div class="story-embed-wrap" id="story-embed-wrap">
+      <!-- IG embed injected here -->
+    </div>
+    <div class="story-viewer-nav">
+      <button class="story-nav-btn" onclick="storyPrev()" aria-label="Previous">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <span class="story-nav-counter" id="story-nav-counter">1 / 5</span>
+      <button class="story-nav-btn" onclick="storyNext()" aria-label="Next">
+        <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+    <div class="story-viewer-cta">
+      <button class="story-viewer-view-btn" onclick="viewOnInstagram()">View on Instagram</button>
+      <button class="story-viewer-follow-btn" onclick="popupFollowInstagram()">
+        <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+        Follow on Instagram
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Virtual Try-On Modal -->
+<!-- Try-On Consent Modal -->
+<div class="tryon-consent-overlay" id="tryon-consent-overlay" onclick="if(event.target===this)closeTryonConsent()">
+  <div class="tryon-consent-modal">
+    <button class="tryon-consent-close" onclick="closeTryonConsent()" aria-label="Close">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="tryon-consent-icon">
+      <svg viewBox="0 0 24 24" style="width:32px;height:32px;stroke:white;fill:none;stroke-width:1.8;">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+    </div>
+    <h3 class="tryon-consent-title">Before You <em>Try On</em></h3>
+    <p class="tryon-consent-subtitle">Please review how Virtual Try-On works.</p>
+
+    <div class="tryon-consent-points">
+      <div class="tryon-consent-point">
+        <span class="tryon-consent-bullet">📷</span>
+        <div>
+          <strong>Camera Access Required</strong>
+          <p>We\'ll ask your browser for camera permission to overlay earrings on your face.</p>
+        </div>
+      </div>
+      <div class="tryon-consent-point">
+        <span class="tryon-consent-bullet">🔒</span>
+        <div>
+          <strong>Nothing Leaves Your Device</strong>
+          <p>Face detection happens entirely in your browser. We do not collect, store, or transmit your camera feed, photos, or any facial data.</p>
+        </div>
+      </div>
+      <div class="tryon-consent-point">
+        <span class="tryon-consent-bullet">✨</span>
+        <div>
+          <strong>Just a Preview</strong>
+          <p>The Try-On is a visualization aid — not an exact representation of size, fit, or color. Final purchase decisions should not be based solely on this preview.</p>
+        </div>
+      </div>
+      <div class="tryon-consent-point">
+        <span class="tryon-consent-bullet">💾</span>
+        <div>
+          <strong>Saved Images Stay With You</strong>
+          <p>If you save a Try-On photo, it\'s created and stored on your device only. You\'re responsible for how you use or share it.</p>
+        </div>
+      </div>
+    </div>
+
+    <p class="tryon-consent-footnote">By continuing, you agree to our <a href="#" onclick="closeTryonConsent();openPolicy(\'terms\');return false;">Terms of Service</a> and <a href="#" onclick="closeTryonConsent();openPolicy(\'privacy\');return false;">Privacy Policy</a>. Children under 13 should not use this feature; users under 18 should have parental supervision.</p>
+
+    <div class="tryon-consent-actions">
+      <button class="tryon-consent-decline" onclick="declineTryonConsent()">No Thanks</button>
+      <button class="tryon-consent-accept" onclick="acceptTryonConsent()">I Understand — Continue</button>
+    </div>
+  </div>
+</div>
+
+<div class="tryon-overlay" id="tryon-overlay" onclick="if(event.target===this)closeTryon()">
+  <div class="tryon-modal">
+    <div class="tryon-header">
+      <span class="tryon-title">Virtual Try-On</span>
+      <button class="tryon-close" onclick="closeTryon()">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="tryon-body" id="tryon-body">
+      <p class="tryon-product-name" id="tryon-product-name"></p>
+      
+      <!-- Upload State -->
+      <div id="tryon-upload-state">
+        <div style="background:var(--stone-100);border-radius:12px;padding:16px 20px;margin-bottom:20px;text-align:left;">
+          <p style="font-family:var(--font-body);font-size:12px;font-weight:500;color:var(--stone-700);margin-bottom:8px;">How it works:</p>
+          <p style="font-family:var(--font-body);font-size:12px;color:var(--stone-500);line-height:1.7;">
+            1. Upload a front-facing photo or use your camera<br>
+            2. Our AI will detect your face and place the earrings<br>
+            3. Drag the earrings to adjust their position<br>
+            4. Use the slider to resize and zoom to see detail<br>
+            5. Save the image to share or keep
+          </p>
+          <p style="font-family:var(--font-body);font-size:11px;color:var(--stone-800);margin-top:10px;font-weight:500;">💡 Tips for best results:</p>
+          <p style="font-family:var(--font-body);font-size:11px;color:var(--stone-500);line-height:1.6;">
+            Face the camera directly · Use good lighting · Pull hair behind ears
+          </p>
+        </div>
+        <div class="tryon-upload-area" onclick="document.getElementById('tryon-file-input').click()">
+          <p style="font-size:36px;margin-bottom:12px;">📸</p>
+          <p class="tryon-upload-text">Upload a photo of yourself</p>
+          <p class="tryon-upload-sub">Front-facing photo works best · JPG or PNG</p>
+        </div>
+        <input type="file" id="tryon-file-input" accept="image/*" style="display:none;" onchange="handleTryonUpload(event)">
+        <button class="tryon-btn tryon-btn-secondary" onclick="startCamera()" style="width:100%;">Or Use Your Camera</button>
+        <div style="margin-top:20px;padding:14px 16px;background:var(--stone-100);border-radius:10px;">
+          <p style="font-family:var(--font-body);font-size:10px;color:var(--stone-400);line-height:1.7;text-align:left;">
+            <span style="font-weight:500;color:var(--stone-600);">Privacy Notice:</span> Your photos are processed entirely within your browser using on-device facial detection technology. No images, photographs, or biometric data are uploaded, transmitted, stored, or retained by Glo's Creations 3:16 or any third party. All image processing occurs locally on your device and all data is permanently discarded when you close this window. By using this feature, you acknowledge that virtual try-on results are approximations intended for visualization purposes only and may not reflect the exact appearance of the product when worn. Glo's Creations 3:16 assumes no liability for purchasing decisions made based on virtual try-on results.
+          </p>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div id="tryon-loading-state" style="display:none;">
+        <div class="tryon-loading">
+          <p style="font-size:28px;margin-bottom:12px;">✨</p>
+          <p>Detecting face and placing earrings...</p>
+        </div>
+      </div>
+
+      <!-- Camera State -->
+      <div id="tryon-camera-state" style="display:none;">
+        <div class="tryon-canvas-wrap">
+          <video id="tryon-video" autoplay playsinline style="max-width:100%;border-radius:16px;transform:scaleX(-1);"></video>
+        </div>
+        <div style="margin-top:16px;">
+          <button class="tryon-btn tryon-btn-primary" onclick="captureCamera()">Take Photo</button>
+          <button class="tryon-btn tryon-btn-secondary" onclick="stopCamera();showUploadState()">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Result State -->
+      <div id="tryon-result-state" style="display:none;">
+        <div class="tryon-canvas-wrap">
+          <canvas id="tryon-canvas"></canvas>
+        </div>
+        <div class="tryon-earring-size">
+          <span>Earring Size</span>
+          <input type="range" class="tryon-size-slider" id="tryon-size-slider" min="30" max="150" value="70" oninput="updateTryonSize(this.value)">
+          <span id="tryon-size-label">Medium</span>
+        </div>
+        <p style="font-family:var(--font-body);font-size:11px;color:var(--stone-400);margin-top:12px;">Drag the earrings to reposition them · Use the slider to resize</p>
+        <div class="tryon-earring-size" style="margin-top:12px;">
+          <span>Zoom</span>
+          <button class="tryon-btn-secondary" style="padding:4px 12px;font-size:14px;border-radius:6px;min-width:32px;" onclick="tryonZoom(-0.2)">−</button>
+          <span id="tryon-zoom-label" style="min-width:40px;text-align:center;">100%</span>
+          <button class="tryon-btn-secondary" style="padding:4px 12px;font-size:14px;border-radius:6px;min-width:32px;" onclick="tryonZoom(0.2)">+</button>
+          <button class="tryon-btn-secondary" style="padding:4px 12px;font-size:10px;border-radius:6px;" onclick="tryonResetZoom()">Reset</button>
+        </div>
+      </div>
+    </div>
+    <div class="tryon-controls" id="tryon-controls" style="display:none;">
+      <button class="tryon-btn tryon-btn-secondary" onclick="resetTryon()">Try Another Photo</button>
+      <button class="tryon-btn tryon-btn-primary" onclick="saveTryonImage()">Save Image</button>
+    </div>
+  </div>
+</div>
+
+<!-- Policy Modal -->
+<div class="modal-overlay" id="policy-overlay" onclick="if(event.target===this)closePolicy()">
+  <div class="modal" style="grid-template-columns:1fr;max-width:720px;">
+    <button class="modal-close" onclick="closePolicy()">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div style="padding:40px 36px;max-height:85vh;overflow-y:auto;" id="policy-content"></div>
+  </div>
+</div>
+
+<!-- FAQ Modal -->
+<div class="modal-overlay" id="faq-overlay" onclick="if(event.target===this)closeFaq()">
+  <div class="modal" style="grid-template-columns:1fr;max-width:720px;">
+    <button class="modal-close" onclick="closeFaq()">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="faq-modal-body">
+      <p class="faq-tag">Got questions?</p>
+      <h2 class="faq-modal-title">Frequently <em>asked.</em></h2>
+      <p class="faq-desc">Everything you might want to know — about materials, shipping, custom orders, and care. Can't find your answer? <a href="mailto:sales@gloscreations316.com">Email us</a> or DM on Instagram.</p>
+
+      <div class="faq-search-wrap">
+        <svg class="faq-search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" class="faq-search" id="faq-search" placeholder="Search questions..." oninput="filterFaq(this.value)" autocomplete="off">
+        <button class="faq-search-clear" id="faq-search-clear" onclick="clearFaqSearch()" aria-label="Clear search">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="faq-list" id="faq-list">
+        <!-- Populated by JS from faqData -->
+      </div>
+
+      <div class="faq-no-results" id="faq-no-results">
+        No questions match that search. <a href="mailto:sales@gloscreations316.com">Email us</a> and we'll add it!
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Login Modal -->
+<div class="login-overlay" id="login-overlay" onclick="if(event.target===this)closeLoginModal()">
+  <div class="login-modal">
+    <button class="login-close" onclick="closeLoginModal()">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+
+    <!-- Login Form -->
+    <div id="login-form">
+      <h3 class="login-title">Welcome back</h3>
+      <p class="login-subtitle">Log in to view your orders and track shipments.</p>
+      <div class="login-field">
+        <label class="login-label">Email</label>
+        <input class="login-input" type="email" id="login-email" placeholder="your@email.com">
+      </div>
+      <div class="login-field">
+        <label class="login-label">Password</label>
+        <input class="login-input" type="password" id="login-password" placeholder="Your password">
+      </div>
+      <button class="login-btn" id="login-btn" onclick="loginCustomer()">Log In</button>
+      <p class="login-error" id="login-error"></p>
+      <p style="text-align:center;margin-top:12px;"><a onclick="showForgotForm()" style="font-family:var(--font-body);font-size:12px;color:var(--stone-500);border-bottom:1px solid var(--stone-300);cursor:pointer;">Forgot password?</a></p>
+      <p class="login-toggle">Don't have an account? <a onclick="showRegisterForm()">Create one</a></p>
+    </div>
+
+    <!-- Forgot Password Form -->
+    <div id="forgot-form" style="display:none;">
+      <h3 class="login-title">Reset password</h3>
+      <p class="login-subtitle">Enter your email and we'll send you a password reset link.</p>
+      <div class="login-field">
+        <label class="login-label">Email</label>
+        <input class="login-input" type="email" id="forgot-email" placeholder="your@email.com">
+      </div>
+      <button class="login-btn" id="forgot-btn" onclick="resetPassword()">Send Reset Link</button>
+      <p class="login-error" id="forgot-error"></p>
+      <div id="forgot-success" style="display:none;margin-top:16px;">
+        <div style="background:#ecfdf5;border-radius:12px;padding:16px;margin-bottom:16px;">
+          <p style="font-family:var(--font-body);font-size:13px;color:#166534;font-weight:500;margin-bottom:6px;">Reset link sent!</p>
+          <p style="font-family:var(--font-body);font-size:12px;color:#166534;line-height:1.6;">Check your email and click the reset link. After setting your new password, come back here to log in.</p>
+        </div>
+        <button class="login-btn" onclick="showLoginForm()">Back to Log In</button>
+      </div>
+      <p class="login-toggle">Remember your password? <a onclick="showLoginForm()">Log in</a></p>
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--stone-200);">
+        <p style="font-family:var(--font-body);font-size:12px;color:var(--stone-400);text-align:center;">Or <a onclick="showRegisterForm()" style="color:var(--stone-700);border-bottom:1px solid var(--stone-300);cursor:pointer;">create a new account</a> · <a href="mailto:sales@gloscreations316.com?subject=Account Help" style="color:var(--stone-700);border-bottom:1px solid var(--stone-300);">contact support</a></p>
+      </div>
+    </div>
+
+    <!-- Register Form -->
+    <div id="register-form" style="display:none;">
+      <h3 class="login-title">Create account</h3>
+      <p class="login-subtitle">Join to track orders and get early access to new drops.</p>
+      <div class="login-field">
+        <label class="login-label">First Name</label>
+        <input class="login-input" type="text" id="register-first" placeholder="First name">
+      </div>
+      <div class="login-field">
+        <label class="login-label">Last Name</label>
+        <input class="login-input" type="text" id="register-last" placeholder="Last name">
+      </div>
+      <div class="login-field">
+        <label class="login-label">Email</label>
+        <input class="login-input" type="email" id="register-email" placeholder="your@email.com">
+      </div>
+      <div class="login-field">
+        <label class="login-label">Password</label>
+        <input class="login-input" type="password" id="register-password" placeholder="Min 6 characters">
+      </div>
+      <button class="login-btn" id="register-btn" onclick="registerCustomer()">Create Account</button>
+      <p class="login-error" id="register-error"></p>
+      <p class="login-toggle">Already have an account? <a onclick="showLoginForm()">Log in</a></p>
+    </div>
+
+    <!-- Account View -->
+    <div id="account-view" style="display:none;">
+      <h3 class="login-title" id="account-greeting"></h3>
+      <p class="login-subtitle" id="account-email-display"></p>
+
+      <div class="acct-tabs">
+        <button class="acct-tab active" onclick="switchAcctTab('orders', this)">Orders</button>
+        <button class="acct-tab" onclick="switchAcctTab('profile', this)">Profile</button>
+        <button class="acct-tab" onclick="switchAcctTab('wishlist', this)">Wishlist</button>
+        <button class="acct-tab" onclick="switchAcctTab('addresses', this)">Addresses</button>
+      </div>
+
+      <!-- Orders Tab -->
+      <div class="acct-panel active" id="panel-orders">
+        <div id="orders-list" style="max-height:360px;overflow-y:auto;"></div>
+      </div>
+
+      <!-- Profile Tab -->
+      <div class="acct-panel" id="panel-profile">
+        <div class="profile-row">
+          <span class="profile-label">First Name</span>
+          <span class="profile-value" id="prof-first">—</span>
+        </div>
+        <div class="profile-row">
+          <span class="profile-label">Last Name</span>
+          <span class="profile-value" id="prof-last">—</span>
+        </div>
+        <div class="profile-row">
+          <span class="profile-label">Email</span>
+          <span class="profile-value" id="prof-email">—</span>
+        </div>
+        <div class="profile-row">
+          <span class="profile-label">Phone</span>
+          <span class="profile-value" id="prof-phone">Not set</span>
+        </div>
+        <div class="profile-row" style="border-bottom:none;">
+          <span class="profile-label">Member Since</span>
+          <span class="profile-value" id="prof-since">—</span>
+        </div>
+      </div>
+
+      <!-- Wishlist Tab -->
+      <div class="acct-panel" id="panel-wishlist">
+        <div class="wish-grid" id="wishlist-grid">
+          <div class="orders-empty" style="grid-column:1/-1;">Your wishlist is empty. Click the ♡ on any product to save it here.</div>
+        </div>
+      </div>
+
+      <!-- Addresses Tab -->
+      <div class="acct-panel" id="panel-addresses">
+        <div id="addresses-list"></div>
+        <button class="login-btn" onclick="showAddressForm()" style="margin-top:12px;background:transparent;color:var(--stone-700);border:1px solid var(--stone-300);">+ Add New Address</button>
+        <div id="address-form-wrap" style="display:none;margin-top:16px;">
+          <div class="login-field">
+            <label class="login-label">Address Line 1</label>
+            <input class="login-input" type="text" id="addr-line1" placeholder="123 Main St">
+          </div>
+          <div class="login-field">
+            <label class="login-label">Address Line 2</label>
+            <input class="login-input" type="text" id="addr-line2" placeholder="Apt, suite, etc. (optional)">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="login-field">
+              <label class="login-label">City</label>
+              <input class="login-input" type="text" id="addr-city" placeholder="City">
+            </div>
+            <div class="login-field">
+              <label class="login-label">State</label>
+              <input class="login-input" type="text" id="addr-state" placeholder="GA">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="login-field">
+              <label class="login-label">ZIP Code</label>
+              <input class="login-input" type="text" id="addr-zip" placeholder="30301">
+            </div>
+            <div class="login-field">
+              <label class="login-label">Country</label>
+              <input class="login-input" type="text" id="addr-country" placeholder="US" value="US">
+            </div>
+          </div>
+          <button class="login-btn" onclick="saveAddress()">Save Address</button>
+          <p class="login-error" id="addr-error"></p>
+        </div>
+      </div>
+
+      <button class="login-btn" onclick="logoutCustomer();closeLoginModal();" style="background:transparent;color:var(--stone-700);border:1px solid var(--stone-300);margin-top:20px;">Log Out</button>
+    </div>
+  </div>
+</div>
+
+<!-- Image Lightbox -->
+<div class="lightbox" id="lightbox" onclick="if(event.target===this)closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">
+    <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
+  <button class="lightbox-arrow lightbox-prev" id="lightbox-prev" onclick="event.stopPropagation();lightboxNav(-1)">
+    <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+  </button>
+  <img id="lightbox-img" src="" alt="">
+  <button class="lightbox-arrow lightbox-next" id="lightbox-next" onclick="event.stopPropagation();lightboxNav(1)">
+    <svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+  </button>
+  <div class="lightbox-counter" id="lightbox-counter"></div>
+</div>
+
+<!-- Product Modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="product-modal">
+    <button class="modal-close" onclick="closeModal()">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="modal-thumbs" id="modal-thumbs"></div>
+    <div class="modal-image" id="modal-image"></div>
+    <div class="modal-info">
+      <p class="modal-category" id="modal-category"></p>
+      <span class="tryon-badge-modal" id="modal-tryon-badge" style="display:none;">✨ Virtual Try-On Available</span>
+      <h3 class="modal-title" id="modal-title"></h3>
+      <p class="modal-price" id="modal-price"></p>
+      <div class="modal-rating-row" id="modal-rating-row">
+        <span class="stars-display" id="modal-rating-stars"></span>
+        <span class="modal-rating-text" id="modal-rating-text"></span>
+      </div>
+      <p id="modal-stock" style="font-family:var(--font-body);font-size:12px;letter-spacing:0.1em;margin-bottom:20px;"></p>
+      <div class="modal-divider"></div>
+      <p class="modal-desc-label">Description</p>
+      <p class="modal-desc" id="modal-desc"></p>
+      <div class="modal-qty-row">
+        <span class="modal-qty-label">Quantity</span>
+        <div class="modal-qty-controls">
+          <button class="modal-qty-btn" onclick="changeModalQty(-1)">−</button>
+          <span class="modal-qty-num" id="modal-qty">1</span>
+          <button class="modal-qty-btn" onclick="changeModalQty(1)">+</button>
+        </div>
+      </div>
+      <button class="modal-add-btn" id="modal-add-btn" onclick="addModalToCart()">Add to Cart</button>
+      <button class="modal-add-btn" id="modal-tryon-btn" onclick="openTryon()" style="background:transparent;color:var(--stone-700);border:1px solid var(--stone-300);margin-top:10px;">✨ Virtual Try-On</button>
+      <div class="modal-reviews-section" id="modal-reviews-section">
+        <div class="modal-reviews-header">
+          <span class="modal-reviews-title">Reviews</span>
+          <span class="modal-reviews-summary" id="modal-reviews-summary"></span>
+        </div>
+        <div id="modal-reviews-list"></div>
+        <button class="reviews-show-more" id="reviews-show-more" onclick="showMoreReviews()" style="display:none;">Show More Reviews</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Cart Overlay -->
+<div class="cart-overlay" id="cart-overlay" onclick="toggleCart()"></div>
+
+<!-- Cart Drawer -->
+<div class="cart-drawer" id="cart-drawer">
+  <div class="cart-header">
+    <span class="cart-title">Your Cart (<span id="cart-count">0</span>)</span>
+    <button class="cart-close" onclick="toggleCart()">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="cart-items" id="cart-items">
+    <div class="cart-empty">Your cart is empty</div>
+  </div>
+  <div id="cart-saved" style="display:none;">
+    <div style="padding:0 24px;border-top:1px solid var(--stone-200);">
+      <p style="font-family:var(--font-body);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--stone-400);padding:14px 0 8px;">Saved for Later (<span id="saved-count">0</span>)</p>
+    </div>
+    <div id="cart-saved-items" style="padding:0 24px 12px;max-height:200px;overflow-y:auto;"></div>
+  </div>
+  <div class="cart-footer" id="cart-footer" style="display:none;">
+    <div id="shipping-progress" style="margin-bottom:14px;">
+      <div id="shipping-msg" style="font-family:var(--font-body);font-size:12px;margin-bottom:8px;"></div>
+      <div style="height:6px;background:var(--stone-200);border-radius:3px;overflow:hidden;">
+        <div id="shipping-bar" style="height:100%;background:var(--stone-900);border-radius:3px;transition:width 0.4s ease;width:0%;"></div>
+      </div>
+    </div>
+    <div class="cart-subtotal">
+      <span>Subtotal</span>
+      <span class="cart-subtotal-amount" id="cart-subtotal">$0.00</span>
+    </div>
+    <div class="cart-subtotal" id="shipping-line" style="margin-bottom:4px;">
+      <span>Shipping</span>
+      <span id="shipping-cost" style="font-weight:500;color:var(--stone-900);">Calculated at checkout</span>
+    </div>
+    <div id="shipping-rates-info" style="font-family:var(--font-body);font-size:11px;color:var(--stone-500);margin-bottom:10px;line-height:1.6;">
+      <span id="shipping-rates-text">Standard $5 · Priority $9</span>
+    </div>
+    <p style="font-family:var(--font-body);font-size:10px;color:var(--stone-400);margin-bottom:14px;">Free shipping on orders $50+ (continental US)</p>
+    <button class="cart-checkout-btn" id="cart-checkout-btn" onclick="goToCheckout()">Proceed to Checkout</button>
+  </div>
+</div>
+
+<!-- Added to Cart Toast -->
+<div class="added-toast" id="added-toast">Added to cart ✓</div>
+
+<!-- Cookie Consent Banner -->
+<div class="cookie-banner" id="cookie-banner">
+  <p>We use cookies to understand how visitors use our site and improve your experience. See our <a href="#" onclick="openPolicy('privacy');return false;">Privacy Policy</a>.</p>
+  <div class="cookie-banner-buttons">
+    <button class="cookie-btn cookie-btn-decline" onclick="declineCookies()">Decline</button>
+    <button class="cookie-btn cookie-btn-accept" onclick="acceptCookies()">Accept</button>
+  </div>
+</div>
+
+<!-- Instagram Follow Popup -->
+<div class="ig-popup" id="ig-popup">
+  <div class="ig-popup-header"></div>
+  <button class="ig-popup-close" onclick="dismissIgPopup()" aria-label="Close">×</button>
+  <div class="ig-popup-body">
+    <div class="ig-popup-icon">
+      <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+    </div>
+    <h3>Like what you see?</h3>
+    <p>Follow along on Instagram for first looks at new pieces, behind-the-scenes peeks, and exclusive drops.</p>
+    <button class="ig-popup-btn" onclick="popupFollowInstagram()">Follow on Instagram</button>
+    <p class="ig-popup-handle">@gloscreations31_6</p>
+    <button class="ig-popup-dismiss" onclick="dismissIgPopup()">Maybe later</button>
+  </div>
+</div>
+
+<!-- Get the App Banner -->
+<section class="get-app-banner" id="get-app-banner">
+  <div class="get-app-inner">
+    <div class="get-app-content">
+      <div class="get-app-icon-preview">
+        <img src="https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/logo.png" alt="Glo's Creations app icon">
+      </div>
+      <div class="get-app-text">
+        <p class="get-app-tag">Take us with you</p>
+        <h2>Add <em>Glo's</em> to your phone.</h2>
+        <p class="get-app-desc">Get the full shop right on your home screen. Browse new pieces, track orders, and check out faster — works just like an app.</p>
+      </div>
+    </div>
+    <div class="get-app-buttons">
+      <button class="get-app-btn get-app-btn-android" id="get-app-android-btn" onclick="openPwaInstallModal('android')">
+        <svg viewBox="0 0 24 24" class="get-app-btn-icon">
+          <path d="M17.523 15.34c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1m-11 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1m11.4-6.05l1.99-3.46a.41.41 0 0 0-.15-.55.41.41 0 0 0-.55.15l-2.02 3.5C15.59 8.13 13.86 7.7 12 7.7s-3.6.43-5.19 1.23L4.79 5.43a.41.41 0 0 0-.55-.15.41.41 0 0 0-.15.55L6.08 9.29C2.65 11.1.42 14.55 0 18.7h24c-.42-4.15-2.65-7.6-6.08-9.41" fill="currentColor" stroke="none"/>
+        </svg>
+        <span class="get-app-btn-text">
+          <span class="get-app-btn-label">Install on</span>
+          <span class="get-app-btn-platform">Android</span>
+        </span>
+      </button>
+      <button class="get-app-btn get-app-btn-ios" id="get-app-ios-btn" onclick="openPwaInstallModal('ios')">
+        <svg viewBox="0 0 24 24" class="get-app-btn-icon">
+          <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35c-1.09-.46-2.09-.48-3.24 0c-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8c1.18-.24 2.31-.93 3.57-.84c1.51.12 2.65.72 3.4 1.8c-3.12 1.87-2.38 5.98.48 7.13c-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25c.29 2.58-2.34 4.5-3.74 4.25"/>
+        </svg>
+        <span class="get-app-btn-text">
+          <span class="get-app-btn-label">Install on</span>
+          <span class="get-app-btn-platform">iPhone</span>
+        </span>
+      </button>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-grid">
+      <div>
+        <img src="https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/logo.png" alt="Glo's Creations" style="max-width:240px;margin-bottom:12px;">
+        <p style="font-style:italic;font-size:14px;color:var(--stone-500);line-height:1.6;margin-bottom:6px;">"Be strong and courageous. Do not be afraid or terrified because of them, for the LORD your God goes with you; He will never leave you nor forsake you."</p>
+        <p style="font-family:var(--font-body);font-size:11px;color:var(--stone-400);letter-spacing:0.1em;">— Deuteronomy 31:6</p>
+      </div>
+      <div class="footer-col">
+        <p class="footer-col-title">Shop</p>
+        <ul>
+          <li><a href="https://glos-creations-2.myshopify.com/collections/all" target="_blank">All Jewelry</a></li>
+          <li><a href="#shop">New Arrivals</a></li>
+          <li><a href="#shop">Best Sellers</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <p class="footer-col-title">Help</p>
+        <ul>
+          <li><a href="#" onclick="openPolicy('shipping');return false;">Shipping</a></li>
+          <li><a href="#" onclick="openPolicy('returns');return false;">Returns & Exchanges</a></li>
+          <li><a href="#" onclick="openPolicy('care');return false;">Care Guide</a></li>
+          <li><a href="mailto:sales@gloscreations316.com">Contact Us</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <p class="footer-col-title">Connect</p>
+        <div class="footer-social">
+          <a href="#" onclick="openInstagram();return false;"  title="Instagram"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg></a>
+          <a href="mailto:sales@gloscreations316.com" title="Email"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 Glo's Creations 3:16. All rights reserved.</p>
+      <div class="footer-bottom-links">
+        <a href="#" onclick="openPolicy('privacy');return false;">Privacy Policy</a>
+        <a href="#" onclick="openPolicy('terms');return false;">Terms of Service</a>
+        <a href="#" onclick="openPolicy('returns');return false;">Returns</a>
+        <a href="#" onclick="openPolicy('shipping');return false;">Shipping</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  var SHOPIFY_STORE = 'glos-creations-2.myshopify.com';
+  var SHOPIFY_TOKEN = '861afc7223b28d374e9f6754e3eb5538';
+  var API_VERSIONS = ['2025-01', '2024-10', '2024-07', '2024-04', '2024-01'];
+  var products = [];
+  var cart = [];
+  var workingApiVersion = null;
+
+  // ============================================
+  // COOKIE CONSENT
+  // ============================================
+  function showCookieBanner() {
+    var choice = localStorage.getItem('gc_cookie_consent');
+    if (!choice) {
+      setTimeout(function() {
+        var banner = document.getElementById('cookie-banner');
+        if (banner) banner.classList.add('show');
+      }, 1500);
+    } else if (choice === 'accepted') {
+      enableAnalytics();
+    }
+  }
+  function acceptCookies() {
+    localStorage.setItem('gc_cookie_consent', 'accepted');
+    document.getElementById('cookie-banner').classList.remove('show');
+    enableAnalytics();
+  }
+  function declineCookies() {
+    localStorage.setItem('gc_cookie_consent', 'declined');
+    document.getElementById('cookie-banner').classList.remove('show');
+  }
+  function enableAnalytics() {
+    if (typeof gtag === 'function') {
+      gtag('consent', 'update', {
+        'analytics_storage': 'granted'
       });
     }
+  }
 
-    var data = await response.json();
-    var answer = '';
-    if (data.content && Array.isArray(data.content)) {
-      for (var i = 0; i < data.content.length; i++) {
-        if (data.content[i].type === 'text') answer += data.content[i].text;
+  // ============================================
+  // INSTAGRAM FOLLOW POPUP (after 2 minutes)
+  // ============================================
+  var igPopupTimer = null;
+  var igPopupShown = false;
+
+  function startIgPopupTimer() {
+    // Don't show if previously dismissed or followed
+    var status = localStorage.getItem('gc_ig_popup');
+    if (status === 'dismissed' || status === 'followed') return;
+    // 30 seconds = 30000 ms
+    igPopupTimer = setTimeout(showIgPopup, 30000);
+  }
+
+  function showIgPopup() {
+    if (igPopupShown) return;
+    // Don't show if cart, modal, or other overlays are open
+    var cartOpen = document.getElementById('cart-drawer') && document.getElementById('cart-drawer').classList.contains('open');
+    var modalOpen = document.getElementById('product-modal') && document.getElementById('product-modal').classList.contains('open');
+    var loginOpen = document.getElementById('login-overlay') && document.getElementById('login-overlay').classList.contains('open');
+    var tryonOpen = document.getElementById('tryon-overlay') && document.getElementById('tryon-overlay').classList.contains('open');
+    var policyOpen = document.getElementById('policy-overlay') && document.getElementById('policy-overlay').classList.contains('open');
+    var cookieOpen = document.getElementById('cookie-banner') && document.getElementById('cookie-banner').classList.contains('show');
+    if (cartOpen || modalOpen || loginOpen || tryonOpen || policyOpen || cookieOpen) {
+      // Try again in 30 seconds
+      setTimeout(showIgPopup, 30000);
+      return;
+    }
+    igPopupShown = true;
+    document.getElementById('ig-popup').classList.add('show');
+    trackEvent('ig_popup_shown', {});
+  }
+
+  function dismissIgPopup() {
+    document.getElementById('ig-popup').classList.remove('show');
+    localStorage.setItem('gc_ig_popup', 'dismissed');
+    trackEvent('ig_popup_dismissed', {});
+    setTimeout(function() {
+      var p = document.getElementById('ig-popup');
+      if (p) p.style.display = 'none';
+    }, 400);
+  }
+
+  function popupFollowInstagram() {
+    localStorage.setItem('gc_ig_popup', 'followed');
+    trackEvent('ig_popup_clicked', {});
+    document.getElementById('ig-popup').classList.remove('show');
+    var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      window.location.href = 'https://www.instagram.com/gloscreations31_6/';
+    } else {
+      window.open('https://www.instagram.com/gloscreations31_6/', '_blank');
+    }
+  }
+
+  // ============================================
+  // BEHIND THE CLAY - REAL INSTAGRAM POSTS
+  // ============================================
+  // Posts are now loaded dynamically from Shopify metaobjects (type: instagram_post)
+  // To edit: Shopify Admin → Settings → Custom data → Metaobjects → Instagram Post
+  // The hardcoded list below is a safety fallback used only if Shopify is unreachable.
+  var igPostsFallback = [
+    { url: 'https://www.instagram.com/p/DX50fhIjTyU/', label: 'Latest', image: 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/ig-post-1.png' },
+    { url: 'https://www.instagram.com/p/DX0d-aTjBdI/', label: 'New Drop', image: 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/ig-post-2.png' },
+    { url: 'https://www.instagram.com/p/DXvS_igjHgQ/', label: 'In Studio', image: 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/ig-post-3.png' },
+    { url: 'https://www.instagram.com/p/DXj6RcwDukj/', label: 'Behind The Scenes', image: 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/ig-post-4.png' },
+    { url: 'https://www.instagram.com/p/DXj2pK5jg9B/', label: 'The Why', image: 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/ig-post-5.png' }
+  ];
+  var igPosts = igPostsFallback.slice();
+
+  // Fetch IG post entries from Shopify metaobjects
+  async function fetchIgPosts() {
+    var query = '{ metaobjects(type: "instagram_post", first: 20) { edges { node { id handle fields { key value reference { ... on MediaImage { image { url } } } } } } } }';
+    var data = await shopifyFetch(query);
+    if (!data || !data.data || !data.data.metaobjects || !data.data.metaobjects.edges) {
+      console.log('IG posts: using fallback (Shopify metaobjects unavailable)');
+      return;
+    }
+    var edges = data.data.metaobjects.edges;
+    if (!edges.length) {
+      console.log('IG posts: no metaobjects returned, using fallback');
+      return;
+    }
+    var loaded = [];
+    for (var i = 0; i < edges.length; i++) {
+      var fields = edges[i].node.fields || [];
+      var post = { url: '', label: '', image: '', order: 999 };
+      for (var f = 0; f < fields.length; f++) {
+        var fld = fields[f];
+        if (fld.key === 'url') post.url = fld.value || '';
+        else if (fld.key === 'label') post.label = fld.value || '';
+        else if (fld.key === 'thumbnail') {
+          if (fld.reference && fld.reference.image && fld.reference.image.url) {
+            post.image = fld.reference.image.url;
+          }
+        }
+        else if (fld.key === 'display_order') post.order = parseInt(fld.value, 10) || 999;
+      }
+      if (post.url) loaded.push(post);
+    }
+    if (!loaded.length) {
+      console.log('IG posts: no valid entries, using fallback');
+      return;
+    }
+    // Sort by display order ascending
+    loaded.sort(function(a, b) { return a.order - b.order; });
+    igPosts = loaded;
+    console.log('IG posts loaded from Shopify:', igPosts.length);
+    renderIgBubbles();
+  }
+
+
+  var currentPostIndex = 0;
+
+  // Load Instagram embed script once (used for the in-page viewer)
+  function loadInstagramEmbedScript() {
+    if (window.instgrm) return Promise.resolve();
+    return new Promise(function(resolve) {
+      var s = document.createElement('script');
+      s.async = true;
+      s.src = 'https://www.instagram.com/embed.js';
+      s.onload = function() { resolve(); };
+      document.body.appendChild(s);
+    });
+  }
+
+  // Get IG post shortcode from URL (e.g. "DX50fhIjTyU")
+  function getIgShortcode(url) {
+    var m = url.match(/\/(p|reel|tv)\/([^/?]+)/);
+    return m ? m[2] : null;
+  }
+
+  // Render the bubble row with IG thumbnails
+  function renderIgBubbles() {
+    var row = document.getElementById('stories-row');
+    if (!row) return;
+    var html = '';
+    for (var i = 0; i < igPosts.length; i++) {
+      var post = igPosts[i];
+      // Prefer locally hosted snapshot image; fall back to Instagram's media endpoint
+      var thumbUrl = post.image;
+      if (!thumbUrl) {
+        var shortcode = getIgShortcode(post.url);
+        thumbUrl = 'https://www.instagram.com/p/' + shortcode + '/media/?size=l';
+      }
+      html += '<button class="story-bubble" onclick="openIgPost(' + i + ')">' +
+        '<div class="story-bubble-ring">' +
+          '<div class="story-bubble-inner">' +
+            '<img src="' + thumbUrl + '" alt="' + (post.label || 'Instagram post') + '" loading="lazy" onerror="this.style.display=\'none\';this.parentNode.classList.add(\'loading\');this.parentNode.innerHTML=\'<svg viewBox=&quot;0 0 24 24&quot; style=&quot;width:32px;height:32px;stroke:#fff;fill:none;stroke-width:1.5;opacity:0.5;&quot;><rect x=&quot;2&quot; y=&quot;2&quot; width=&quot;20&quot; height=&quot;20&quot; rx=&quot;5&quot;/><path d=&quot;M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z&quot;/><line x1=&quot;17.5&quot; y1=&quot;6.5&quot; x2=&quot;17.51&quot; y2=&quot;6.5&quot;/></svg>\';">' +
+            '<div class="story-bubble-play-icon"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>' +
+          '</div>' +
+        '</div>' +
+        '<span class="story-bubble-label">' + (post.label || '') + '</span>' +
+      '</button>';
+    }
+    row.innerHTML = html;
+  }
+
+  function openIgPost(index) {
+    currentPostIndex = index;
+    var post = igPosts[index];
+    if (!post) return;
+    trackEvent('story_open', { post_index: index, post_url: post.url, post_label: post.label || '' });
+
+    document.getElementById('story-viewer').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    renderIgEmbed();
+    updateStoryCounter();
+  }
+
+  function renderIgEmbed() {
+    var post = igPosts[currentPostIndex];
+    if (!post) return;
+    var wrap = document.getElementById('story-embed-wrap');
+    wrap.innerHTML = '<div class="story-embed-loader">Loading post...</div>';
+
+    // Build the official Instagram embed blockquote
+    var embedHtml = '<blockquote class="instagram-media" data-instgrm-permalink="' + post.url + '" data-instgrm-version="14" style="background:#FFF;border:0;margin:0;padding:0;width:100%;"></blockquote>';
+
+    setTimeout(function() {
+      wrap.innerHTML = embedHtml;
+      loadInstagramEmbedScript().then(function() {
+        if (window.instgrm && window.instgrm.Embeds) {
+          window.instgrm.Embeds.process();
+        }
+      });
+    }, 100);
+  }
+
+  function updateStoryCounter() {
+    var c = document.getElementById('story-nav-counter');
+    if (c) c.textContent = (currentPostIndex + 1) + ' / ' + igPosts.length;
+  }
+
+  function storyNext() {
+    currentPostIndex = (currentPostIndex + 1) % igPosts.length;
+    var post = igPosts[currentPostIndex];
+    trackEvent('story_navigate', { direction: 'next', post_index: currentPostIndex, post_label: post.label || '' });
+    renderIgEmbed();
+    updateStoryCounter();
+  }
+
+  function storyPrev() {
+    currentPostIndex = (currentPostIndex - 1 + igPosts.length) % igPosts.length;
+    var post = igPosts[currentPostIndex];
+    trackEvent('story_navigate', { direction: 'prev', post_index: currentPostIndex, post_label: post.label || '' });
+    renderIgEmbed();
+    updateStoryCounter();
+  }
+
+  function closeStory() {
+    document.getElementById('story-viewer').classList.remove('open');
+    document.body.style.overflow = '';
+    // Clear embed to stop any video playback
+    var wrap = document.getElementById('story-embed-wrap');
+    if (wrap) wrap.innerHTML = '';
+  }
+
+  function viewOnInstagram() {
+    var post = igPosts[currentPostIndex];
+    if (!post) return;
+    trackEvent('story_view_on_ig', { post_index: currentPostIndex, post_label: post.label || '' });
+    var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      window.location.href = post.url;
+    } else {
+      window.open(post.url, '_blank');
+    }
+  }
+
+  // Keyboard navigation
+  document.addEventListener('keydown', function(e) {
+    var open = document.getElementById('story-viewer') && document.getElementById('story-viewer').classList.contains('open');
+    if (!open) return;
+    if (e.key === 'Escape') closeStory();
+    if (e.key === 'ArrowRight') storyNext();
+    if (e.key === 'ArrowLeft') storyPrev();
+  });
+
+  // Click outside to close
+  document.addEventListener('click', function(e) {
+    var viewer = document.getElementById('story-viewer');
+    if (viewer && viewer.classList.contains('open') && e.target === viewer) {
+      closeStory();
+    }
+  });
+
+  // ============================================
+  // SHOPIFY API HELPER
+  // ============================================
+  async function shopifyFetch(query) {
+    var versions = workingApiVersion ? [workingApiVersion] : API_VERSIONS;
+    for (var v = 0; v < versions.length; v++) {
+      try {
+        var response = await fetch('https://' + SHOPIFY_STORE + '/api/' + versions[v] + '/graphql.json', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': SHOPIFY_TOKEN },
+          body: JSON.stringify({ query: query }),
+        });
+        if (response.status === 401) continue;
+        var data = await response.json();
+        if (data.errors) continue;
+        workingApiVersion = versions[v];
+        return data;
+      } catch (e) { continue; }
+    }
+    return null;
+  }
+
+  // ============================================
+  // CART SYSTEM
+  // ============================================
+  function toggleCart() {
+    document.getElementById('cart-drawer').classList.toggle('open');
+    document.getElementById('cart-overlay').classList.toggle('open');
+  }
+
+  function addToCart(product) {
+    // Check stock
+    var currentInCart = 0;
+    for (var j = 0; j < cart.length; j++) {
+      if (cart[j].variantId === product.variantId) { currentInCart = cart[j].qty; break; }
+    }
+    if (currentInCart >= product.stock) {
+      showToastMsg('Sorry, only ' + product.stock + ' available');
+      return;
+    }
+
+    var existing = null;
+    for (var i = 0; i < cart.length; i++) {
+      if (cart[i].variantId === product.variantId) { existing = cart[i]; break; }
+    }
+    if (existing) {
+      existing.qty += 1;
+    } else {
+      cart.push({ name: product.name, price: product.price, image: product.image, variantId: product.variantId, qty: 1, stock: product.stock });
+    }
+    trackEvent('add_to_cart', {
+      currency: 'USD',
+      value: product.price,
+      items: [{ item_id: product.variantId, item_name: product.name, price: product.price, quantity: 1 }]
+    });
+    updateCartUI();
+    showToast();
+  }
+
+  function removeFromCart(index) {
+    var removed = cart[index];
+    if (removed) {
+      trackEvent('remove_from_cart', {
+        currency: 'USD',
+        value: removed.price * removed.qty,
+        items: [{ item_id: removed.variantId, item_name: removed.name, price: removed.price, quantity: removed.qty }]
+      });
+    }
+    cart.splice(index, 1);
+    updateCartUI();
+  }
+
+  function saveForLater(index) {
+    if (!customerToken) {
+      // Don't remove from cart - just prompt login
+      toggleCart();
+      openLoginModal();
+      showToastMsg('Please log in to save items for later');
+      return;
+    }
+    var item = cart[index];
+    // Check if already in wishlist
+    var alreadyIn = false;
+    for (var i = 0; i < wishlist.length; i++) {
+      if (wishlist[i].variantId === item.variantId) { alreadyIn = true; break; }
+    }
+    if (!alreadyIn) {
+      wishlist.push({ name: item.name, price: item.price, image: item.image, variantId: item.variantId, category: '' });
+      saveWishlist();
+    }
+    cart.splice(index, 1);
+    updateCartUI();
+    // Re-render products to show heart
+    var activeFilter = document.querySelector('.filter-btn.active');
+    if (activeFilter) renderProducts(activeFilter.textContent);
+    showToastMsg('Saved to wishlist ♡');
+  }
+
+  function updateQty(index, delta) {
+    if (delta > 0 && cart[index].qty >= cart[index].stock) {
+      showToastMsg('Sorry, only ' + cart[index].stock + ' available');
+      return;
+    }
+    cart[index].qty += delta;
+    if (cart[index].qty <= 0) cart.splice(index, 1);
+    updateCartUI();
+  }
+
+  function updateCartUI() {
+    var totalItems = 0;
+    var subtotal = 0;
+    for (var i = 0; i < cart.length; i++) {
+      totalItems += cart[i].qty;
+      subtotal += cart[i].price * cart[i].qty;
+    }
+
+    // Badge
+    var badge = document.getElementById('cart-badge');
+    badge.textContent = totalItems;
+    badge.className = totalItems > 0 ? 'cart-badge show' : 'cart-badge';
+
+    // Count
+    document.getElementById('cart-count').textContent = totalItems;
+
+    // Subtotal
+    document.getElementById('cart-subtotal').textContent = '$' + subtotal.toFixed(2);
+
+    // Shipping progress
+    var FREE_SHIPPING_MIN = 50;
+    var shippingMsg = document.getElementById('shipping-msg');
+    var shippingBar = document.getElementById('shipping-bar');
+    var shippingCost = document.getElementById('shipping-cost');
+    var progress = Math.min((subtotal / FREE_SHIPPING_MIN) * 100, 100);
+    shippingBar.style.width = progress + '%';
+
+    if (subtotal >= FREE_SHIPPING_MIN) {
+      shippingMsg.innerHTML = '<span style="color:#166534;">✓ You\'ve earned free shipping!</span>';
+      shippingBar.style.background = '#166534';
+      shippingCost.textContent = 'FREE';
+      shippingCost.style.color = '#166534';
+      document.getElementById('shipping-rates-text').textContent = 'Free standard shipping applied!';
+    } else {
+      var remaining = (FREE_SHIPPING_MIN - subtotal).toFixed(2);
+      shippingMsg.innerHTML = 'You\'re <strong>$' + remaining + '</strong> away from free shipping!';
+      shippingMsg.style.color = 'var(--stone-600)';
+      shippingBar.style.background = 'var(--stone-900)';
+      shippingCost.textContent = 'From $5.00';
+      shippingCost.style.color = 'var(--stone-600)';
+      document.getElementById('shipping-rates-text').textContent = 'Standard $5 (3-5 days) · Priority $9 (1-2 days)';
+    }
+
+    // Footer
+    document.getElementById('cart-footer').style.display = totalItems > 0 ? 'block' : 'none';
+
+    // Items
+    var container = document.getElementById('cart-items');
+    if (cart.length === 0) {
+      container.innerHTML = '<div class="cart-empty">Your cart is empty</div>';
+      renderSavedForLater();
+      return;
+    }
+
+    var html = '';
+    for (var j = 0; j < cart.length; j++) {
+      var item = cart[j];
+      html += '<div class="cart-item">';
+      html += '<div class="cart-item-img">';
+      if (item.image) html += '<img src="' + item.image + '" alt="' + item.name + '">';
+      html += '</div>';
+      html += '<div class="cart-item-info">';
+      html += '<p class="cart-item-name">' + item.name + '</p>';
+      html += '<p class="cart-item-price">$' + item.price.toFixed(2) + '</p>';
+      html += '<div class="cart-item-qty">';
+      html += '<button class="cart-qty-btn" onclick="updateQty(' + j + ', -1)">−</button>';
+      html += '<span class="cart-qty-num">' + item.qty + '</span>';
+      html += '<button class="cart-qty-btn" onclick="updateQty(' + j + ', 1)">+</button>';
+      html += '</div>';
+      html += '<div style="display:flex;gap:12px;margin-top:8px;">';
+      html += '<button class="cart-item-remove" onclick="removeFromCart(' + j + ')">Remove</button>';
+      html += '<button class="cart-item-remove" onclick="saveForLater(' + j + ')">Save for Later ♡</button>';
+      html += '</div>';
+      html += '</div></div>';
+    }
+    container.innerHTML = html;
+    renderSavedForLater();
+  }
+
+  function renderSavedForLater() {
+    var savedSection = document.getElementById('cart-saved');
+    var savedContainer = document.getElementById('cart-saved-items');
+    var savedCount = document.getElementById('saved-count');
+
+    if (!customerToken || wishlist.length === 0) {
+      savedSection.style.display = 'none';
+      return;
+    }
+
+    savedSection.style.display = 'block';
+    savedCount.textContent = wishlist.length;
+
+    var html = '';
+    for (var i = 0; i < wishlist.length; i++) {
+      var w = wishlist[i];
+      html += '<div class="saved-item">';
+      html += '<div class="saved-item-img">';
+      if (w.image) html += '<img src="' + w.image + '" alt="' + w.name + '">';
+      html += '</div>';
+      html += '<div class="saved-item-info">';
+      html += '<p class="saved-item-name">' + w.name + '</p>';
+      html += '<p class="saved-item-price">$' + w.price.toFixed(2) + '</p>';
+      html += '</div>';
+      html += '<div class="saved-item-actions">';
+      html += '<button class="saved-item-btn saved-move-btn" onclick="moveToCart(' + i + ')">Add to Cart</button>';
+      html += '<button class="saved-item-btn saved-remove-btn" onclick="removeSaved(' + i + ')">Remove</button>';
+      html += '</div>';
+      html += '</div>';
+    }
+    savedContainer.innerHTML = html;
+  }
+
+  function moveToCart(wishlistIndex) {
+    var item = wishlist[wishlistIndex];
+    var matchedProduct = null;
+    for (var i = 0; i < products.length; i++) {
+      if (products[i].variantId === item.variantId) { matchedProduct = products[i]; break; }
+    }
+    if (matchedProduct) {
+      addToCart(matchedProduct);
+    } else {
+      cart.push({ name: item.name, price: item.price, image: item.image, variantId: item.variantId, qty: 1, stock: 999 });
+      updateCartUI();
+      showToast();
+    }
+    wishlist.splice(wishlistIndex, 1);
+    saveWishlist();
+    renderSavedForLater();
+    var activeFilter = document.querySelector('.filter-btn.active');
+    if (activeFilter) renderProducts(activeFilter.textContent);
+  }
+
+  function removeSaved(wishlistIndex) {
+    wishlist.splice(wishlistIndex, 1);
+    saveWishlist();
+    renderSavedForLater();
+    var activeFilter = document.querySelector('.filter-btn.active');
+    if (activeFilter) renderProducts(activeFilter.textContent);
+    showToastMsg('Removed from saved items');
+  }
+
+  function showToast() {
+    showToastMsg('Added to cart ✓');
+  }
+
+  function showToastMsg(msg) {
+    var toast = document.getElementById('added-toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(function() { toast.classList.remove('show'); }, 2500);
+  }
+
+  async function goToCheckout() {
+    var btn = document.getElementById('cart-checkout-btn');
+    btn.textContent = 'Creating checkout...';
+    btn.disabled = true;
+
+    // Track checkout start
+    var totalValue = 0;
+    var checkoutItems = [];
+    for (var k = 0; k < cart.length; k++) {
+      totalValue += cart[k].price * cart[k].qty;
+      checkoutItems.push({ item_id: cart[k].variantId, item_name: cart[k].name, price: cart[k].price, quantity: cart[k].qty });
+    }
+    trackEvent('begin_checkout', { currency: 'USD', value: totalValue, items: checkoutItems });
+
+    // Build line items
+    var lines = [];
+    for (var i = 0; i < cart.length; i++) {
+      lines.push('{ merchandiseId: "' + cart[i].variantId + '", quantity: ' + cart[i].qty + ' }');
+    }
+
+    // Try cartCreate first (newer API)
+    var query = 'mutation { cartCreate(input: { lines: [' + lines.join(', ') + '] }) { cart { checkoutUrl } userErrors { field message } } }';
+    var data = await shopifyFetch(query);
+    console.log('cartCreate response:', JSON.stringify(data));
+
+    if (data && data.data && data.data.cartCreate && data.data.cartCreate.cart && data.data.cartCreate.cart.checkoutUrl) {
+      window.location.href = data.data.cartCreate.cart.checkoutUrl;
+      return;
+    }
+
+    // Fallback: try checkoutCreate (older API)
+    var lines2 = [];
+    for (var j = 0; j < cart.length; j++) {
+      lines2.push('{ variantId: "' + cart[j].variantId + '", quantity: ' + cart[j].qty + ' }');
+    }
+    var query2 = 'mutation { checkoutCreate(input: { lineItems: [' + lines2.join(', ') + '] }) { checkout { webUrl } checkoutUserErrors { field message } } }';
+    var data2 = await shopifyFetch(query2);
+    console.log('checkoutCreate response:', JSON.stringify(data2));
+
+    if (data2 && data2.data && data2.data.checkoutCreate && data2.data.checkoutCreate.checkout && data2.data.checkoutCreate.checkout.webUrl) {
+      window.location.href = data2.data.checkoutCreate.checkout.webUrl;
+      return;
+    }
+
+    // If both fail, log errors and show message
+    console.error('Both checkout methods failed');
+    if (data && data.data && data.data.cartCreate && data.data.cartCreate.userErrors) {
+      console.error('cartCreate errors:', data.data.cartCreate.userErrors);
+    }
+    if (data2 && data2.data && data2.data.checkoutCreate && data2.data.checkoutCreate.checkoutUserErrors) {
+      console.error('checkoutCreate errors:', data2.data.checkoutCreate.checkoutUserErrors);
+    }
+    alert('There was an issue creating the checkout. Please try again.');
+    btn.textContent = 'Proceed to Checkout';
+    btn.disabled = false;
+  }
+
+  // ============================================
+  // CUSTOMER ACCOUNT SYSTEM
+  // ============================================
+  var customerToken = null;
+  var customerName = '';
+
+  function openLoginModal() {
+    if (customerToken) {
+      showAccountView();
+    } else {
+      showLoginForm();
+    }
+    document.getElementById('login-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLoginModal() {
+    document.getElementById('login-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function showLoginForm() {
+    document.getElementById('login-form').style.display = 'block';
+    document.getElementById('register-form').style.display = 'none';
+    document.getElementById('forgot-form').style.display = 'none';
+    document.getElementById('account-view').style.display = 'none';
+    document.getElementById('login-error').style.display = 'none';
+  }
+
+  function showRegisterForm() {
+    document.getElementById('login-form').style.display = 'none';
+    document.getElementById('register-form').style.display = 'block';
+    document.getElementById('forgot-form').style.display = 'none';
+    document.getElementById('account-view').style.display = 'none';
+    document.getElementById('register-error').style.display = 'none';
+  }
+
+  function showForgotForm() {
+    document.getElementById('login-form').style.display = 'none';
+    document.getElementById('register-form').style.display = 'none';
+    document.getElementById('forgot-form').style.display = 'block';
+    document.getElementById('account-view').style.display = 'none';
+    document.getElementById('forgot-error').style.display = 'none';
+    document.getElementById('forgot-success').style.display = 'none';
+  }
+
+  async function resetPassword() {
+    var email = document.getElementById('forgot-email').value.trim();
+    var btn = document.getElementById('forgot-btn');
+    var errEl = document.getElementById('forgot-error');
+    var successEl = document.getElementById('forgot-success');
+
+    if (!email) {
+      errEl.textContent = 'Please enter your email address.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    btn.textContent = 'Sending...';
+    btn.disabled = true;
+    errEl.style.display = 'none';
+    successEl.style.display = 'none';
+
+    var query = 'mutation { customerRecover(email: "' + email.replace(/"/g, '\\"') + '") { customerUserErrors { message } } }';
+    var data = await shopifyFetch(query);
+
+    if (data && data.data && data.data.customerRecover) {
+      var errors = data.data.customerRecover.customerUserErrors;
+      if (errors && errors.length > 0) {
+        errEl.textContent = errors[0].message;
+        errEl.style.display = 'block';
+      } else {
+        successEl.textContent = 'Reset link sent! Check your email (including spam folder).';
+        successEl.style.display = 'block';
+      }
+    } else {
+      // Show success anyway - don't reveal if email exists or not for security
+      successEl.textContent = 'If an account exists with that email, a reset link has been sent.';
+      successEl.style.display = 'block';
+    }
+
+    btn.textContent = 'Send Reset Link';
+    btn.disabled = false;
+  }
+
+  function showAccountView() {
+    document.getElementById('login-form').style.display = 'none';
+    document.getElementById('register-form').style.display = 'none';
+    document.getElementById('forgot-form').style.display = 'none';
+    document.getElementById('account-view').style.display = 'block';
+    document.getElementById('account-greeting').textContent = 'Hi, ' + customerName + '!';
+    switchAcctTab('orders', document.querySelector('.acct-tab'));
+    fetchOrders();
+    fetchAddresses();
+    loadWishlist();
+    renderWishlist();
+  }
+
+  function switchAcctTab(tab, btn) {
+    var tabs = document.querySelectorAll('.acct-tab');
+    for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
+    btn.classList.add('active');
+    var panels = document.querySelectorAll('.acct-panel');
+    for (var j = 0; j < panels.length; j++) panels[j].classList.remove('active');
+    document.getElementById('panel-' + tab).classList.add('active');
+  }
+
+  async function loginCustomer() {
+    var email = document.getElementById('login-email').value.trim();
+    var password = document.getElementById('login-password').value;
+    var btn = document.getElementById('login-btn');
+    var errEl = document.getElementById('login-error');
+
+    if (!email || !password) {
+      errEl.textContent = 'Please enter your email and password.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    btn.textContent = 'Logging in...';
+    btn.disabled = true;
+    errEl.style.display = 'none';
+
+    var query = 'mutation { customerAccessTokenCreate(input: { email: "' + email.replace(/"/g, '\\"') + '", password: "' + password.replace(/"/g, '\\"') + '" }) { customerAccessToken { accessToken expiresAt } customerUserErrors { code message } } }';
+    var data = await shopifyFetch(query);
+
+    if (data && data.data && data.data.customerAccessTokenCreate) {
+      var result = data.data.customerAccessTokenCreate;
+      if (result.customerAccessToken) {
+        customerToken = result.customerAccessToken.accessToken;
+        try {
+          sessionStorage.setItem('gc_token', customerToken);
+        } catch(e) {}
+        await fetchCustomerInfo();
+        loadWishlist();
+        updateNavLogin();
+        showAccountView();
+        trackEvent('login', { method: 'email' });
+        showToastMsg('Welcome back, ' + customerName + '!');
+      } else {
+        var msg = 'Invalid email or password.';
+        if (result.customerUserErrors && result.customerUserErrors.length > 0) {
+          msg = result.customerUserErrors[0].message || msg;
+        }
+        errEl.textContent = msg;
+        errEl.style.display = 'block';
+      }
+    } else {
+      errEl.textContent = 'Something went wrong. Please try again.';
+      errEl.style.display = 'block';
+    }
+
+    btn.textContent = 'Log In';
+    btn.disabled = false;
+  }
+
+  async function registerCustomer() {
+    var first = document.getElementById('register-first').value.trim();
+    var last = document.getElementById('register-last').value.trim();
+    var email = document.getElementById('register-email').value.trim();
+    var password = document.getElementById('register-password').value;
+    var btn = document.getElementById('register-btn');
+    var errEl = document.getElementById('register-error');
+
+    if (!first || !email || !password) {
+      errEl.textContent = 'Please fill in all required fields.';
+      errEl.style.display = 'block';
+      return;
+    }
+    if (password.length < 6) {
+      errEl.textContent = 'Password must be at least 6 characters.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    btn.textContent = 'Creating account...';
+    btn.disabled = true;
+    errEl.style.display = 'none';
+
+    var query = 'mutation { customerCreate(input: { firstName: "' + first.replace(/"/g, '\\"') + '", lastName: "' + last.replace(/"/g, '\\"') + '", email: "' + email.replace(/"/g, '\\"') + '", password: "' + password.replace(/"/g, '\\"') + '" }) { customer { id firstName } customerUserErrors { message field } } }';
+    var data = await shopifyFetch(query);
+
+    if (data && data.data && data.data.customerCreate) {
+      var result = data.data.customerCreate;
+      if (result.customer) {
+        trackEvent('sign_up', { method: 'email' });
+        document.getElementById('login-email').value = email;
+        document.getElementById('login-password').value = password;
+        showLoginForm();
+        await loginCustomer();
+      } else {
+        var msg = 'Could not create account.';
+        if (result.customerUserErrors && result.customerUserErrors.length > 0) {
+          msg = result.customerUserErrors[0].message || msg;
+        }
+        errEl.textContent = msg;
+        errEl.style.display = 'block';
+      }
+    } else {
+      errEl.textContent = 'Something went wrong. Please try again.';
+      errEl.style.display = 'block';
+    }
+
+    btn.textContent = 'Create Account';
+    btn.disabled = false;
+  }
+
+  async function fetchCustomerInfo() {
+    if (!customerToken) return;
+    var query = '{ customer(customerAccessToken: "' + customerToken + '") { firstName lastName email phone createdAt } }';
+    var data = await shopifyFetch(query);
+    if (data && data.data && data.data.customer) {
+      var c = data.data.customer;
+      customerName = c.firstName || 'there';
+      var customerEmail = c.email || '';
+      try {
+        sessionStorage.setItem('gc_name', customerName);
+        sessionStorage.setItem('gc_email', customerEmail);
+      } catch(e) {}
+      document.getElementById('account-email-display').textContent = customerEmail;
+
+      // Profile tab
+      document.getElementById('prof-first').textContent = c.firstName || '—';
+      document.getElementById('prof-last').textContent = c.lastName || '—';
+      document.getElementById('prof-email').textContent = c.email || '—';
+      document.getElementById('prof-phone').textContent = c.phone || 'Not set';
+      if (c.createdAt) {
+        var d = new Date(c.createdAt);
+        document.getElementById('prof-since').textContent = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
       }
     }
-    answer = answer.trim();
+  }
 
-    if (!answer) {
-      return res.status(500).json({
-        error: 'Empty response',
-        message: "I didn't get a good answer for that one. Please email sales@gloscreations316.com — Glo will help personally."
+  async function fetchOrders() {
+    if (!customerToken) return;
+    var ordersList = document.getElementById('orders-list');
+    ordersList.innerHTML = '<div class="orders-loading">Loading your orders...</div>';
+
+    var query = '{ customer(customerAccessToken: "' + customerToken + '") { orders(first: 20, sortKey: PROCESSED_AT, reverse: true) { edges { node { id orderNumber name processedAt fulfillmentStatus currentTotalPrice { amount currencyCode } lineItems(first: 10) { edges { node { title quantity variant { image { url } } } } } } } } } }';
+    var data = await shopifyFetch(query);
+
+    if (data && data.data && data.data.customer && data.data.customer.orders) {
+      var orders = data.data.customer.orders.edges;
+      if (orders.length === 0) {
+        ordersList.innerHTML = '<div class="orders-empty">No orders yet. Start shopping!</div>';
+        return;
+      }
+
+      var html = '';
+      for (var i = 0; i < orders.length; i++) {
+        var order = orders[i].node;
+        var date = new Date(order.processedAt);
+        var dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        var status = order.fulfillmentStatus || 'UNFULFILLED';
+        var statusClass = status === 'FULFILLED' ? 'fulfilled' : 'unfulfilled';
+        var statusText = status === 'FULFILLED' ? 'Shipped' : 'Processing';
+
+        html += '<div class="order-card">';
+        html += '<div class="order-header">';
+        html += '<span class="order-number">Order ' + order.name + '</span>';
+        html += '<span class="order-status ' + statusClass + '">' + statusText + '</span>';
+        html += '</div>';
+        html += '<p class="order-date">' + dateStr + '</p>';
+
+        // Item thumbnails
+        html += '<div class="order-items">';
+        var items = order.lineItems.edges;
+        for (var j = 0; j < items.length && j < 4; j++) {
+          var item = items[j].node;
+          html += '<div class="order-item-thumb">';
+          if (item.variant && item.variant.image) {
+            html += '<img src="' + item.variant.image.url + '" alt="' + item.title + '">';
+          }
+          html += '</div>';
+        }
+        if (items.length > 4) {
+          html += '<div class="order-item-thumb" style="display:flex;align-items:center;justify-content:center;font-family:var(--font-body);font-size:11px;color:var(--stone-500);">+' + (items.length - 4) + '</div>';
+        }
+        html += '</div>';
+
+        // Item names
+        for (var k = 0; k < items.length; k++) {
+          html += '<p style="font-family:var(--font-body);font-size:11px;color:var(--stone-600);margin-bottom:2px;">' + items[k].node.title + ' × ' + items[k].node.quantity + '</p>';
+        }
+
+        html += '<div class="order-total" style="margin-top:10px;"><span>Total</span><span>$' + parseFloat(order.currentTotalPrice.amount).toFixed(2) + '</span></div>';
+        html += '</div>';
+      }
+      ordersList.innerHTML = html;
+    } else {
+      ordersList.innerHTML = '<div class="orders-empty">Could not load orders. Please try again.</div>';
+    }
+  }
+
+  // ============================================
+  // WISHLIST (saved per customer in localStorage)
+  // ============================================
+  var wishlist = [];
+
+  function getWishlistKey() {
+    try {
+      var email = sessionStorage.getItem('gc_email');
+      if (email) return 'gc_wish_' + email;
+    } catch(e) {}
+    return null;
+  }
+
+  function loadWishlist() {
+    wishlist = [];
+    var key = getWishlistKey();
+    if (key) {
+      try {
+        var saved = localStorage.getItem(key);
+        if (saved) wishlist = JSON.parse(saved);
+      } catch(e) { wishlist = []; }
+    }
+  }
+
+  function saveWishlist() {
+    var key = getWishlistKey();
+    if (key) {
+      try { localStorage.setItem(key, JSON.stringify(wishlist)); } catch(e) {}
+    }
+    updateWishBadge();
+  }
+
+  function toggleWishlist(productIndex) {
+    // Require login
+    if (!customerToken) {
+      openLoginModal();
+      showToastMsg('Please log in to save items');
+      return;
+    }
+
+    var p = products[productIndex];
+    var idx = -1;
+    for (var i = 0; i < wishlist.length; i++) {
+      if (wishlist[i].variantId === p.variantId) { idx = i; break; }
+    }
+    if (idx >= 0) {
+      wishlist.splice(idx, 1);
+      trackEvent('remove_from_wishlist', {
+        currency: 'USD',
+        value: p.price,
+        items: [{ item_id: p.variantId, item_name: p.name, price: p.price }]
+      });
+      showToastMsg('Removed from wishlist');
+    } else {
+      wishlist.push({ name: p.name, price: p.price, image: p.image, variantId: p.variantId, category: p.category });
+      trackEvent('add_to_wishlist', {
+        currency: 'USD',
+        value: p.price,
+        items: [{ item_id: p.variantId, item_name: p.name, item_category: p.category, price: p.price }]
+      });
+      showToastMsg('Added to wishlist ♡');
+    }
+    saveWishlist();
+    renderProducts(document.querySelector('.filter-btn.active').textContent);
+  }
+
+  function isInWishlist(variantId) {
+    for (var i = 0; i < wishlist.length; i++) {
+      if (wishlist[i].variantId === variantId) return true;
+    }
+    return false;
+  }
+
+  function removeFromWishlist(index) {
+    wishlist.splice(index, 1);
+    saveWishlist();
+    renderWishlist();
+    // Re-render product cards to update heart states
+    var activeFilter = document.querySelector('.filter-btn.active');
+    if (activeFilter) renderProducts(activeFilter.textContent);
+  }
+
+  function renderWishlist() {
+    var grid = document.getElementById('wishlist-grid');
+    if (!grid) return;
+    if (wishlist.length === 0) {
+      grid.innerHTML = '<div class="orders-empty" style="grid-column:1/-1;">Your wishlist is empty. Click the ♡ on any product to save it here.</div>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < wishlist.length; i++) {
+      var w = wishlist[i];
+      html += '<div class="wish-card">';
+      if (w.image) html += '<img src="' + w.image + '" alt="' + w.name + '">';
+      html += '<button class="wish-remove" onclick="event.stopPropagation();removeFromWishlist(' + i + ')">✕</button>';
+      html += '<div class="wish-card-info">';
+      html += '<p class="wish-card-name">' + w.name + '</p>';
+      html += '<p class="wish-card-price">$' + w.price.toFixed(2) + '</p>';
+      html += '</div></div>';
+    }
+    grid.innerHTML = html;
+  }
+
+  // ============================================
+  // ADDRESSES
+  // ============================================
+  function showAddressForm() {
+    var form = document.getElementById('address-form-wrap');
+    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+  }
+
+  async function fetchAddresses() {
+    if (!customerToken) return;
+    var list = document.getElementById('addresses-list');
+    list.innerHTML = '<div class="orders-loading">Loading addresses...</div>';
+
+    var query = '{ customer(customerAccessToken: "' + customerToken + '") { defaultAddress { id address1 address2 city province zip country } addresses(first: 10) { edges { node { id address1 address2 city province zip country } } } } }';
+    var data = await shopifyFetch(query);
+
+    if (data && data.data && data.data.customer) {
+      var c = data.data.customer;
+      var addrs = c.addresses ? c.addresses.edges : [];
+      var defaultId = c.defaultAddress ? c.defaultAddress.id : null;
+
+      if (addrs.length === 0) {
+        list.innerHTML = '<div class="orders-empty">No saved addresses yet.</div>';
+        return;
+      }
+
+      var html = '';
+      for (var i = 0; i < addrs.length; i++) {
+        var a = addrs[i].node;
+        var isDefault = a.id === defaultId;
+        html += '<div class="addr-card">';
+        if (isDefault) html += '<span class="addr-default">Default</span>';
+        html += '<p>' + a.address1 + '</p>';
+        if (a.address2) html += '<p>' + a.address2 + '</p>';
+        html += '<p>' + a.city + ', ' + a.province + ' ' + a.zip + '</p>';
+        html += '<p>' + a.country + '</p>';
+        html += '</div>';
+      }
+      list.innerHTML = html;
+    } else {
+      list.innerHTML = '<div class="orders-empty">Could not load addresses.</div>';
+    }
+  }
+
+  async function saveAddress() {
+    if (!customerToken) return;
+    var errEl = document.getElementById('addr-error');
+    var line1 = document.getElementById('addr-line1').value.trim();
+    var line2 = document.getElementById('addr-line2').value.trim();
+    var city = document.getElementById('addr-city').value.trim();
+    var state = document.getElementById('addr-state').value.trim();
+    var zip = document.getElementById('addr-zip').value.trim();
+    var country = document.getElementById('addr-country').value.trim() || 'US';
+
+    if (!line1 || !city || !state || !zip) {
+      errEl.textContent = 'Please fill in address, city, state, and ZIP.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    var query = 'mutation { customerAddressCreate(customerAccessToken: "' + customerToken + '", address: { address1: "' + line1.replace(/"/g, '\\"') + '", address2: "' + line2.replace(/"/g, '\\"') + '", city: "' + city.replace(/"/g, '\\"') + '", province: "' + state.replace(/"/g, '\\"') + '", zip: "' + zip.replace(/"/g, '\\"') + '", country: "' + country.replace(/"/g, '\\"') + '" }) { customerAddress { id } customerUserErrors { message } } }';
+    var data = await shopifyFetch(query);
+
+    if (data && data.data && data.data.customerAddressCreate && data.data.customerAddressCreate.customerAddress) {
+      showToastMsg('Address saved!');
+      document.getElementById('address-form-wrap').style.display = 'none';
+      document.getElementById('addr-line1').value = '';
+      document.getElementById('addr-line2').value = '';
+      document.getElementById('addr-city').value = '';
+      document.getElementById('addr-state').value = '';
+      document.getElementById('addr-zip').value = '';
+      errEl.style.display = 'none';
+      fetchAddresses();
+    } else {
+      errEl.textContent = 'Could not save address. Please try again.';
+      errEl.style.display = 'block';
+    }
+  }
+
+  function logoutCustomer() {
+    customerToken = null;
+    customerName = '';
+    wishlist = [];
+    try {
+      sessionStorage.removeItem('gc_token');
+      sessionStorage.removeItem('gc_name');
+      sessionStorage.removeItem('gc_email');
+    } catch(e) {}
+    updateNavLogin();
+    var activeFilter = document.querySelector('.filter-btn.active');
+    if (activeFilter) renderProducts(activeFilter.textContent);
+    showToastMsg('You\'ve been logged out');
+  }
+
+  function updateNavLogin() {
+    if (customerToken && customerName) {
+      document.getElementById('nav-user').style.display = 'inline';
+      document.getElementById('nav-user-name').textContent = customerName;
+      document.getElementById('nav-logout').style.display = 'inline';
+      document.getElementById('nav-wishlist-btn').style.display = 'flex';
+      updateWishBadge();
+    } else {
+      document.getElementById('nav-user').style.display = 'none';
+      document.getElementById('nav-logout').style.display = 'none';
+      document.getElementById('nav-wishlist-btn').style.display = 'none';
+    }
+  }
+
+  function updateWishBadge() {
+    var badge = document.getElementById('wish-badge');
+    if (wishlist.length > 0) {
+      badge.textContent = wishlist.length;
+      badge.classList.add('show');
+    } else {
+      badge.classList.remove('show');
+    }
+  }
+
+  function checkSession() {
+    try {
+      var savedToken = sessionStorage.getItem('gc_token');
+      var savedName = sessionStorage.getItem('gc_name');
+      if (savedToken) {
+        customerToken = savedToken;
+        customerName = savedName || 'there';
+        updateNavLogin();
+        fetchCustomerInfo().then(function() { updateNavLogin(); });
+        loadWishlist();
+      }
+    } catch(e) {}
+  }
+
+  // ============================================
+  // CAROUSEL - NEW ARRIVALS
+  // ============================================
+  var carouselItems = [];
+  var carouselIndex = 0;
+  var carouselTimer = null;
+
+  async function fetchNewArrivals() {
+    var track = document.getElementById('carousel-track');
+    track.innerHTML = '<div class="carousel-loading">Loading new arrivals...</div>';
+
+    var query = '{ collection(handle: "new-arrivals") { products(first: 10) { edges { node { id title handle productType description priceRange { minVariantPrice { amount } } images(first: 6) { edges { node { url altText } } } variants(first: 1) { edges { node { id availableForSale quantityAvailable } } } } } } } }';
+    var data = await shopifyFetch(query);
+
+    if (data && data.data && data.data.collection && data.data.collection.products.edges.length > 0) {
+      carouselItems = data.data.collection.products.edges.map(function(edge) {
+        var node = edge.node;
+        return {
+          name: node.title,
+          handle: node.handle,
+          category: node.productType || 'Jewelry',
+          price: parseFloat(node.priceRange.minVariantPrice.amount),
+          image: node.images.edges[0] ? node.images.edges[0].node.url : null,
+          images: node.images.edges.map(function(e) { return e.node.url; }),
+          description: node.description || '',
+          variantId: node.variants.edges[0] ? node.variants.edges[0].node.id : null,
+          available: node.variants.edges[0] ? node.variants.edges[0].node.availableForSale : false,
+          stock: node.variants.edges[0] && node.variants.edges[0].node.quantityAvailable !== null ? node.variants.edges[0].node.quantityAvailable : 999,
+        };
+      // Hide sold-out items — they live in the "Recently Sold" section instead
+      }).filter(function(item) {
+        return item.available && item.stock > 0;
+      });
+      if (carouselItems.length === 0) {
+        track.innerHTML = '<div class="carousel-loading">All new arrivals just sold out — check back soon for new pieces!</div>';
+        return;
+      }
+      renderCarousel();
+      startCarouselTimer();
+    } else {
+      track.innerHTML = '<div class="carousel-loading">Add products to your "New Arrivals" collection in Shopify</div>';
+    }
+  }
+
+  function renderCarousel() {
+    var track = document.getElementById('carousel-track');
+    var dots = document.getElementById('carousel-dots');
+    var html = '';
+    for (var i = 0; i < carouselItems.length; i++) {
+      var item = carouselItems[i];
+      // Find this carousel item's index in the main products array so we can open its modal.
+      // Try matching by variantId first, then fall back to product id or handle.
+      var productIndex = -1;
+      for (var k = 0; k < products.length; k++) {
+        if (item.variantId && products[k].variantId === item.variantId) { productIndex = k; break; }
+      }
+      if (productIndex === -1 && item.id) {
+        for (var k2 = 0; k2 < products.length; k2++) {
+          if (products[k2].id === item.id) { productIndex = k2; break; }
+        }
+      }
+      if (productIndex === -1 && item.handle) {
+        for (var k3 = 0; k3 < products.length; k3++) {
+          if (products[k3].handle === item.handle) { productIndex = k3; break; }
+        }
+      }
+      var clickHandler = productIndex >= 0 ? 'onclick="openModal(' + productIndex + ')"' : '';
+      var clickStyle = productIndex >= 0 ? 'cursor:pointer;' : '';
+      html += '<div class="carousel-slide" ' + clickHandler + ' style="' + clickStyle + '">';
+      if (item.image) html += '<img src="' + item.image + '" alt="' + item.name + '">';
+      html += '<div class="carousel-slide-info">';
+      html += '<p class="carousel-slide-tag">New Arrival · ' + item.category + '</p>';
+      html += '<p class="carousel-slide-name">' + item.name + '</p>';
+      html += '<p class="carousel-slide-price">$' + item.price.toFixed(2) + '</p>';
+      html += '<button class="carousel-slide-btn" onclick="event.stopPropagation(); addToCart(carouselItems[' + i + '])">Add to Cart</button>';
+      html += '</div></div>';
+    }
+    track.innerHTML = html;
+
+    var dotsHtml = '';
+    for (var j = 0; j < carouselItems.length; j++) {
+      dotsHtml += '<button class="carousel-dot' + (j === 0 ? ' active' : '') + '" onclick="goToSlide(' + j + ')"></button>';
+    }
+    dots.innerHTML = dotsHtml;
+    carouselIndex = 0;
+  }
+
+  function goToSlide(index) {
+    carouselIndex = index;
+    var track = document.getElementById('carousel-track');
+    track.style.transform = 'translateX(-' + (carouselIndex * 100) + '%)';
+    var allDots = document.querySelectorAll('.carousel-dot');
+    for (var i = 0; i < allDots.length; i++) allDots[i].classList.remove('active');
+    if (allDots[carouselIndex]) allDots[carouselIndex].classList.add('active');
+    resetCarouselTimer();
+  }
+
+  function carouselNext() {
+    if (carouselItems.length === 0) return;
+    goToSlide((carouselIndex + 1) % carouselItems.length);
+  }
+
+  function carouselPrev() {
+    if (carouselItems.length === 0) return;
+    goToSlide((carouselIndex - 1 + carouselItems.length) % carouselItems.length);
+  }
+
+  function startCarouselTimer() {
+    carouselTimer = setInterval(function() { carouselNext(); }, 4000);
+  }
+
+  function resetCarouselTimer() {
+    if (carouselTimer) clearInterval(carouselTimer);
+    startCarouselTimer();
+  }
+
+  // ============================================
+  // PRODUCTS - COLLECTION BASED
+  // ============================================
+  var collections = [];
+
+  async function fetchCollections() {
+    var query = '{ collections(first: 20) { edges { node { id title handle } } } }';
+    var data = await shopifyFetch(query);
+    if (data && data.data && data.data.collections) {
+      collections = data.data.collections.edges.map(function(edge) {
+        return { title: edge.node.title, handle: edge.node.handle };
+      }).filter(function(c) {
+        // Exclude "New Arrivals" since that's the carousel, and any default Shopify collections
+        var skip = ['new-arrivals', 'frontpage', 'all'];
+        return skip.indexOf(c.handle) === -1;
+      });
+      buildFilters();
+    }
+    // Fetch all products initially
+    await fetchProducts();
+  }
+
+  async function fetchProducts() {
+    var grid = document.getElementById('products-grid');
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--stone-400);font-family:var(--font-body);font-size:13px;">Loading products...</div>';
+
+    var query = '{ products(first: 50) { edges { node { id title handle description productType tags createdAt collections(first:5) { edges { node { title handle } } } priceRange { minVariantPrice { amount currencyCode } } images(first: 6) { edges { node { url altText } } } variants(first: 1) { edges { node { id availableForSale quantityAvailable } } } ratingMetafield: metafield(namespace: "reviews", key: "rating") { value } countMetafield: metafield(namespace: "reviews", key: "rating_count") { value } } } } }';
+    var data = await shopifyFetch(query);
+
+    if (data && data.data && data.data.products && data.data.products.edges) {
+      products = data.data.products.edges.map(function(edge) {
+        var node = edge.node;
+        // Get collection names for this product (excluding New Arrivals and system ones)
+        var prodCollections = [];
+        if (node.collections && node.collections.edges) {
+          prodCollections = node.collections.edges.map(function(c) { return c.node.title; }).filter(function(t) {
+            return t !== 'New Arrivals' && t !== 'Home page';
+          });
+        }
+        // Parse Judge.me rating metafields if present
+        var rating = null;
+        var ratingCount = 0;
+        if (node.ratingMetafield && node.ratingMetafield.value) {
+          // Rating field is JSON like {"value":"4.8","scale_max":"5.0","scale_min":"1.0"}
+          try {
+            var parsed = JSON.parse(node.ratingMetafield.value);
+            rating = parseFloat(parsed.value);
+            if (isNaN(rating)) rating = null;
+          } catch(e) {
+            rating = parseFloat(node.ratingMetafield.value);
+            if (isNaN(rating)) rating = null;
+          }
+        }
+        if (node.countMetafield && node.countMetafield.value) {
+          ratingCount = parseInt(node.countMetafield.value, 10) || 0;
+        }
+        return {
+          id: node.id,
+          name: node.title,
+          handle: node.handle,
+          description: node.description,
+          price: parseFloat(node.priceRange.minVariantPrice.amount),
+          category: prodCollections.length > 0 ? prodCollections[0] : (node.productType || 'Jewelry'),
+          categories: prodCollections,
+          image: node.images.edges[0] ? node.images.edges[0].node.url : null,
+          images: node.images.edges.map(function(e) { return e.node.url; }),
+          variantId: node.variants.edges[0] ? node.variants.edges[0].node.id : null,
+          available: node.variants.edges[0] ? node.variants.edges[0].node.availableForSale : false,
+          stock: node.variants.edges[0] && node.variants.edges[0].node.quantityAvailable !== null ? node.variants.edges[0].node.quantityAvailable : 999,
+          tags: node.tags || [],
+          createdAt: node.createdAt || '',
+          rating: rating,
+          ratingCount: ratingCount,
+        };
+      });
+      // Show in-stock count in the shop tag (the sold ones live in their own section)
+      var inStockCount = products.filter(function(p) { return p.available && p.stock > 0; }).length;
+      document.querySelector('.shop-tag').textContent = 'The Collection (' + inStockCount + ')';
+      console.log('Products loaded with stock:', products.map(function(p) { return p.name + ': stock=' + p.stock + ', collections=' + p.categories.join(',') + ', tags=' + p.tags.join(','); }));
+      if (collections.length === 0) buildFilters();
+      buildStyleFilters();
+      renderProducts('All');
+      renderRecentlySold();
+      // Re-render carousel now that products array is populated, so its slides can be clickable
+      if (carouselItems && carouselItems.length > 0) renderCarousel();
+      // Load homepage reviews carousel from real customer reviews (async, non-blocking)
+      loadCarouselReviews();
+    } else {
+      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--stone-400);font-family:var(--font-body);font-size:13px;">Could not load products. Please try again later.</div>';
+    }
+  }
+
+  function renderProducts(filter) {
+    currentCollectionFilter = filter || 'All';
+    applyFilters();
+  }
+
+  // ============================================
+  // PRODUCT MODAL
+  // ============================================
+  var modalProduct = null;
+  var modalQty = 1;
+  var modalImageIndex = 0;
+  var modalImages = [];
+
+  function openModal(productIndex) {
+    modalProduct = products[productIndex];
+    modalQty = 1;
+    modalImageIndex = 0;
+
+    trackEvent('view_item', {
+      currency: 'USD',
+      value: modalProduct.price,
+      items: [{ item_id: modalProduct.id, item_name: modalProduct.name, item_category: modalProduct.category, price: modalProduct.price }]
+    });
+
+    // Inject Product schema for SEO — helps Google show this product in search results
+    injectProductSchema(modalProduct);
+
+    document.getElementById('modal-category').textContent = modalProduct.category;
+    document.getElementById('modal-title').textContent = modalProduct.name;
+    document.getElementById('modal-price').textContent = '$' + modalProduct.price.toFixed(2);
+    document.getElementById('modal-desc').textContent = modalProduct.description || 'Beautiful handcrafted polymer clay jewelry. Each piece is unique and made with love.';
+    document.getElementById('modal-qty').textContent = '1';
+
+    // Stock status
+    var stockEl = document.getElementById('modal-stock');
+    if (modalProduct.stock <= 0 || !modalProduct.available) {
+      stockEl.textContent = 'Sold Out';
+      stockEl.style.color = '#b45309';
+      document.getElementById('modal-add-btn').textContent = 'Sold Out';
+      document.getElementById('modal-add-btn').disabled = true;
+    } else if (modalProduct.stock <= 5) {
+      stockEl.textContent = 'Only ' + modalProduct.stock + ' left!';
+      stockEl.style.color = '#b45309';
+      document.getElementById('modal-add-btn').textContent = 'Add to Cart';
+      document.getElementById('modal-add-btn').disabled = false;
+    } else {
+      stockEl.textContent = 'In Stock';
+      stockEl.style.color = '#6d9e6d';
+      document.getElementById('modal-add-btn').textContent = 'Add to Cart';
+      document.getElementById('modal-add-btn').disabled = false;
+    }
+
+    // Get all images for this product
+    modalImages = modalProduct.images || (modalProduct.image ? [modalProduct.image] : []);
+    renderModalImage();
+
+    // Show or hide the Virtual Try-On button based on:
+    //   1. Whether a matching earring image exists for this product
+    //   2. Whether the item is still available for purchase (sold items skip the try-on)
+    var tryonBtn = document.getElementById('modal-tryon-btn');
+    var tryonBadge = document.getElementById('modal-tryon-badge');
+    var hasEarring = !!getTryonEarringForProduct(modalProduct);
+    var isAvailable = modalProduct.available && modalProduct.stock > 0;
+    var showTryon = hasEarring && isAvailable;
+    if (tryonBtn) tryonBtn.style.display = showTryon ? 'block' : 'none';
+    if (tryonBadge) tryonBadge.style.display = showTryon ? 'inline-flex' : 'none';
+
+    document.getElementById('modal-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    // Load reviews from Judge.me (async, will populate when ready)
+    loadModalReviews(modalProduct);
+  }
+
+  function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+    // Remove product schema when modal closes (so it doesn't pollute when no product is shown)
+    var schemaEl = document.getElementById('dynamic-product-schema');
+    if (schemaEl) schemaEl.remove();
+  }
+
+  // Inject Product schema for the currently-open product so Google can index it for rich results.
+  // Removes any previous product schema before injecting the new one.
+  function injectProductSchema(product) {
+    var existing = document.getElementById('dynamic-product-schema');
+    if (existing) existing.remove();
+    if (!product) return;
+
+    var inStock = (product.stock > 0 && product.available);
+    var schema = {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      "name": product.name,
+      "description": product.description || ('Handcrafted polymer clay ' + (product.category || 'jewelry') + ' — sculpted, baked, and finished by hand. One-of-a-kind piece by Glo\'s Creations 3:16.'),
+      "image": product.image || product.images,
+      "category": product.category || 'Jewelry',
+      "brand": {
+        "@type": "Brand",
+        "name": "Glo's Creations 3:16"
+      },
+      "sku": product.id,
+      "offers": {
+        "@type": "Offer",
+        "url": "https://gloscreations316.com/",
+        "priceCurrency": "USD",
+        "price": product.price,
+        "availability": inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+        "seller": {
+          "@type": "Organization",
+          "name": "Glo's Creations 3:16"
+        }
+      }
+    };
+
+    var script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.id = 'dynamic-product-schema';
+    script.textContent = JSON.stringify(schema);
+    document.head.appendChild(script);
+  }
+
+  function renderModalImage() {
+    var container = document.getElementById('modal-image');
+    var thumbs = document.getElementById('modal-thumbs');
+    var modalEl = document.getElementById('product-modal');
+
+    // Toggle single-image class on the modal so layout collapses to 2 columns when only 1 image
+    if (modalEl) {
+      if (modalImages.length <= 1) {
+        modalEl.classList.add('single-image');
+      } else {
+        modalEl.classList.remove('single-image');
+      }
+    }
+
+    // Render thumbnail rail
+    if (thumbs) {
+      if (modalImages.length > 1) {
+        var thumbHtml = '';
+        for (var i = 0; i < modalImages.length; i++) {
+          thumbHtml += '<button class="modal-thumb' + (i === modalImageIndex ? ' active' : '') +
+            '" onmouseenter="previewModalImage(' + i + ')" onmouseleave="restoreModalImage()" onclick="changeModalImage(' + i + ')" aria-label="View image ' + (i + 1) + '">' +
+            '<img src="' + modalImages[i] + '" alt="Thumbnail ' + (i + 1) + '"></button>';
+        }
+        thumbs.innerHTML = thumbHtml;
+      } else {
+        thumbs.innerHTML = '';
+      }
+    }
+
+    // Render main image
+    var html = '';
+    if (modalImages.length > 0) {
+      html += '<img id="modal-main-img" src="' + modalImages[modalImageIndex] + '" alt="' + modalProduct.name + '" onclick="openLightbox(' + modalImageIndex + ')">';
+      if (modalImages.length > 1) {
+        // Image counter
+        html += '<div class="modal-img-counter">' + (modalImageIndex + 1) + ' / ' + modalImages.length + '</div>';
+        // Left arrow
+        html += '<button class="modal-img-arrow modal-img-prev" onclick="event.stopPropagation();changeModalImage(' + ((modalImageIndex - 1 + modalImages.length) % modalImages.length) + ')">';
+        html += '<svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>';
+        // Right arrow
+        html += '<button class="modal-img-arrow modal-img-next" onclick="event.stopPropagation();changeModalImage(' + ((modalImageIndex + 1) % modalImages.length) + ')">';
+        html += '<svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></button>';
+      }
+    } else {
+      html += '<div style="display:flex;align-items:center;justify-content:center;height:100%;"><div style="width:120px;height:120px;border-radius:50%;background:var(--stone-200);opacity:0.5;"></div></div>';
+    }
+    container.innerHTML = html;
+  }
+
+  function changeModalImage(index) {
+    modalImageIndex = index;
+    renderModalImage();
+  }
+
+  // Hover-preview from thumbnails: temporarily show that image as the main, without changing index
+  var modalThumbHoverIndex = null;
+  function previewModalImage(index) {
+    if (index === modalImageIndex) return;
+    modalThumbHoverIndex = index;
+    var img = document.getElementById('modal-main-img');
+    if (img && modalImages[index]) img.src = modalImages[index];
+  }
+  function restoreModalImage() {
+    if (modalThumbHoverIndex === null) return;
+    modalThumbHoverIndex = null;
+    var img = document.getElementById('modal-main-img');
+    if (img && modalImages[modalImageIndex]) img.src = modalImages[modalImageIndex];
+  }
+
+  // ============================================
+  // IMAGE LIGHTBOX
+  // ============================================
+  var lightboxIndex = 0;
+
+  function openLightbox(index) {
+    lightboxIndex = index;
+    if (modalProduct) {
+      trackEvent('image_lightbox_open', { product_name: modalProduct.name, image_index: index });
+    }
+    renderLightbox();
+    document.getElementById('lightbox').classList.add('open');
+  }
+
+  function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('open');
+  }
+
+  function renderLightbox() {
+    document.getElementById('lightbox-img').src = modalImages[lightboxIndex];
+    document.getElementById('lightbox-counter').textContent = (lightboxIndex + 1) + ' / ' + modalImages.length;
+    document.getElementById('lightbox-prev').style.display = modalImages.length > 1 ? 'flex' : 'none';
+    document.getElementById('lightbox-next').style.display = modalImages.length > 1 ? 'flex' : 'none';
+  }
+
+  function lightboxNav(delta) {
+    lightboxIndex = (lightboxIndex + delta + modalImages.length) % modalImages.length;
+    renderLightbox();
+  }
+
+  function changeModalQty(delta) {
+    var currentInCart = 0;
+    for (var i = 0; i < cart.length; i++) {
+      if (cart[i].variantId === modalProduct.variantId) { currentInCart = cart[i].qty; break; }
+    }
+    var maxCanAdd = modalProduct.stock - currentInCart;
+    var newQty = modalQty + delta;
+    if (newQty > maxCanAdd) {
+      showToastMsg('Sorry, only ' + modalProduct.stock + ' available' + (currentInCart > 0 ? ' (' + currentInCart + ' in cart)' : ''));
+      return;
+    }
+    modalQty = Math.max(1, newQty);
+    document.getElementById('modal-qty').textContent = modalQty;
+  }
+
+  function addModalToCart() {
+    for (var i = 0; i < modalQty; i++) {
+      addToCart(modalProduct);
+    }
+    // Reset qty display since addToCart handles incrementing
+    if (modalQty > 1) {
+      // Adjust since addToCart adds 1 each time but we want the total qty
+      var found = null;
+      for (var j = 0; j < cart.length; j++) {
+        if (cart[j].variantId === modalProduct.variantId) { found = cart[j]; break; }
+      }
+      if (found) {
+        found.qty = found.qty - modalQty + modalQty; // Already correct from loop
+      }
+      updateCartUI();
+    }
+    closeModal();
+  }
+
+  // Close modal with Escape key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeModal();
+      closeLoginModal();
+      closePolicy();
+      closeLightbox();
+      closeTryonConsent();
+      if (gloBotOpen) closeGloBot();
+      if (document.getElementById('cart-drawer').classList.contains('open')) toggleCart();
+    }
+  });
+
+  var currentCollectionFilter = 'All';
+  var currentStyleFilter = 'all';
+  var currentSort = 'featured';
+
+  function filterProducts(category, btn) {
+    var btns = document.querySelectorAll('.filter-btn');
+    for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
+    btn.classList.add('active');
+    currentCollectionFilter = category;
+    trackEvent('filter_collection', { filter_value: category });
+    applyFilters();
+  }
+
+  function setStyleFilter(style, btn) {
+    var btns = document.querySelectorAll('.style-btn');
+    for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
+    btn.classList.add('active');
+    currentStyleFilter = style;
+    trackEvent('filter_style', { filter_value: style });
+    applyFilters();
+  }
+
+  function applyFilters() {
+    currentSort = document.getElementById('sort-select').value;
+    trackEvent('sort_products', { sort_value: currentSort });
+
+    // Start with all in-stock products (sold-out items go to "Recently Sold" section)
+    var filtered = products.filter(function(p) {
+      return p.available && p.stock > 0;
+    });
+
+    // Apply collection filter
+    if (currentCollectionFilter !== 'All') {
+      filtered = filtered.filter(function(p) {
+        if (p.categories && p.categories.length > 0) {
+          return p.categories.indexOf(currentCollectionFilter) !== -1;
+        }
+        return p.category === currentCollectionFilter;
       });
     }
 
-    return res.status(200).json({
-      answer: answer,
-      remaining: limit.remaining
+    // Apply style filter
+    if (currentStyleFilter !== 'all') {
+      filtered = filtered.filter(function(p) {
+        // Check tags
+        for (var i = 0; i < p.tags.length; i++) {
+          if (p.tags[i].toLowerCase() === currentStyleFilter.toLowerCase()) return true;
+        }
+        // Also check product name
+        if (p.name.toLowerCase().indexOf(currentStyleFilter.toLowerCase()) !== -1) return true;
+        return false;
+      });
+    }
+
+    // Apply sort
+    if (currentSort === 'price-low') {
+      filtered.sort(function(a, b) { return a.price - b.price; });
+    } else if (currentSort === 'price-high') {
+      filtered.sort(function(a, b) { return b.price - a.price; });
+    } else if (currentSort === 'newest') {
+      filtered.sort(function(a, b) { return b.createdAt.localeCompare(a.createdAt); });
+    } else if (currentSort === 'name-az') {
+      filtered.sort(function(a, b) { return a.name.localeCompare(b.name); });
+    }
+
+    // Update results count
+    document.getElementById('sort-results').textContent = filtered.length + ' product' + (filtered.length !== 1 ? 's' : '');
+
+    // Render
+    renderFilteredProducts(filtered);
+  }
+
+  function renderFilteredProducts(filtered) {
+    var grid = document.getElementById('products-grid');
+    if (filtered.length === 0) {
+      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--stone-400);font-family:var(--font-body);font-size:13px;">No products match your filters.</div>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < filtered.length; i++) {
+      var p = filtered[i];
+      var pIndex = products.indexOf(p);
+      html += '<div class="product-card" onclick="openModal(' + pIndex + ')">';
+      html += '<div class="product-img-wrap">';
+      if (p.image) {
+        html += '<img src="' + p.image + '" alt="' + p.name + '" loading="lazy">';
+      } else {
+        html += '<div class="product-placeholder"><div class="product-placeholder-circle"></div></div>';
+      }
+      html += '<button class="product-wish" onclick="event.stopPropagation();toggleWishlist(' + pIndex + ')" style="' + (isInWishlist(p.variantId) ? 'opacity:1;' : '') + '"><svg viewBox="0 0 24 24" style="' + (isInWishlist(p.variantId) ? 'stroke:#e11d48;fill:#e11d48;' : '') + '"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></button>';
+      if (p.stock <= 0 || !p.available) {
+        html += '<div class="product-overlay" onclick="event.stopPropagation()" style="background:var(--stone-500);transform:translateY(0);display:flex;justify-content:center;padding:11px 16px;">Sold Out</div>';
+      } else {
+        html += '<div class="product-overlay" style="display:flex;justify-content:space-between;align-items:center;padding:11px 16px;">';
+        html += '<span onclick="event.stopPropagation();openModal(' + pIndex + ')" style="cursor:pointer;">View Details</span>';
+        html += '<span onclick="event.stopPropagation();addToCart(products[' + pIndex + '])" style="cursor:pointer;">Add to Cart +</span>';
+        html += '</div>';
+      }
+      if (p.images && p.images.length > 1) {
+        html += '<div class="photo-count-badge"><svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:white;fill:none;stroke-width:2;"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>' + p.images.length + ' photos</div>';
+      }
+      // Try-On badge — only when item has a matching earring image AND is in stock
+      if (getTryonEarringForProduct(p) && p.available && p.stock > 0) {
+        html += '<div class="tryon-badge-card">Try On</div>';
+      }
+      html += '</div>';
+      html += '<p class="product-type">' + p.category + '</p>';
+      html += '<p class="product-name">' + p.name + '</p>';
+      html += '<p class="product-price">$' + p.price.toFixed(2) + '</p>';
+      html += '</div>';
+    }
+    grid.innerHTML = html;
+  }
+
+  function renderRecentlySold() {
+    var section = document.getElementById('recently-sold-section');
+    var grid = document.getElementById('sold-grid');
+    if (!section || !grid) return;
+
+    // Find sold-out products
+    var sold = products.filter(function(p) {
+      return !p.available || p.stock <= 0;
     });
 
-  } catch (err) {
-    console.error('[Glo Bot] Fetch error:', err);
-    return res.status(500).json({
-      error: 'Network error',
-      message: "I'm having trouble connecting. Please email sales@gloscreations316.com."
+    // Sort by newest first (most recently sold appears first)
+    sold.sort(function(a, b) {
+      return (b.createdAt || '').localeCompare(a.createdAt || '');
+    });
+
+    // Limit to 8 most recent so the section doesn't grow too long
+    sold = sold.slice(0, 8);
+
+    if (sold.length === 0) {
+      section.classList.remove('has-items');
+      grid.innerHTML = '';
+      return;
+    }
+
+    section.classList.add('has-items');
+    var html = '';
+    for (var i = 0; i < sold.length; i++) {
+      var p = sold[i];
+      var pIndex = products.indexOf(p);
+      html += '<div class="sold-card" onclick="openModal(' + pIndex + ')">';
+      html += '<div class="sold-img-wrap">';
+      if (p.image) {
+        html += '<img src="' + p.image + '" alt="' + p.name + '" loading="lazy">';
+      }
+      html += '<div class="sold-img-overlay"></div>';
+      html += '<span class="sold-tag">Sold</span>';
+      html += '</div>';
+      html += '<div class="sold-card-info">';
+      html += '<p class="sold-card-category">' + p.category + '</p>';
+      html += '<p class="sold-card-name">' + p.name + '</p>';
+      html += '<p class="sold-card-price">$' + p.price.toFixed(2) + '</p>';
+      html += '<span class="sold-card-stars" id="sold-stars-' + pIndex + '"></span>';
+      html += '</div>';
+      html += '</div>';
+    }
+    grid.innerHTML = html;
+    // Fetch ratings for each sold product
+    for (var s = 0; s < sold.length; s++) {
+      (function(prod, idx) {
+        fetchProductRating(prod, function(rating) {
+          renderMiniStars('sold-stars-' + idx, rating);
+        });
+      })(sold[s], products.indexOf(sold[s]));
+    }
+  }
+
+  function buildStyleFilters() {
+    // Collect all unique style tags from products
+    var styles = [];
+    var styleKeywords = ['stud', 'dangle', 'hoop', 'drop', 'clip', 'cuff', 'huggie', 'threader'];
+    for (var i = 0; i < products.length; i++) {
+      var p = products[i];
+      // Check tags
+      for (var j = 0; j < p.tags.length; j++) {
+        var tag = p.tags[j].toLowerCase();
+        if (styles.indexOf(tag) === -1) {
+          for (var k = 0; k < styleKeywords.length; k++) {
+            if (tag.indexOf(styleKeywords[k]) !== -1 && styles.indexOf(tag) === -1) {
+              styles.push(tag);
+            }
+          }
+        }
+      }
+      // Also check product name for style keywords
+      var nameLower = p.name.toLowerCase();
+      for (var m = 0; m < styleKeywords.length; m++) {
+        if (nameLower.indexOf(styleKeywords[m]) !== -1 && styles.indexOf(styleKeywords[m]) === -1) {
+          styles.push(styleKeywords[m]);
+        }
+      }
+    }
+    styles.sort();
+
+    var container = document.getElementById('style-filters');
+    var html = '<button class="style-btn active" onclick="setStyleFilter(\'all\', this)">All Styles</button>';
+    for (var n = 0; n < styles.length; n++) {
+      var label = styles[n].charAt(0).toUpperCase() + styles[n].slice(1);
+      html += '<button class="style-btn" onclick="setStyleFilter(\'' + styles[n] + '\', this)">' + label + '</button>';
+    }
+    container.innerHTML = html;
+  }
+
+  function buildFilters() {
+    var container = document.getElementById('filters-container');
+    var html = '<button class="filter-btn active" onclick="filterProducts(\'All\', this)">All</button>';
+
+    if (collections.length > 0) {
+      // Use collections from Shopify
+      for (var j = 0; j < collections.length; j++) {
+        html += '<button class="filter-btn" onclick="filterProducts(\'' + collections[j].title + '\', this)">' + collections[j].title + '</button>';
+      }
+    } else {
+      // Fallback: build from product categories
+      var categories = [];
+      for (var i = 0; i < products.length; i++) {
+        var cats = products[i].categories || [products[i].category];
+        for (var k = 0; k < cats.length; k++) {
+          if (cats[k] && categories.indexOf(cats[k]) === -1) {
+            categories.push(cats[k]);
+          }
+        }
+      }
+      categories.sort();
+      for (var m = 0; m < categories.length; m++) {
+        html += '<button class="filter-btn" onclick="filterProducts(\'' + categories[m] + '\', this)">' + categories[m] + '</button>';
+      }
+    }
+    container.innerHTML = html;
+  }
+
+  async function handleSubscribe() {
+    var input = document.getElementById('email-input');
+    var msg = document.getElementById('subscribe-msg');
+    var email = input.value.trim();
+    if (!email || email.indexOf('@') === -1) {
+      msg.textContent = 'Please enter a valid email address.';
+      msg.style.display = 'block';
+      msg.style.color = '#b45309';
+      return;
+    }
+
+    msg.textContent = 'Subscribing...';
+    msg.style.display = 'block';
+    msg.style.color = 'var(--stone-400)';
+
+    // Create customer with a random password (they don't need to know it - this is just for the mailing list)
+    var tempPass = 'GC316_' + Math.random().toString(36).substring(2, 15) + '!' + Math.floor(Math.random() * 999);
+    var query = 'mutation { customerCreate(input: { email: "' + email.replace(/"/g, '\\"') + '", password: "' + tempPass + '", acceptsMarketing: true }) { customer { id email } customerUserErrors { message field code } } }';
+
+    var data = await shopifyFetch(query);
+    console.log('Subscribe response:', JSON.stringify(data));
+
+    if (data && data.data && data.data.customerCreate) {
+      var result = data.data.customerCreate;
+      if (result.customer) {
+        trackEvent('newsletter_subscribe', { status: 'new' });
+        msg.textContent = "You're in! Watch your inbox for new drops and exclusive offers.";
+        msg.style.color = '#6d9e6d';
+        input.value = '';
+      } else if (result.customerUserErrors && result.customerUserErrors.length > 0) {
+        var errMsg = result.customerUserErrors[0].message || '';
+        var errCode = result.customerUserErrors[0].code || '';
+        if (errCode === 'TAKEN' || errMsg.toLowerCase().indexOf('taken') !== -1 || errMsg.toLowerCase().indexOf('already') !== -1) {
+          trackEvent('newsletter_subscribe', { status: 'already_subscribed' });
+          msg.textContent = "You're already subscribed! Thank you for your support.";
+          msg.style.color = '#6d9e6d';
+          input.value = '';
+        } else {
+          msg.textContent = errMsg || 'Something went wrong. Please try again.';
+          msg.style.color = '#b45309';
+        }
+      }
+    } else {
+      msg.textContent = 'Something went wrong. Please try again.';
+      msg.style.color = '#b45309';
+    }
+  }
+
+  function sendSubscribeNotification(email) {
+    console.log('New subscriber:', email);
+  }
+
+  // ============================================
+  // JUDGE.ME REVIEWS
+  // ============================================
+  // Aggregate rating comes from Shopify metafields (synced by Judge.me automatically).
+  // Actual review text is fetched on-demand from Judge.me's public widget API.
+  var JUDGEME_TOKEN = 'P0bKacLWsVQXol7Pl1x9ADBdDSA';
+  var JUDGEME_SHOP = 'cytrsm-kp.myshopify.com';
+  var currentReviewsProductHandle = null;
+  var reviewsCache = {};
+
+  function buildStarsSvg(filled, size) {
+    size = size || 14;
+    var svg = '';
+    for (var i = 1; i <= 5; i++) {
+      var isFilled = i <= Math.round(filled);
+      svg += '<svg viewBox="0 0 24 24" width="' + size + '" height="' + size + '" style="display:inline-block;vertical-align:middle;fill:' + (isFilled ? '#d4a574' : '#d6d3d1') + ';margin:0 1px;"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>';
+    }
+    return svg;
+  }
+
+  function renderMiniStars(elementId, rating) {
+    var el = document.getElementById(elementId);
+    if (!el) return;
+    if (!rating || !rating.count) return;
+    el.classList.add('has-reviews');
+    el.innerHTML = buildStarsSvg(rating.average, 10) + '<span class="sold-card-stars-count">(' + rating.count + ')</span>';
+  }
+
+  // Fetch actual review text from Judge.me public widget API (CORS-friendly)
+  function fetchReviewText(handle, callback) {
+    if (reviewsCache[handle] !== undefined) { callback(reviewsCache[handle]); return; }
+    var url = 'https://judge.me/api/v1/widgets/product_review?api_token=' + encodeURIComponent(JUDGEME_TOKEN) +
+              '&shop_domain=' + encodeURIComponent(JUDGEME_SHOP) +
+              '&handle=' + encodeURIComponent(handle);
+    fetch(url)
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var html = (data && data.widget) ? data.widget : '';
+        var reviews = parseJudgemeWidget(html);
+        reviewsCache[handle] = reviews;
+        callback(reviews);
+      })
+      .catch(function() {
+        reviewsCache[handle] = [];
+        callback([]);
+      });
+  }
+
+  // Privacy: convert "Lisa Sharma" → "Lisa S." so reviewer last names aren't fully exposed.
+  // Handles single names, multi-word last names, hyphenated names, and edge cases gracefully.
+  function abbreviateLastName(fullName) {
+    if (!fullName) return 'Anonymous';
+    var name = String(fullName).trim();
+    if (!name) return 'Anonymous';
+    // If the reviewer entered just one name (e.g. "Lisa"), leave it alone
+    var parts = name.split(/\s+/);
+    if (parts.length < 2) return name;
+    // Keep first name as-is, abbreviate everything after to first letter + period
+    var first = parts[0];
+    var lastInitial = parts[parts.length - 1].charAt(0).toUpperCase();
+    if (!lastInitial) return first;
+    return first + ' ' + lastInitial + '.';
+  }
+
+  // Parse Judge.me widget HTML to extract review data
+  function parseJudgemeWidget(html) {
+    if (!html) return [];
+    try {
+      var doc = new DOMParser().parseFromString(html, 'text/html');
+      var reviewEls = doc.querySelectorAll('.jdgm-rev');
+      var reviews = [];
+      for (var i = 0; i < reviewEls.length; i++) {
+        var r = reviewEls[i];
+        // Try multiple ways to find the rating: data-score on review or nested rating element
+        var rating = parseFloat(r.getAttribute('data-score')) || parseFloat(r.getAttribute('data-rating')) || 0;
+        if (!rating) {
+          var ratingEl = r.querySelector('[data-score], .jdgm-rev__rating');
+          if (ratingEl) {
+            rating = parseFloat(ratingEl.getAttribute('data-score')) || 0;
+            // Fallback: count filled star elements if data-score isn't useful
+            if (!rating) {
+              var filledStars = ratingEl.querySelectorAll('.jdgm--on, .jdgm-star--on, .jdgm-rev__rating--on');
+              if (filledStars.length) rating = filledStars.length;
+            }
+          }
+        }
+        // Final fallback: count star characters in aria-label like "5 out of 5 stars"
+        if (!rating) {
+          var ariaLabel = r.getAttribute('aria-label') || '';
+          var match = ariaLabel.match(/(\d+(?:\.\d+)?)\s*(?:out of|\/)\s*5/i);
+          if (match) rating = parseFloat(match[1]);
+        }
+        rating = Math.max(0, Math.min(5, Math.round(rating)));
+
+        var titleEl = r.querySelector('.jdgm-rev__title');
+        var bodyEl = r.querySelector('.jdgm-rev__body');
+        var authorEl = r.querySelector('.jdgm-rev__author');
+        var dateEl = r.querySelector('.jdgm-rev__timestamp');
+        var verifiedEl = r.querySelector('.jdgm-rev__buyer-badge');
+        var picEls = r.querySelectorAll('.jdgm-rev__pic-img, .jdgm-rev__pic img');
+        var pictures = [];
+        for (var p = 0; p < picEls.length; p++) {
+          var src = picEls[p].getAttribute('data-src') || picEls[p].getAttribute('src');
+          if (src) pictures.push(src);
+        }
+        reviews.push({
+          rating: rating,
+          title: titleEl ? titleEl.textContent.trim() : '',
+          body: bodyEl ? bodyEl.textContent.trim() : '',
+          author: abbreviateLastName(authorEl ? authorEl.textContent.trim() : 'Anonymous'),
+          date: dateEl ? (dateEl.getAttribute('data-content') || dateEl.textContent.trim()) : '',
+          verified: !!verifiedEl,
+          pictures: pictures
+        });
+      }
+      return reviews;
+    } catch(e) {
+      return [];
+    }
+  }
+
+  function escapeHtml(s) {
+    if (!s) return '';
+    return String(s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  // Display rating + reviews in modal — called from openModal
+  function loadModalReviews(product) {
+    var ratingRow = document.getElementById('modal-rating-row');
+    var ratingStars = document.getElementById('modal-rating-stars');
+    var ratingText = document.getElementById('modal-rating-text');
+    var section = document.getElementById('modal-reviews-section');
+    var list = document.getElementById('modal-reviews-list');
+    var summary = document.getElementById('modal-reviews-summary');
+    var showMoreBtn = document.getElementById('reviews-show-more');
+
+    // Reset
+    ratingRow.classList.remove('has-reviews');
+    section.classList.remove('has-reviews');
+    list.innerHTML = '';
+    showMoreBtn.style.display = 'none';
+    currentReviewsProductHandle = product.handle;
+
+    if (!product.rating || !product.ratingCount) return;
+
+    var avg = product.rating;
+    var count = product.ratingCount;
+
+    // Top star rating row (no Read all link)
+    ratingStars.innerHTML = buildStarsSvg(avg, 14);
+    ratingText.innerHTML = '<strong>' + avg.toFixed(1) + '</strong> · ' + count + ' review' + (count !== 1 ? 's' : '');
+    ratingRow.classList.add('has-reviews');
+
+    // Reviews section
+    summary.textContent = avg.toFixed(1) + ' out of 5 · ' + count + ' total';
+    section.classList.add('has-reviews');
+    list.innerHTML = '<div class="reviews-loading">Loading reviews...</div>';
+
+    // Fetch the actual review text and render
+    fetchReviewText(product.handle, function(reviews) {
+      // Bail if user opened a different product while we were fetching
+      if (currentReviewsProductHandle !== product.handle) return;
+      // If exactly one review and parser couldn't read its rating, use the aggregate average
+      if (reviews && reviews.length === 1 && (!reviews[0].rating || reviews[0].rating === 0)) {
+        reviews[0].rating = Math.round(avg);
+      }
+      renderReviewsList(reviews);
     });
   }
-};
+
+  function renderReviewsList(reviews) {
+    var list = document.getElementById('modal-reviews-list');
+    if (!reviews || !reviews.length) {
+      list.innerHTML = '<p style="text-align:center;font-family:var(--font-body);font-size:12px;color:var(--stone-400);padding:12px 0;">Reviews are syncing — refresh in a few minutes.</p>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < reviews.length; i++) {
+      var r = reviews[i];
+      html += '<div class="review-item">';
+      html += '<div class="review-header">';
+      html += '<div class="review-header-left">';
+      html += '<span class="review-stars">' + buildStarsSvg(r.rating, 12) + '</span>';
+      html += '<span class="review-author">' + escapeHtml(r.author) + '</span>';
+      if (r.verified) html += '<span class="review-verified">Verified</span>';
+      html += '</div>';
+      if (r.date) html += '<span class="review-date">' + escapeHtml(r.date) + '</span>';
+      html += '</div>';
+      if (r.title) html += '<p class="review-title">' + escapeHtml(r.title) + '</p>';
+      if (r.body) html += '<p class="review-body">' + escapeHtml(r.body).replace(/\n/g, '<br>') + '</p>';
+      if (r.pictures && r.pictures.length > 0) {
+        html += '<div class="review-photos">';
+        for (var p = 0; p < r.pictures.length; p++) {
+          html += '<img class="review-photo" src="' + r.pictures[p] + '" alt="Customer photo" onclick="window.open(\'' + r.pictures[p] + '\',\'_blank\')">';
+        }
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+    list.innerHTML = html;
+  }
+
+  // Stub kept for the Recently Sold cards
+  function fetchProductRating(product, callback) {
+    if (product && product.rating && product.ratingCount) {
+      callback({ average: product.rating, count: product.ratingCount });
+    } else {
+      callback(null);
+    }
+  }
+
+  // ============================================
+  // POLICIES
+  // ============================================
+  var policies = {
+    privacy: {
+      title: 'Privacy Policy',
+      content: '<p><strong>Last Updated: May 2026</strong></p>' +
+        '<p>Glo\'s Creations 3:16 ("we," "us," or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website gloscreations316.com (including when installed as a Progressive Web App on your device) and make purchases from our store.</p>' +
+        '<h4>Information We Collect</h4>' +
+        '<p><strong>Personal Information:</strong> When you make a purchase or create an account, we may collect your name, email address, shipping address, billing address, phone number, and payment information. Payment card details are processed securely by Shopify Payments and are never stored on our servers.</p>' +
+        '<p><strong>Automatically Collected Information:</strong> We may collect information about your device, browser type, IP address, and browsing behavior on our site through cookies and similar technologies. This includes interaction events such as product views, cart actions, search queries, and page navigation patterns.</p>' +
+        '<p><strong>Locally Stored Data:</strong> We use your browser\'s local storage to save your wishlist, cart contents, cookie preferences, and certain user interface preferences. This data stays on your device and is not transmitted to us unless you explicitly take an action (such as adding to cart or checking out).</p>' +
+        '<p><strong>Virtual Try-On Data:</strong> Our Virtual Try-On feature uses your device\'s camera and on-device facial landmark detection (powered by Google\'s MediaPipe technology). All facial detection happens locally in your web browser. We do not collect, store, transmit, or have access to your camera feed, photos, or any biometric/facial geometry data. If you choose to save or download a try-on image, that file is created and stored on your device only. Use of the Virtual Try-On feature is entirely optional and requires your explicit consent each time you use it. See "Virtual Try-On Disclosure" below for more detail.</p>' +
+        '<h4>Virtual Try-On Disclosure</h4>' +
+        '<p>The Virtual Try-On feature requires camera access. When you use this feature:</p>' +
+        '<ul style="margin:8px 0 12px 20px;">' +
+          '<li>Your browser asks for camera permission, which you may grant or deny</li>' +
+          '<li>Facial landmark detection runs entirely on your device (no facial data leaves your device)</li>' +
+          '<li>We do not record, capture, transmit, or store images, video, or facial geometry from your camera</li>' +
+          '<li>Camera access ends as soon as you close the try-on feature</li>' +
+          '<li>You may revoke camera permission at any time through your browser settings</li>' +
+        '</ul>' +
+        '<p>We make no representation that the Virtual Try-On accurately depicts how a product will appear in real life. The feature is provided for entertainment and visualization purposes only.</p>' +
+        '<h4>How We Use Your Information</h4>' +
+        '<p>We use the information we collect to: process and fulfill your orders; communicate with you about your orders, products, and promotions; improve our website and customer experience; comply with legal obligations; and prevent fraud.</p>' +
+        '<h4>Information Sharing & Third-Party Services</h4>' +
+        '<p>We do not sell, trade, or rent your personal information to third parties. We use the following third-party services that may process limited information about your visit:</p>' +
+        '<ul style="margin:8px 0 12px 20px;">' +
+          '<li><strong>Shopify</strong> — our e-commerce and payment processing platform</li>' +
+          '<li><strong>Shipping carriers</strong> — to deliver your orders</li>' +
+          '<li><strong>Google Analytics 4</strong> — for anonymized website usage analytics (with consent)</li>' +
+          '<li><strong>Tawk.to</strong> — our live chat platform; conversations are stored on Tawk.to\'s servers and may be reviewed by Tawk.to staff for service quality. Do not share sensitive information such as payment card numbers in chat.</li>' +
+          '<li><strong>Judge.me</strong> — our customer review platform; reviews you submit are stored by Judge.me and displayed publicly on our site</li>' +
+          '<li><strong>Instagram (Meta)</strong> — when you view embedded Instagram content, Meta may collect data about your interaction per their privacy policy</li>' +
+          '<li><strong>Vercel</strong> — our website hosting provider</li>' +
+          '<li><strong>GitHub</strong> — hosts certain images and assets</li>' +
+          '<li><strong>Law enforcement</strong> — if required by law</li>' +
+        '</ul>' +
+        '<h4>Live Chat Notice</h4>' +
+        '<p>Our live chat feature is provided by a third-party service (Tawk.to). By initiating a chat, you acknowledge and consent to the following:</p>' +
+        '<ul style="margin:8px 0 12px 20px;">' +
+          '<li><strong>Recording & Storage:</strong> The entire conversation, including any text messages, file uploads, images, links, your IP address, browser information, and approximate location, is recorded and stored on Tawk.to\'s servers and may be reviewed by us or Tawk.to staff for training, quality, and security purposes.</li>' +
+          '<li><strong>No Sensitive Information:</strong> Do not share sensitive personal or financial information through chat, including but not limited to: credit card or bank account numbers, social security numbers, passwords, government IDs, medical information, or anyone else\'s personal information.</li>' +
+          '<li><strong>File Uploads:</strong> If you upload files or images through chat, you confirm that you have the legal right to share that content. Do not upload copyrighted material, illegal content, malware, or images of any individual without their consent.</li>' +
+          '<li><strong>Subject to Terms of Service:</strong> Your use of live chat is also governed by our Terms of Service, which include conduct standards and our right to terminate chat sessions or block users for misuse.</li>' +
+          '<li><strong>Two-Party Consent States:</strong> If you reside in a state that requires two-party consent for recording (such as California, Florida, Illinois, Massachusetts, Maryland, Pennsylvania, or Washington), your continued use of the chat constitutes your consent to recording.</li>' +
+        '</ul>' +
+        '<p>For Tawk.to\'s own privacy practices, see <a href="https://www.tawk.to/privacy-policy/" target="_blank" rel="noopener">tawk.to/privacy-policy</a>.</p>' +
+        '<h4>Progressive Web App (PWA) Notice</h4>' +
+        '<p>Our website may be installed on your device as a Progressive Web App (PWA). When installed, the app uses a service worker to cache certain content for offline use and faster performance. This cached data is stored on your device only and is not transmitted to us. You can clear cached data at any time through your browser settings or by uninstalling the app from your home screen.</p>' +
+        '<h4>Data Security</h4>' +
+        '<p>We implement appropriate technical and organizational measures to protect your personal information. All transactions are processed through Shopify\'s secure, PCI-compliant payment system. However, no method of transmission over the Internet is 100% secure, and we cannot guarantee absolute security.</p>' +
+        '<h4>Cookies & Consent</h4>' +
+        '<p>Our website uses cookies and similar technologies to enhance your browsing experience, analyze site traffic, and personalize content. We use a cookie consent banner to obtain your consent for non-essential cookies (such as analytics). You can control cookie settings through your browser preferences and revoke consent at any time.</p>' +
+        '<h4>Your Rights</h4>' +
+        '<p>You have the right to: access the personal information we hold about you; request correction of inaccurate information; request deletion of your information (subject to legal obligations); opt out of marketing communications at any time; revoke consent for non-essential cookies and tracking. To exercise these rights, contact us at the email below.</p>' +
+        '<p><strong>California Residents (CCPA):</strong> California residents have additional rights including the right to know what personal information is collected, the right to delete personal information, and the right to opt out of the sale of personal information. We do not sell personal information.</p>' +
+        '<h4>Biometric Information Notice</h4>' +
+        '<p>The Virtual Try-On feature uses real-time facial landmark detection that runs entirely on your device. We do not collect, store, share, sell, or transmit any biometric identifiers, facial geometry, or facial recognition data. No facial data is sent to our servers or any third party at any time. This notice is provided in accordance with applicable biometric privacy laws including the Illinois Biometric Information Privacy Act (BIPA), Texas Capture or Use of Biometric Identifier Act (CUBI), and the Washington Biometric Privacy Act, even though we believe these laws may not apply to fully on-device processing.</p>' +
+        '<h4>Children\'s Privacy</h4>' +
+        '<p>Our website is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13. The Virtual Try-On feature should not be used by children without parental supervision.</p>' +
+        '<h4>Changes to This Policy</h4>' +
+        '<p>We may update this Privacy Policy from time to time. Changes will be posted on this page with an updated revision date.</p>' +
+        '<h4>Contact Us</h4>' +
+        '<p>If you have questions about this Privacy Policy, please contact us at <a href="mailto:sales@gloscreations316.com">sales@gloscreations316.com</a>.</p>'
+    },
+    terms: {
+      title: 'Terms of Service',
+      content: '<p><strong>Last Updated: May 2026</strong></p>' +
+        '<p>Welcome to Glo\'s Creations 3:16. By accessing or using our website gloscreations316.com (including the installable Progressive Web App version) or any of its features, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our website.</p>' +
+        '<h4>General Conditions</h4>' +
+        '<p>We reserve the right to refuse service to anyone for any reason at any time. Prices for our products are subject to change without notice. We reserve the right to modify or discontinue any product, feature, or service (including the Virtual Try-On, live chat, or PWA functionality) at any time without notice.</p>' +
+        '<h4>Accuracy of Information</h4>' +
+        '<p>We make every effort to display our products as accurately as possible. However, due to variations in photography, screen displays, and the handmade nature of our products, actual colors, textures, and dimensions may vary slightly from what is shown on the website. Each piece of polymer clay jewelry is handcrafted individually, making every item unique. Minor variations in color, pattern, and size are inherent to handmade products and are not considered defects.</p>' +
+        '<h4>Products & Pricing</h4>' +
+        '<p>All products are handmade polymer clay jewelry. Prices are listed in US Dollars (USD) and are subject to change without prior notice. We are not responsible for typographical errors in pricing. In the event of a pricing error, we reserve the right to cancel the order and notify you of the error.</p>' +
+        '<h4>Orders & Payment</h4>' +
+        '<p>By placing an order, you represent that the information you provide is accurate and that you are authorized to use the payment method provided. We reserve the right to refuse or cancel any order for any reason, including suspected fraud, unauthorized transactions, or product availability issues. All payments are processed securely through Shopify Payments.</p>' +
+        '<h4>Virtual Try-On Feature</h4>' +
+        '<p>Our website offers a Virtual Try-On feature that uses your device\'s camera and on-device facial detection technology to overlay product images onto your face for visualization purposes. By using this feature, you acknowledge and agree that:</p>' +
+        '<ul style="margin:8px 0 12px 20px;">' +
+          '<li>The Virtual Try-On is a visualization aid only and does not represent the actual appearance, fit, size, weight, or quality of the physical product when worn</li>' +
+          '<li>You are responsible for granting and revoking camera access through your browser</li>' +
+          '<li>The feature requires good lighting, a clear view of your face, and may not work on all devices, browsers, or with all hairstyles, glasses, or coverings</li>' +
+          '<li>We make no warranty regarding the accuracy, sizing, color rendering, or appearance shown by the Virtual Try-On</li>' +
+          '<li>Final purchase decisions should not be made solely based on the Virtual Try-On preview</li>' +
+          '<li>Any image you save or capture using the Virtual Try-On is created entirely on your device, and you are solely responsible for how you use, store, share, or distribute such images</li>' +
+          '<li>You will not use the Virtual Try-On feature in any unlawful manner or to create content that violates the rights of others</li>' +
+          '<li>Children under 13 should not use this feature; users under 18 should have parental supervision</li>' +
+        '</ul>' +
+        '<p>We disclaim all liability for any decisions made, dissatisfaction with purchased products, or any other consequences arising from your use of the Virtual Try-On feature.</p>' +
+        '<h4>Live Chat</h4>' +
+        '<p>Live chat is provided through a third-party service (Tawk.to). All conversations, including any uploaded files or images, are recorded and stored on Tawk.to\'s servers. By using live chat, you agree to the following:</p>' +
+        '<ul style="margin:8px 0 12px 20px;">' +
+          '<li><strong>Conduct Standards:</strong> You will not use chat to send abusive, harassing, threatening, defamatory, obscene, hateful, or discriminatory language; spam, repeated messages, or solicitations unrelated to our products; impersonate any person or entity; or share unlawful, fraudulent, or misleading content.</li>' +
+          '<li><strong>Content Responsibility:</strong> You are solely responsible for any text, files, images, or links you send through chat. We do not pre-screen chat content. By sending content, you represent that you own it or have the legal right to share it, that it does not violate any third party\'s rights (including copyright, privacy, or publicity rights), and that it does not contain malware or harmful code.</li>' +
+          '<li><strong>No Confidential or Sensitive Information:</strong> Do not transmit credit card numbers, bank details, passwords, social security numbers, government IDs, medical information, or any other sensitive personal information through chat. We are not liable for any consequences resulting from sensitive information shared through chat.</li>' +
+          '<li><strong>Statements Are Informal:</strong> Statements, suggestions, or opinions made by our agents during chat are provided for informational and customer service purposes only. They do not constitute legally binding offers, warranties, professional advice (legal, medical, financial, or otherwise), or modifications to these Terms or our published policies. Our published Terms, Privacy Policy, Returns Policy, and product descriptions on the website always control in case of any discrepancy.</li>' +
+          '<li><strong>No Guarantee of Availability or Response Time:</strong> Live chat is offered as a courtesy and may be unavailable, offline, or experience delays. We make no guarantee of response time or that any specific issue will be resolved through chat.</li>' +
+          '<li><strong>Right to Terminate, Block, or Refuse Service:</strong> We reserve the right to end any chat session at any time, block any user, or refuse to provide chat support, without notice and without liability, for any reason including but not limited to violation of these standards.</li>' +
+          '<li><strong>Indemnification:</strong> You agree to indemnify and hold us harmless from any claims, damages, or expenses arising from your use of live chat, including content you submit, statements you make, or any consequences of sharing sensitive information against our guidance.</li>' +
+        '</ul>' +
+        '<p>The views or opinions expressed by individual visitors in chat do not represent the views or values of Glo\'s Creations 3:16 or Marjoel LLC. We disclaim responsibility for any third-party content shared by visitors through any feature of our website.</p>' +
+        '<h4>Progressive Web App ("App") Disclaimer</h4>' +
+        '<p>Our website may be installed on your device as a Progressive Web App (PWA) through your browser\'s "Add to Home Screen" or "Install" feature. This is a web application — not a native application distributed through Apple\'s App Store or Google Play Store. By installing the PWA, you acknowledge that:</p>' +
+        '<ul style="margin:8px 0 12px 20px;">' +
+          '<li>The "app" is the same website running in a standalone window</li>' +
+          '<li>It requires an internet connection for most functionality (some content may be available offline through cached data)</li>' +
+          '<li>Updates are delivered automatically when you have internet access — there is no separate update process</li>' +
+          '<li>The PWA is not affiliated with, distributed by, or endorsed by Apple, Google, or any app store</li>' +
+          '<li>You can uninstall the PWA at any time by long-pressing its icon and selecting "Uninstall" or "Remove"</li>' +
+        '</ul>' +
+        '<h4>User Accounts</h4>' +
+        '<p>If you create a customer account, you are responsible for maintaining the confidentiality of your password and for all activities that occur under your account. We reserve the right to suspend or terminate accounts that violate these Terms or are inactive for extended periods. You must provide accurate and current information when creating an account.</p>' +
+        '<h4>Customer Reviews</h4>' +
+        '<p>Reviews submitted through our review system (powered by Judge.me) become publicly visible on our site and on Judge.me\'s platform. You retain ownership of your review content but grant us and Judge.me a perpetual, royalty-free license to display, reproduce, and distribute your review. We reserve the right to remove reviews that contain offensive language, false claims, spam, or content unrelated to the product. By submitting a review, you confirm that the content is your own original work and that you have purchased and used the product.</p>' +
+        '<h4>Intellectual Property</h4>' +
+        '<p>All content on this website, including but not limited to text, graphics, logos, images, product designs, and photographs, is the property of Glo\'s Creations 3:16 and is protected by copyright, trademark, and other intellectual property laws. You may not reproduce, distribute, modify, or create derivative works from any content without our express written permission. Our brand name, logo, and the name "Glo\'s Creations 3:16" are trademarks of Marjoel LLC.</p>' +
+        '<h4>Acceptable Use</h4>' +
+        '<p>You agree not to: use our website or any feature for any unlawful purpose; attempt to interfere with the security or operation of our website; use automated tools (bots, scrapers, etc.) to access our site without permission; impersonate any person or entity; transmit malware or harmful code; circumvent any access controls or security features; or use the Virtual Try-On feature to create misleading, harmful, or non-consensual imagery of any third party.</p>' +
+        '<h4>Limitation of Liability</h4>' +
+        '<p>To the fullest extent permitted by applicable law, Glo\'s Creations 3:16, Marjoel LLC, and its owners, officers, employees, and agents shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to loss of profits, data, or other intangible losses, resulting from: your use or inability to use our website, products, or any feature including the Virtual Try-On, live chat, or PWA; any unauthorized access to or alteration of your personal information; any errors or omissions in any content; any decisions made based on Virtual Try-On previews; or any other matter relating to our website, products, or services.</p>' +
+        '<h4>Indemnification</h4>' +
+        '<p>You agree to indemnify, defend, and hold harmless Glo\'s Creations 3:16, Marjoel LLC, and its owners, officers, employees, and agents from and against any claims, liabilities, damages, losses, and expenses (including reasonable attorney\'s fees) arising out of or in any way connected with your access to or use of our website, products, or any feature, including any content you submit (such as reviews) or any images you create using the Virtual Try-On.</p>' +
+        '<h4>Allergies & Sensitivities Disclaimer</h4>' +
+        '<p>While our polymer clay jewelry is generally hypoallergenic, we cannot guarantee that our products will not cause allergic reactions or skin sensitivities in all individuals. If you have known sensitivities to jewelry materials, earring hooks, or adhesives, please review product descriptions carefully or contact us before purchasing. Glo\'s Creations 3:16 is not liable for any allergic reactions or skin irritations caused by our products.</p>' +
+        '<h4>Product Safety</h4>' +
+        '<p>Our products are decorative jewelry items and are not intended as toys. Small parts may present a choking hazard for children under 3 years of age. Keep jewelry out of reach of small children and pets. Our products are not intended for use in the mouth and should not be ingested.</p>' +
+        '<h4>No Warranty</h4>' +
+        '<p>Our website, products, and all features are provided on an "as is" and "as available" basis without warranties of any kind, either express or implied, including but not limited to implied warranties of merchantability, fitness for a particular purpose, or non-infringement. We do not warrant that the website or any feature (including the Virtual Try-On, live chat, or PWA) will be uninterrupted, error-free, secure, or free from viruses or other harmful components.</p>' +
+        '<h4>Governing Law</h4>' +
+        '<p>These Terms of Service shall be governed by and construed in accordance with the laws of the State of Georgia, United States, without regard to its conflict of law provisions. Any disputes shall be resolved in the courts of Cherokee County, Georgia.</p>' +
+        '<h4>Changes to Terms</h4>' +
+        '<p>We reserve the right to update or modify these Terms of Service at any time without prior notice. Your continued use of our website following any changes constitutes your acceptance of the revised terms.</p>' +
+        '<h4>Contact Us</h4>' +
+        '<p>If you have questions about these Terms of Service, please contact us at <a href="mailto:sales@gloscreations316.com">sales@gloscreations316.com</a>.</p>'
+    },
+    returns: {
+      title: 'Return & Exchange Policy',
+      content: '<p><strong>Last Updated: May 2026</strong></p>' +
+        '<p>We want you to love your Glo\'s Creations 3:16 jewelry! If you\'re not completely satisfied with your purchase, we offer the following return and exchange options.</p>' +
+        '<h4>Return Window</h4>' +
+        '<p>You may return or exchange items within <strong>14 days</strong> of receiving your order. Items must be in their original, unworn condition with all original packaging and tags intact.</p>' +
+        '<h4>Eligible Returns</h4>' +
+        '<p>To be eligible for a return, your item must be: unused, unworn, and in the same condition you received it; in its original packaging; accompanied by proof of purchase (order number or receipt).</p>' +
+        '<h4>Non-Returnable Items</h4>' +
+        '<p>The following items are <strong>not eligible</strong> for return or exchange: custom or personalized orders; items that have been worn, altered, or damaged by the customer; sale or clearance items marked as "Final Sale"; gift cards.</p>' +
+        '<h4>How to Initiate a Return</h4>' +
+        '<p>To start a return or exchange, please email us at <a href="mailto:sales@gloscreations316.com">sales@gloscreations316.com</a> with your order number and reason for return. We will provide you with return instructions within 1-2 business days.</p>' +
+        '<h4>Return Shipping</h4>' +
+        '<p>Customers are responsible for return shipping costs unless the item arrived damaged or defective. We recommend using a trackable shipping method, as we cannot be responsible for items lost in return transit. Original shipping charges are non-refundable.</p>' +
+        '<h4>Refund Processing</h4>' +
+        '<p>Once we receive and inspect your return, we will notify you of the approval or rejection of your refund. Approved refunds will be processed to your original payment method within <strong>5-10 business days</strong>. Please note that your bank or credit card company may take additional time to post the refund to your account.</p>' +
+        '<h4>Exchanges</h4>' +
+        '<p>If you would like to exchange an item for a different piece, please email us and we will do our best to accommodate your request, subject to availability. If the exchange item is a different price, we will charge or refund the difference accordingly.</p>' +
+        '<h4>Damaged or Defective Items</h4>' +
+        '<p>If your item arrives damaged or defective, please contact us within <strong>48 hours</strong> of delivery with photos of the damage. We will provide a prepaid return label and send a replacement or issue a full refund at no cost to you.</p>' +
+        '<h4>Contact Us</h4>' +
+        '<p>For all return and exchange inquiries, please email <a href="mailto:sales@gloscreations316.com">sales@gloscreations316.com</a>.</p>'
+    },
+    shipping: {
+      title: 'Shipping Policy',
+      content: '<p><strong>Last Updated: May 2026</strong></p>' +
+        '<h4>Processing Time</h4>' +
+        '<p>All orders are processed within <strong>1-3 business days</strong> (Monday–Friday, excluding holidays). You will receive a confirmation email with tracking information once your order has shipped.</p>' +
+        '<h4>Shipping Rates & Delivery Times</h4>' +
+        '<p><strong>Standard Shipping:</strong> $5.00 — Estimated delivery: 3-5 business days<br>' +
+        '<strong>Priority Shipping:</strong> $9.00 — Estimated delivery: 1-2 business days<br>' +
+        '<strong>Free Standard Shipping:</strong> On orders of $50 or more (continental United States only)</p>' +
+        '<p>Delivery times are estimates and are not guaranteed. Delays may occur due to carrier issues, weather, holidays, or other circumstances beyond our control.</p>' +
+        '<h4>Shipping Locations</h4>' +
+        '<p>We currently ship to the <strong>continental United States</strong> (48 states). We do not currently ship to Alaska, Hawaii, US territories, or international locations. If you are interested in international shipping, please contact us at <a href="mailto:sales@gloscreations316.com">sales@gloscreations316.com</a>.</p>' +
+        '<h4>Order Tracking</h4>' +
+        '<p>Once your order ships, you will receive a shipping confirmation email. If a tracking number is available, it will be included in this email along with a link to track your package. Please allow up to 24 hours for tracking information to update. Not all shipping methods include tracking. If tracking is not available for your shipment, estimated delivery windows will be provided in your confirmation email.</p>' +
+        '<h4>Lost or Stolen Packages</h4>' +
+        '<p>Glo\'s Creations 3:16 is not responsible for packages that are lost, stolen, or damaged after they have been delivered and confirmed by the carrier. If your tracking shows "delivered" but you have not received your package, please: check with neighbors and household members; contact your local post office or carrier; and contact us within 7 days of the delivery date so we can assist with filing a claim.</p>' +
+        '<h4>Incorrect Shipping Address</h4>' +
+        '<p>Please double-check your shipping address before completing your order. We are not responsible for orders shipped to incorrect addresses provided by the customer. If a package is returned to us due to an incorrect address, the customer will be responsible for additional shipping charges to reship the order.</p>' +
+        '<h4>P.O. Boxes</h4>' +
+        '<p>We can ship to P.O. Boxes via USPS. Please note that delivery to P.O. Boxes may take longer than delivery to a physical address.</p>' +
+        '<h4>Contact Us</h4>' +
+        '<p>For shipping questions or concerns, please email <a href="mailto:sales@gloscreations316.com">sales@gloscreations316.com</a>.</p>'
+    },
+    care: {
+      title: 'Jewelry Care Guide',
+      content: '<p><strong>Taking Care of Your Polymer Clay Jewelry</strong></p>' +
+        '<p>Your Glo\'s Creations 3:16 jewelry is handmade with love and care. With proper care, your pieces will stay beautiful for years to come. Here are some tips to keep your jewelry looking its best.</p>' +
+        '<h4>General Care</h4>' +
+        '<p>Polymer clay is a durable material, but like all jewelry, it benefits from gentle handling. Avoid dropping your jewelry on hard surfaces, as this may cause chipping or cracking. Store your jewelry in a cool, dry place away from direct sunlight, as prolonged sun exposure may cause colors to fade over time.</p>' +
+        '<h4>Cleaning</h4>' +
+        '<p>To clean your polymer clay jewelry, gently wipe with a soft, damp cloth. Do not use harsh chemicals, alcohol, acetone, or abrasive cleaners, as these may damage the finish or color of the clay. Do not submerge your jewelry in water for extended periods.</p>' +
+        '<h4>What to Avoid</h4>' +
+        '<p>Remove your jewelry before: swimming, bathing, or showering; exercising or engaging in strenuous activity; applying lotions, perfumes, hairspray, or other beauty products; sleeping (to prevent accidental damage); household cleaning with chemicals.</p>' +
+        '<h4>Storage</h4>' +
+        '<p>Store each piece separately in a soft pouch, jewelry box, or the original packaging to prevent scratching. Keep away from extreme heat, as polymer clay can soften in very high temperatures (above 170°F/77°C). Avoid storing near windows or in cars during hot weather.</p>' +
+        '<h4>Metal Components</h4>' +
+        '<p>Some of our jewelry features metal findings (hooks, posts, chains). These components may tarnish over time with exposure to moisture and air. To slow tarnishing, store in an airtight container or with anti-tarnish strips. If tarnishing occurs, gently clean metal parts with a soft jewelry polishing cloth.</p>' +
+        '<h4>Disclaimer</h4>' +
+        '<p>Polymer clay jewelry is a handcrafted artisan product. While durable for everyday wear, it is not indestructible. Normal wear and tear, including minor surface scratches, are expected over time and are not covered under any warranty. By purchasing and wearing our jewelry, you acknowledge and accept these care guidelines.</p>'
+    }
+  };
+
+  // ============================================
+  // REVIEWS CAROUSEL — Live customer reviews
+  // ============================================
+  // Pulls real customer reviews from Judge.me across all products and rotates
+  // them in the homepage testimonial section. Falls back to the default
+  // "Sarah M." quote if no real reviews are available yet.
+  var reviewsList = [];
+  var reviewsIndex = 0;
+  var reviewsTimer = null;
+  var REVIEWS_ROTATE_MS = 7000;
+
+  // Find the highest-rated reviews from products and gather them
+  async function loadCarouselReviews() {
+    if (!products || products.length === 0) return;
+    var fetched = [];
+    var fetchPromises = [];
+
+    // Only fetch reviews from products that have ratings (saves API calls)
+    var productsWithRatings = products.filter(function(p) {
+      return p.ratingCount && p.ratingCount > 0;
+    });
+    if (productsWithRatings.length === 0) return;
+
+    for (var i = 0; i < productsWithRatings.length; i++) {
+      (function(product) {
+        fetchPromises.push(new Promise(function(resolve) {
+          fetchReviewText(product.handle, function(reviews) {
+            if (reviews && reviews.length > 0) {
+              for (var j = 0; j < reviews.length; j++) {
+                var r = reviews[j];
+                // Only include reviews that have actual body text and are 4 stars or higher
+                if (r.body && r.body.length > 20 && r.rating >= 4) {
+                  fetched.push({
+                    rating: r.rating,
+                    title: r.title || '',
+                    body: r.body,
+                    author: r.author || 'Anonymous',
+                    date: r.date || '',
+                    productName: product.name,
+                    productHandle: product.handle,
+                    productIndex: products.indexOf(product)
+                  });
+                }
+              }
+            }
+            resolve();
+          });
+        }));
+      })(productsWithRatings[i]);
+    }
+
+    await Promise.all(fetchPromises);
+    if (fetched.length === 0) return; // Keep the default "Sarah M." fallback shown
+
+    // Sort by rating (highest first), then by length (longer reviews are more meaningful)
+    fetched.sort(function(a, b) {
+      if (b.rating !== a.rating) return b.rating - a.rating;
+      return b.body.length - a.body.length;
+    });
+
+    // Cap at 10 reviews to keep the carousel manageable
+    reviewsList = fetched.slice(0, 10);
+    renderReviewsCarousel();
+  }
+
+  function renderReviewsCarousel() {
+    var slides = document.getElementById('reviews-slides');
+    var dots = document.getElementById('reviews-dots');
+    var loading = document.getElementById('reviews-loading');
+    var controls = document.getElementById('reviews-controls');
+    if (!slides || !dots) return;
+
+    if (reviewsList.length === 0) return; // Keep fallback shown
+
+    // Hide the default fallback quote
+    if (loading) loading.classList.add('hidden');
+
+    // Build slides
+    var slidesHtml = '';
+    for (var i = 0; i < reviewsList.length; i++) {
+      var r = reviewsList[i];
+      var stars = '';
+      for (var s = 0; s < 5; s++) {
+        stars += s < r.rating ? '★' : '☆';
+      }
+      slidesHtml += '<div class="review-slide' + (i === 0 ? ' active' : '') + '">';
+      slidesHtml += '<p class="review-slide-stars">' + stars + '</p>';
+      slidesHtml += '<blockquote>"' + escapeHtml(r.body) + '"</blockquote>';
+      slidesHtml += '<a class="review-slide-product" onclick="openModalFromReview(' + r.productIndex + ')">' + escapeHtml(r.productName) + '</a><br>';
+      slidesHtml += '<p class="review-slide-author">' + escapeHtml(r.author) + ' · Verified Customer</p>';
+      slidesHtml += '</div>';
+    }
+    slides.innerHTML = slidesHtml;
+
+    // Build dots (only show dots if more than 1 review)
+    if (reviewsList.length > 1) {
+      var dotsHtml = '';
+      for (var d = 0; d < reviewsList.length; d++) {
+        dotsHtml += '<button class="reviews-dot' + (d === 0 ? ' active' : '') + '" onclick="goToReview(' + d + ')" aria-label="Review ' + (d + 1) + '"></button>';
+      }
+      dots.innerHTML = dotsHtml;
+      controls.style.display = 'flex';
+      startReviewsTimer();
+    } else {
+      controls.style.display = 'none';
+    }
+  }
+
+  function goToReview(index) {
+    reviewsIndex = index;
+    var slides = document.querySelectorAll('.review-slide');
+    var dots = document.querySelectorAll('.reviews-dot');
+    for (var i = 0; i < slides.length; i++) slides[i].classList.toggle('active', i === reviewsIndex);
+    for (var j = 0; j < dots.length; j++) dots[j].classList.toggle('active', j === reviewsIndex);
+    resetReviewsTimer();
+  }
+
+  function reviewsNext() {
+    if (reviewsList.length === 0) return;
+    goToReview((reviewsIndex + 1) % reviewsList.length);
+  }
+
+  function reviewsPrev() {
+    if (reviewsList.length === 0) return;
+    goToReview((reviewsIndex - 1 + reviewsList.length) % reviewsList.length);
+  }
+
+  function startReviewsTimer() {
+    if (reviewsTimer) clearInterval(reviewsTimer);
+    if (reviewsList.length > 1) {
+      reviewsTimer = setInterval(function() { reviewsNext(); }, REVIEWS_ROTATE_MS);
+    }
+  }
+
+  function resetReviewsTimer() {
+    startReviewsTimer();
+  }
+
+  // Open product modal when visitor clicks the product name on a review
+  function openModalFromReview(productIndex) {
+    if (productIndex >= 0 && productIndex < products.length) {
+      trackEvent('review_carousel_product_click', { product_index: productIndex });
+      openModal(productIndex);
+    }
+  }
+
+  // ============================================
+  // ANNOUNCEMENT BAR ROTATION
+  // ============================================
+  var announceIndex = 0;
+  var announceTotal = 2;
+  var announceTimer = null;
+
+  function goToAnnounce(index) {
+    announceIndex = index;
+    var track = document.getElementById('announce-track');
+    track.style.transform = 'translateX(-' + (announceIndex * 100) + '%)';
+    var dots = document.querySelectorAll('.announcement-dot');
+    for (var i = 0; i < dots.length; i++) dots[i].classList.remove('active');
+    if (dots[announceIndex]) dots[announceIndex].classList.add('active');
+    resetAnnounceTimer();
+  }
+
+  function nextAnnounce() {
+    goToAnnounce((announceIndex + 1) % announceTotal);
+  }
+
+  function resetAnnounceTimer() {
+    if (announceTimer) clearInterval(announceTimer);
+    announceTimer = setInterval(nextAnnounce, 5000);
+  }
+
+  resetAnnounceTimer();
+
+  function openInstagram() {
+    trackEvent('instagram_click', {});
+    var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      window.location.href = 'https://www.instagram.com/gloscreations31_6/';
+    } else {
+      window.open('https://www.instagram.com/gloscreations31_6/', '_blank');
+    }
+  }
+
+  function openPolicy(type) {
+    var policy = policies[type];
+    if (!policy) return;
+    trackEvent('policy_view', { policy_type: type });
+    var content = document.getElementById('policy-content');
+    content.innerHTML = '<h3 class="login-title" style="margin-bottom:16px;">' + policy.title + '</h3>' +
+      '<div style="font-family:var(--font-body);font-size:13px;color:var(--stone-600);line-height:1.8;">' + policy.content + '</div>';
+    // Style the headings
+    var headings = content.querySelectorAll('h4');
+    for (var i = 0; i < headings.length; i++) {
+      headings[i].style.cssText = 'font-family:var(--font-body);font-size:13px;font-weight:500;color:var(--stone-900);margin:20px 0 8px;letter-spacing:0.05em;';
+    }
+    document.getElementById('policy-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closePolicy() {
+    document.getElementById('policy-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  // ============================================
+  // VIRTUAL TRY-ON
+  // ============================================
+  var tryonEarringImg = null;
+  var tryonUserImg = null;
+  var tryonFaceLandmarks = null;
+  var tryonEarringSize = 70;
+  var tryonStream = null;
+  var faceMeshLoaded = false;
+  var faceMesh = null;
+
+  async function loadFaceMesh() {
+    if (faceMeshLoaded) return;
+    var script1 = document.createElement('script');
+    script1.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js';
+    document.head.appendChild(script1);
+    var script2 = document.createElement('script');
+    script2.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js';
+    document.head.appendChild(script2);
+
+    await new Promise(function(resolve) {
+      var check = setInterval(function() {
+        if (typeof FaceMesh !== 'undefined') { clearInterval(check); resolve(); }
+      }, 100);
+      setTimeout(function() { clearInterval(check); resolve(); }, 10000);
+    });
+
+    if (typeof FaceMesh === 'undefined') {
+      alert('Could not load face detection. Please try again.');
+      return;
+    }
+
+    faceMesh = new FaceMesh({
+      locateFile: function(file) {
+        return 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/' + file;
+      }
+    });
+    faceMesh.setOptions({
+      maxNumFaces: 1,
+      refineLandmarks: true,
+      minDetectionConfidence: 0.5,
+      minTrackingConfidence: 0.5
+    });
+    faceMesh.onResults(function(results) {
+      console.log('FaceMesh results received:', results.multiFaceLandmarks ? results.multiFaceLandmarks.length + ' faces' : 'no faces');
+      if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+        tryonFaceLandmarks = results.multiFaceLandmarks[0];
+        console.log('Earring image ready:', tryonEarringImg ? (tryonEarringImg.complete ? 'loaded' : 'loading') : 'null');
+        renderTryon();
+      } else {
+        alert('No face detected. Please try a clearer, front-facing photo.');
+        showUploadState();
+      }
+    });
+    faceMeshLoaded = true;
+  }
+
+  // Map products to their transparent earring images on GitHub
+  // To add a new try-on earring: upload `earring-<keyword>.png` to GitHub and add an entry below.
+  // Keywords are matched against the product name. Longer/more-specific keywords beat shorter ones
+  // (e.g. "bumble" beats "bee" if both appear in the name).
+  var TRYON_EARRINGS = {
+    'arch': 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/earring-arch.png',
+    'bee': 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/earring-bee.png',
+    'bumble': 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/earring-bee.png',
+    'cappuccino': 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/earring-cappuccino.png',
+    'cross': 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/earring-cross.png',
+    'rose': 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/earring-rose.png',
+    'strawberry': 'https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/earring-strawberry.png'
+  };
+
+  // Returns the earring image URL for a product, or null if no match.
+  // Uses LONGEST-match-wins to prevent collisions (e.g. "Bumble Bee" matches "bumble", not "bee").
+  // Also prefers word-boundary matches over substring matches.
+  function getTryonEarringForProduct(product) {
+    if (!product || !product.name) return null;
+    var nameLower = product.name.toLowerCase();
+    var bestKey = null;
+    var bestScore = -1;
+    for (var key in TRYON_EARRINGS) {
+      var idx = nameLower.indexOf(key);
+      if (idx === -1) continue;
+      // Score = key length, plus bonus if at word boundary (start of name or preceded by space)
+      var score = key.length;
+      var prevChar = idx === 0 ? ' ' : nameLower.charAt(idx - 1);
+      var nextChar = nameLower.charAt(idx + key.length) || ' ';
+      if (/[\s\-_]/.test(prevChar)) score += 2;
+      if (/[\s\-_]/.test(nextChar) || nextChar === '') score += 2;
+      if (score > bestScore) {
+        bestScore = score;
+        bestKey = key;
+      }
+    }
+    if (!bestKey) return null;
+    console.log('Try-on match:', product.name, '→', bestKey);
+    return TRYON_EARRINGS[bestKey];
+  }
+
+  // Track try-on consent for this session (sessionStorage clears on tab close)
+  function hasTryonConsent() {
+    try { return sessionStorage.getItem('gc_tryon_consent') === '1'; }
+    catch(e) { return false; }
+  }
+  function setTryonConsent() {
+    try { sessionStorage.setItem('gc_tryon_consent', '1'); } catch(e) {}
+  }
+
+  function openTryon() {
+    if (!modalProduct) return;
+    // Show consent modal first if user hasn't agreed this session
+    if (!hasTryonConsent()) {
+      openTryonConsent();
+      return;
+    }
+    proceedWithTryon();
+  }
+
+  // Called after user agrees to consent (or if already agreed this session)
+  function proceedWithTryon() {
+    if (!modalProduct) return;
+    var earringSrc = getTryonEarringForProduct(modalProduct);
+    if (!earringSrc) {
+      // Safety net — should never reach here because button is hidden when no match
+      console.log('No try-on image available for this product');
+      return;
+    }
+    trackEvent('tryon_open', {
+      product_name: modalProduct.name,
+      product_id: modalProduct.id,
+      product_category: modalProduct.category
+    });
+    document.getElementById('tryon-product-name').textContent = modalProduct.name;
+    console.log('Try-on earring src:', earringSrc);
+
+    // Pre-load the earring image before showing the upload screen
+    tryonEarringImg = new Image();
+    tryonEarringImg.crossOrigin = 'anonymous';
+    tryonEarringImg.onload = function() {
+      console.log('Earring image loaded:', tryonEarringImg.width, 'x', tryonEarringImg.height);
+    };
+    tryonEarringImg.onerror = function() {
+      console.error('Failed to load earring image, using product image');
+      tryonEarringImg = new Image();
+      tryonEarringImg.crossOrigin = 'anonymous';
+      tryonEarringImg.src = modalProduct.image;
+    };
+    tryonEarringImg.src = earringSrc;
+    showUploadState();
+    document.getElementById('tryon-overlay').classList.add('open');
+  }
+
+  function openTryonConsent() {
+    document.getElementById('tryon-consent-overlay').classList.add('open');
+    trackEvent('tryon_consent_shown', {});
+  }
+  function closeTryonConsent() {
+    document.getElementById('tryon-consent-overlay').classList.remove('open');
+  }
+  function acceptTryonConsent() {
+    setTryonConsent();
+    closeTryonConsent();
+    trackEvent('tryon_consent_accepted', {});
+    proceedWithTryon();
+  }
+  function declineTryonConsent() {
+    closeTryonConsent();
+    trackEvent('tryon_consent_declined', {});
+  }
+
+  function closeTryon() {
+    document.getElementById('tryon-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+    stopCamera();
+  }
+
+  function showUploadState() {
+    document.getElementById('tryon-upload-state').style.display = 'block';
+    document.getElementById('tryon-loading-state').style.display = 'none';
+    document.getElementById('tryon-camera-state').style.display = 'none';
+    document.getElementById('tryon-result-state').style.display = 'none';
+    document.getElementById('tryon-controls').style.display = 'none';
+  }
+
+  async function handleTryonUpload(event) {
+    var file = event.target.files[0];
+    if (!file) return;
+    trackEvent('tryon_upload_photo', { product_name: modalProduct ? modalProduct.name : '' });
+    document.getElementById('tryon-upload-state').style.display = 'none';
+    document.getElementById('tryon-loading-state').style.display = 'block';
+
+    tryonUserImg = new Image();
+    tryonUserImg.onload = async function() {
+      await loadFaceMesh();
+      if (faceMesh) {
+        var tempCanvas = document.createElement('canvas');
+        tempCanvas.width = tryonUserImg.width;
+        tempCanvas.height = tryonUserImg.height;
+        var tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(tryonUserImg, 0, 0);
+        await faceMesh.send({ image: tempCanvas });
+      }
+    };
+    tryonUserImg.src = URL.createObjectURL(file);
+  }
+
+  async function startCamera() {
+    trackEvent('tryon_use_camera', { product_name: modalProduct ? modalProduct.name : '' });
+    document.getElementById('tryon-upload-state').style.display = 'none';
+    document.getElementById('tryon-camera-state').style.display = 'block';
+    try {
+      tryonStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } });
+      document.getElementById('tryon-video').srcObject = tryonStream;
+    } catch (e) {
+      alert('Could not access camera. Please upload a photo instead.');
+      showUploadState();
+    }
+  }
+
+  function stopCamera() {
+    if (tryonStream) {
+      tryonStream.getTracks().forEach(function(track) { track.stop(); });
+      tryonStream = null;
+    }
+  }
+
+  async function captureCamera() {
+    var video = document.getElementById('tryon-video');
+    var tempCanvas = document.createElement('canvas');
+    tempCanvas.width = video.videoWidth;
+    tempCanvas.height = video.videoHeight;
+    var tempCtx = tempCanvas.getContext('2d');
+    tempCtx.translate(tempCanvas.width, 0);
+    tempCtx.scale(-1, 1);
+    tempCtx.drawImage(video, 0, 0);
+    stopCamera();
+
+    document.getElementById('tryon-camera-state').style.display = 'none';
+    document.getElementById('tryon-loading-state').style.display = 'block';
+
+    tryonUserImg = new Image();
+    tryonUserImg.onload = async function() {
+      await loadFaceMesh();
+      if (faceMesh) {
+        await faceMesh.send({ image: tempCanvas });
+      }
+    };
+    tryonUserImg.src = tempCanvas.toDataURL();
+  }
+
+  function renderTryon() {
+    console.log('renderTryon called');
+    document.getElementById('tryon-loading-state').style.display = 'none';
+    document.getElementById('tryon-result-state').style.display = 'block';
+    document.getElementById('tryon-controls').style.display = 'flex';
+
+    var canvas = document.getElementById('tryon-canvas');
+    var ctx = canvas.getContext('2d');
+
+    // Use full resolution for quality
+    var maxW = 800;
+    var scale = Math.min(maxW / tryonUserImg.width, 1);
+    canvas.width = tryonUserImg.width * scale;
+    canvas.height = tryonUserImg.height * scale;
+
+    // Enable high quality rendering
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    if (!tryonFaceLandmarks) { console.log('No face landmarks'); return; }
+    if (!tryonEarringImg || !tryonEarringImg.complete) {
+      console.log('Earring image not ready, waiting...');
+      tryonEarringImg.onload = function() { console.log('Earring loaded now, re-rendering'); renderTryon(); };
+      // Still draw the user photo
+      drawTryonCanvas();
+      return;
+    }
+    console.log('Rendering with earring:', tryonEarringImg.src.substring(0, 60) + '...');
+
+    var landmarks = tryonFaceLandmarks;
+    var leftCheek = landmarks[234];
+    var rightCheek = landmarks[454];
+    var faceWidth = Math.abs(rightCheek.x - leftCheek.x) * canvas.width;
+
+    var earringH = faceWidth * (tryonEarringSize / 100) * 0.8;
+    var earringW = earringH * (tryonEarringImg.width / tryonEarringImg.height);
+
+    // Set initial positions if not already dragged.
+    // Landmarks 132/361 sit at jaw-level near each ear. We center the earring vertically on the landmark
+    // (offset = -earringH/2) — this puts a stud roughly at the lobe and a dangle's top near the lobe.
+    // Users can drag to fine-tune from there.
+    if (!tryonLeftPos) {
+      // Landmark 132 = jawline near left ear (user's left)
+      var leftEar = landmarks[132];
+      tryonLeftPos = {
+        x: leftEar.x * canvas.width - earringW / 2,
+        y: leftEar.y * canvas.height - earringH / 2
+      };
+    }
+    if (!tryonRightPos) {
+      // Landmark 361 = jawline near right ear (user's right)
+      var rightEar = landmarks[361];
+      tryonRightPos = {
+        x: rightEar.x * canvas.width - earringW / 2,
+        y: rightEar.y * canvas.height - earringH / 2
+      };
+    }
+
+    tryonEarringW = earringW;
+    tryonEarringH = earringH;
+
+    drawTryonCanvas();
+  }
+
+  var tryonLeftPos = null;
+  var tryonRightPos = null;
+  var tryonEarringW = 0;
+  var tryonEarringH = 0;
+  var tryonDragging = null;
+  var tryonDragOffset = { x: 0, y: 0 };
+  var tryonZoomLevel = 1;
+  var tryonPanX = 0;
+  var tryonPanY = 0;
+  var tryonPanning = false;
+  var tryonPanStart = { x: 0, y: 0 };
+
+  function drawTryonCanvas() {
+    var canvas = document.getElementById('tryon-canvas');
+    var ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Apply zoom and pan
+    ctx.save();
+    ctx.translate(tryonPanX, tryonPanY);
+    ctx.scale(tryonZoomLevel, tryonZoomLevel);
+
+    // Draw user photo
+    ctx.drawImage(tryonUserImg, 0, 0, canvas.width, canvas.height);
+
+    if (!tryonEarringImg || !tryonLeftPos || !tryonRightPos) {
+      ctx.restore();
+      return;
+    }
+
+    // Draw left earring
+    ctx.drawImage(tryonEarringImg, tryonLeftPos.x, tryonLeftPos.y, tryonEarringW, tryonEarringH);
+    // Draw right earring (mirrored)
+    ctx.save();
+    ctx.translate(tryonRightPos.x + tryonEarringW, tryonRightPos.y);
+    ctx.scale(-1, 1);
+    ctx.drawImage(tryonEarringImg, 0, 0, tryonEarringW, tryonEarringH);
+    ctx.restore();
+
+    // Draw drag handles
+    drawDragHandle(ctx, tryonLeftPos.x + tryonEarringW / 2, tryonLeftPos.y + tryonEarringH / 2);
+    drawDragHandle(ctx, tryonRightPos.x + tryonEarringW / 2, tryonRightPos.y + tryonEarringH / 2);
+
+    ctx.restore();
+  }
+
+  function tryonZoom(delta) {
+    var oldZoom = tryonZoomLevel;
+    tryonZoomLevel = Math.max(0.5, Math.min(4, tryonZoomLevel + delta));
+    
+    // Zoom toward center
+    var canvas = document.getElementById('tryon-canvas');
+    var cx = canvas.width / 2;
+    var cy = canvas.height / 2;
+    tryonPanX = cx - (cx - tryonPanX) * (tryonZoomLevel / oldZoom);
+    tryonPanY = cy - (cy - tryonPanY) * (tryonZoomLevel / oldZoom);
+    
+    document.getElementById('tryon-zoom-label').textContent = Math.round(tryonZoomLevel * 100) + '%';
+    drawTryonCanvas();
+  }
+
+  function tryonResetZoom() {
+    tryonZoomLevel = 1;
+    tryonPanX = 0;
+    tryonPanY = 0;
+    document.getElementById('tryon-zoom-label').textContent = '100%';
+    drawTryonCanvas();
+  }
+
+  function drawDragHandle(ctx, x, y) {
+    ctx.beginPath();
+    ctx.arc(x, y, 14, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // Move icon
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('✥', x, y + 4);
+  }
+
+  // Mouse/touch drag handling
+  function initTryonDrag() {
+    var canvas = document.getElementById('tryon-canvas');
+
+    function getPos(e) {
+      var rect = canvas.getBoundingClientRect();
+      var scaleX = canvas.width / rect.width;
+      var scaleY = canvas.height / rect.height;
+      var clientX, clientY;
+      if (e.touches) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      } else {
+        clientX = e.clientX;
+        clientY = e.clientY;
+      }
+      // Convert screen coords to canvas coords accounting for zoom/pan
+      var canvasX = (clientX - rect.left) * scaleX;
+      var canvasY = (clientY - rect.top) * scaleY;
+      // Convert to zoomed coordinate space
+      var zoomedX = (canvasX - tryonPanX) / tryonZoomLevel;
+      var zoomedY = (canvasY - tryonPanY) / tryonZoomLevel;
+      return { x: zoomedX, y: zoomedY, rawX: canvasX, rawY: canvasY };
+    }
+
+    function hitTest(pos) {
+      if (tryonLeftPos && pos.x >= tryonLeftPos.x && pos.x <= tryonLeftPos.x + tryonEarringW &&
+          pos.y >= tryonLeftPos.y && pos.y <= tryonLeftPos.y + tryonEarringH) {
+        return 'left';
+      }
+      if (tryonRightPos && pos.x >= tryonRightPos.x && pos.x <= tryonRightPos.x + tryonEarringW &&
+          pos.y >= tryonRightPos.y && pos.y <= tryonRightPos.y + tryonEarringH) {
+        return 'right';
+      }
+      return null;
+    }
+
+    function onStart(e) {
+      e.preventDefault();
+      var pos = getPos(e);
+      var hit = hitTest(pos);
+      if (hit) {
+        tryonDragging = hit;
+        var earPos = hit === 'left' ? tryonLeftPos : tryonRightPos;
+        tryonDragOffset = { x: pos.x - earPos.x, y: pos.y - earPos.y };
+        canvas.style.cursor = 'grabbing';
+      } else if (tryonZoomLevel > 1) {
+        // Pan when zoomed in and not dragging earrings
+        tryonPanning = true;
+        tryonPanStart = { x: pos.rawX - tryonPanX, y: pos.rawY - tryonPanY };
+        canvas.style.cursor = 'move';
+      }
+    }
+
+    function onMove(e) {
+      e.preventDefault();
+      if (tryonPanning) {
+        var pos = getPos(e);
+        tryonPanX = pos.rawX - tryonPanStart.x;
+        tryonPanY = pos.rawY - tryonPanStart.y;
+        drawTryonCanvas();
+        return;
+      }
+      if (!tryonDragging) {
+        var pos = getPos(e);
+        var hit = hitTest(pos);
+        canvas.style.cursor = hit ? 'grab' : (tryonZoomLevel > 1 ? 'move' : 'default');
+        return;
+      }
+      var pos = getPos(e);
+      var newX = pos.x - tryonDragOffset.x;
+      var newY = pos.y - tryonDragOffset.y;
+      if (tryonDragging === 'left') {
+        tryonLeftPos = { x: newX, y: newY };
+      } else {
+        tryonRightPos = { x: newX, y: newY };
+      }
+      drawTryonCanvas();
+    }
+
+    function onEnd(e) {
+      tryonDragging = null;
+      tryonPanning = false;
+      canvas.style.cursor = 'default';
+    }
+
+    // Mouse wheel zoom
+    canvas.addEventListener('wheel', function(e) {
+      e.preventDefault();
+      var delta = e.deltaY > 0 ? -0.15 : 0.15;
+      tryonZoom(delta);
+    }, { passive: false });
+
+    canvas.addEventListener('mousedown', onStart);
+    canvas.addEventListener('mousemove', onMove);
+    canvas.addEventListener('mouseup', onEnd);
+    canvas.addEventListener('mouseleave', onEnd);
+    canvas.addEventListener('touchstart', onStart, { passive: false });
+    canvas.addEventListener('touchmove', onMove, { passive: false });
+    canvas.addEventListener('touchend', onEnd);
+  }
+
+  // Initialize drag after first render
+  var tryonDragInitialized = false;
+  var origRenderTryon = renderTryon;
+  renderTryon = function() {
+    origRenderTryon();
+    if (!tryonDragInitialized) {
+      initTryonDrag();
+      tryonDragInitialized = true;
+    }
+  };
+
+  function updateTryonSize(value) {
+    tryonEarringSize = parseInt(value);
+    var label = document.getElementById('tryon-size-label');
+    if (value < 50) label.textContent = 'Small';
+    else if (value < 90) label.textContent = 'Medium';
+    else label.textContent = 'Large';
+
+    // Recalculate earring dimensions
+    if (tryonFaceLandmarks) {
+      var canvas = document.getElementById('tryon-canvas');
+      var landmarks = tryonFaceLandmarks;
+      var leftCheek = landmarks[234];
+      var rightCheek = landmarks[454];
+      var faceWidth = Math.abs(rightCheek.x - leftCheek.x) * canvas.width;
+      tryonEarringH = faceWidth * (tryonEarringSize / 100) * 0.8;
+      tryonEarringW = tryonEarringH * (tryonEarringImg.width / tryonEarringImg.height);
+      drawTryonCanvas();
+    }
+  }
+
+  function resetTryon() {
+    document.getElementById('tryon-file-input').value = '';
+    tryonFaceLandmarks = null;
+    tryonUserImg = null;
+    tryonLeftPos = null;
+    tryonRightPos = null;
+    tryonDragging = null;
+    tryonDragInitialized = false;
+    tryonZoomLevel = 1;
+    tryonPanX = 0;
+    tryonPanY = 0;
+    tryonPanning = false;
+    document.getElementById('tryon-zoom-label').textContent = '100%';
+    showUploadState();
+  }
+
+  function saveTryonImage() {
+    trackEvent('tryon_save_image', { product_name: modalProduct ? modalProduct.name : '' });
+    var canvas = document.getElementById('tryon-canvas');
+    var ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    // Redraw without handles at current zoom
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.translate(tryonPanX, tryonPanY);
+    ctx.scale(tryonZoomLevel, tryonZoomLevel);
+    ctx.drawImage(tryonUserImg, 0, 0, canvas.width, canvas.height);
+    if (tryonEarringImg && tryonLeftPos && tryonRightPos) {
+      ctx.drawImage(tryonEarringImg, tryonLeftPos.x, tryonLeftPos.y, tryonEarringW, tryonEarringH);
+      ctx.save();
+      ctx.translate(tryonRightPos.x + tryonEarringW, tryonRightPos.y);
+      ctx.scale(-1, 1);
+      ctx.drawImage(tryonEarringImg, 0, 0, tryonEarringW, tryonEarringH);
+      ctx.restore();
+    }
+    ctx.restore();
+
+    var link = document.createElement('a');
+    link.download = 'glos-creations-tryon.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    showToastMsg('Image saved!');
+
+    drawTryonCanvas();
+  }
+
+  // ============================================
+  // FAQ SECTION
+  // ============================================
+  // To edit FAQ: just change the questions/answers below. They render automatically on page load.
+  // The 'category' is used internally for organization and helps with search matching.
+  var faqData = [
+    {
+      category: 'Materials',
+      q: 'Are these earrings hypoallergenic?',
+      a: 'Yes! All Glo\'s Creations earrings use hypoallergenic, sensitive-skin-safe stainless steel posts and findings. The polymer clay itself is non-toxic and safe for most sensitive ears. If you have a known nickel allergy, you can wear these with confidence.'
+    },
+    {
+      category: 'Materials',
+      q: 'What is polymer clay made of? Is it safe?',
+      a: 'Polymer clay is a non-toxic, oven-cured modeling material made primarily of PVC particles in a plasticizer. Once baked and cured, it becomes solid and durable. It\'s used widely in fine art and jewelry-making. Each piece is hand-sculpted, baked, sealed, and finished to last.'
+    },
+    {
+      category: 'Materials',
+      q: 'Will these break easily?',
+      a: 'No — once cured, polymer clay is quite durable. That said, all jewelry needs some care. Avoid dropping them on hard surfaces, sleeping in them, or pulling them sharply. With normal wear, your pieces will last for years.'
+    },
+    {
+      category: 'Care',
+      q: 'How do I care for my polymer clay earrings?',
+      a: '<p>A few simple tips to keep them looking beautiful:</p><p>• Store separately in a small pouch or jewelry box to prevent scratches<br>• Avoid water, lotions, perfumes, and harsh chemicals<br>• Remove before swimming, showering, or working out<br>• Clean gently with a soft, dry cloth if needed<br>• Don\'t expose to extreme heat (e.g., leaving in a hot car)</p>'
+    },
+    {
+      category: 'Care',
+      q: 'Are they waterproof?',
+      a: 'No — please don\'t shower or swim wearing them. The polymer clay itself can handle a splash, but the metal findings and finishes can be affected by chlorine, salt water, and harsh soaps. Take them off before getting wet.'
+    },
+    {
+      category: 'Shipping',
+      q: 'How long until my order ships?',
+      a: 'Orders typically ship within 2–3 business days. You\'ll receive a tracking email once your package is on its way. Standard shipping ($5) usually arrives in 3–5 business days. Priority shipping ($9) typically arrives in 2–3 business days. Free shipping on orders over $50 (continental US).'
+    },
+    {
+      category: 'Shipping',
+      q: 'Do you ship internationally?',
+      a: 'Currently we ship within the United States only. International shipping is something we hope to offer soon — follow us on Instagram for updates!'
+    },
+    {
+      category: 'Shipping',
+      q: 'Can I track my order?',
+      a: 'Yes! You\'ll receive an email with tracking information as soon as your order ships. You can also log into your account on this site to view your order status anytime.'
+    },
+    {
+      category: 'Custom Orders',
+      q: 'Do you take custom orders?',
+      a: 'Sometimes! Custom orders depend on availability and the complexity of your idea. Email <a href="mailto:sales@gloscreations316.com">sales@gloscreations316.com</a> with what you have in mind — colors, style, occasion — and we\'ll let you know what\'s possible.'
+    },
+    {
+      category: 'Custom Orders',
+      q: 'Can I request a piece in a different color?',
+      a: 'Reach out and ask! Many of our designs can be made in alternate color palettes when supplies allow. Email us with the design you love and the colors you\'re thinking of.'
+    },
+    {
+      category: 'Returns',
+      q: 'What is your return policy?',
+      a: '<p>Because each piece is handmade and one-of-a-kind, we don\'t accept returns on individual orders. However, if your item arrives damaged or defective, we\'ll absolutely make it right.</p><p>Email <a href="mailto:sales@gloscreations316.com">sales@gloscreations316.com</a> within 7 days of delivery with photos of the issue and we\'ll replace it or refund your purchase.</p>'
+    },
+    {
+      category: 'Returns',
+      q: 'What if I have an allergic reaction?',
+      a: 'We\'re so sorry that happened. Even with hypoallergenic materials, sensitivities vary. Email us within 7 days with details and we\'ll work with you on a refund or exchange.'
+    },
+    {
+      category: 'About',
+      q: 'What does "3:16" in your name mean?',
+      a: 'It\'s a reference to Deuteronomy 31:6 — "Be strong and courageous. Do not be afraid or terrified because of them, for the LORD your God goes with you; He will never leave you nor forsake you." It\'s a verse that reminds me of my faith and is the heart behind every piece.'
+    },
+    {
+      category: 'About',
+      q: 'Are these one-of-a-kind?',
+      a: 'Each piece is hand-sculpted in small batches, so no two pieces are exactly identical. Even within a single design, the marbling, color blending, and finish vary slightly — making your pair unique to you.'
+    },
+    {
+      category: 'About',
+      q: 'How can I stay updated on new pieces?',
+      a: 'Follow us on Instagram <a href="https://instagram.com/gloscreations31_6" target="_blank" rel="noopener">@gloscreations31_6</a> for first looks at new drops, behind-the-scenes content, and exclusive previews. New pieces are posted there before anywhere else.'
+    },
+    {
+      category: 'App',
+      q: 'Do you have a mobile app?',
+      a: 'Yes! Our website can be installed on your phone like an app — it appears on your home screen with our logo and opens in full-screen, just like apps from the App Store or Google Play. It\'s called a Progressive Web App (PWA), and it\'s completely free. Scroll to the bottom of any page and tap the "Get the App" section to install.'
+    },
+    {
+      category: 'App',
+      q: 'How do I install the app on my iPhone?',
+      a: 'Installing on iPhone takes about 10 seconds:<br><br>' +
+         '<strong>1.</strong> Open Safari (the install only works in Safari, not Chrome on iPhone)<br>' +
+         '<strong>2.</strong> Visit <a href="https://gloscreations316.com">gloscreations316.com</a><br>' +
+         '<strong>3.</strong> Tap the Share button (square with an up arrow) at the bottom of the screen<br>' +
+         '<strong>4.</strong> Scroll down and tap "Add to Home Screen"<br>' +
+         '<strong>5.</strong> Tap "Add" in the top right corner<br><br>' +
+         'The Glo\'s Creations icon will appear on your home screen. Tap it anytime to open the shop in full-screen mode.'
+    },
+    {
+      category: 'App',
+      q: 'How do I install the app on my Android phone?',
+      a: 'Android makes installing super easy:<br><br>' +
+         '<strong>1.</strong> Open Chrome on your phone<br>' +
+         '<strong>2.</strong> Visit <a href="https://gloscreations316.com">gloscreations316.com</a><br>' +
+         '<strong>3.</strong> Scroll to the "Get the App" section near the bottom of the page<br>' +
+         '<strong>4.</strong> Tap "Install on Android"<br>' +
+         '<strong>5.</strong> Tap the green "Install Glo\'s Creations" button<br>' +
+         '<strong>6.</strong> Confirm by tapping "Install" in the dialog that appears<br><br>' +
+         'You\'ll find the Glo\'s Creations icon on your home screen and in your app drawer, just like any other app.'
+    },
+    {
+      category: 'App',
+      q: 'Is the app available in the App Store or Google Play?',
+      a: 'Not currently. We use a Progressive Web App (PWA) instead, which works just like a regular app but is installed directly through your phone\'s browser. The advantage is faster updates and a smoother experience. You won\'t find us by searching the App Store or Google Play — you have to install from our website.'
+    },
+    {
+      category: 'App',
+      q: 'Does the app cost anything?',
+      a: 'No — installing the app is completely free. There are no hidden fees, subscriptions, or in-app purchases beyond purchasing jewelry from the shop itself.'
+    },
+    {
+      category: 'App',
+      q: 'How is the app different from the website?',
+      a: 'The "app" is actually our website running in a special full-screen mode. The differences you\'ll notice:<br>' +
+         '• <strong>Full-screen experience</strong> — no browser bar at the top<br>' +
+         '• <strong>Home screen icon</strong> — quick access in one tap<br>' +
+         '• <strong>Faster repeat loads</strong> — content is cached on your device<br>' +
+         '• <strong>Offline browsing</strong> — already-viewed pages work without internet<br><br>' +
+         'All site features (cart, checkout, virtual try-on, account, reviews) work identically.'
+    },
+    {
+      category: 'App',
+      q: 'How do I update the app?',
+      a: 'Updates happen automatically. Whenever we release new features, products, or fixes, your app picks them up the next time you open it with an internet connection. There\'s no "update" button to tap and no waiting for App Store approval — just close and reopen the app.'
+    },
+    {
+      category: 'App',
+      q: 'How do I uninstall the app?',
+      a: '<strong>iPhone:</strong> Touch and hold the Glo\'s Creations icon → tap "Remove App" → tap "Delete from Home Screen."<br><br>' +
+         '<strong>Android:</strong> Touch and hold the Glo\'s Creations icon → tap "Uninstall" or drag to "Remove" → confirm.<br><br>' +
+         'Uninstalling clears all locally cached data. You can reinstall anytime from gloscreations316.com.'
+    },
+    {
+      category: 'App',
+      q: 'Will the app use my data or storage?',
+      a: 'A small amount of storage (typically under 5 MB) is used to cache pages for offline access and faster loading. The app does not run in the background, does not use mobile data when closed, and does not send notifications unless you allow them. We do not collect any data through the app that we don\'t collect through the website.'
+    },
+    {
+      category: 'App',
+      q: 'Does the virtual try-on work in the app?',
+      a: 'Yes! The virtual try-on feature works the same way in the app as on the website. When you tap "Virtual Try-On" on a product, your phone will ask for camera permission. All facial detection happens locally on your device — nothing is sent to our servers. See our <a href="#" onclick="closeFaq();openPolicy(\'privacy\');return false;">Privacy Policy</a> for full details.'
+    },
+    {
+      category: 'App',
+      q: 'Can I use the app offline?',
+      a: 'Partially. Once you\'ve visited the site or opened the app online, key pages are cached so you can browse them offline. However, you\'ll need an internet connection to: place orders, see live inventory, fetch new products, use live chat, or use the virtual try-on. The cached version is great for showing pieces to friends when you\'re out and about without WiFi.'
+    },
+    {
+      category: 'App',
+      q: 'I installed the app but it\'s showing an old logo or design. How do I fix it?',
+      a: '<strong>iPhone:</strong> Delete the app, then reinstall it from Safari following the install steps above.<br><br>' +
+         '<strong>Android:</strong> Long-press the app and tap "Uninstall." Then open Chrome → tap the three-dot menu → Settings → Privacy and Security → Clear browsing data → check "Cached images and files" → Clear data. Then reinstall the app.<br><br>' +
+         'This forces your phone to grab the latest version. If problems persist, contact us at <a href="mailto:sales@gloscreations316.com">sales@gloscreations316.com</a>.'
+    },
+    {
+      category: 'App',
+      q: 'Can I use the app on multiple devices?',
+      a: 'Yes! Install the app on as many phones, tablets, or computers as you\'d like — there\'s no device limit. Your account, wishlist, and cart sync when you\'re signed into your Glo\'s Creations customer account.'
+    },
+    {
+      category: 'App',
+      q: 'Why doesn\'t the install button appear on my phone?',
+      a: 'A few reasons this can happen:<br>' +
+         '• <strong>Already installed</strong> — check your home screen first<br>' +
+         '• <strong>iPhone:</strong> install is only available in Safari (not Chrome, Firefox, or other browsers on iOS)<br>' +
+         '• <strong>Android:</strong> install works best in Chrome, Edge, or Samsung Internet<br>' +
+         '• <strong>Previously dismissed</strong> — try clearing browser data and revisiting the site<br>' +
+         '• <strong>Older browser</strong> — make sure your browser is up to date<br><br>' +
+         'On any device, you can always reach the manual install instructions by scrolling to the "Get the App" section at the bottom of our homepage.'
+    }
+  ];
+
+  function renderFaq() {
+    var list = document.getElementById('faq-list');
+    if (!list) return;
+    var html = '';
+    for (var i = 0; i < faqData.length; i++) {
+      var item = faqData[i];
+      html += '<div class="faq-item" data-faq-index="' + i + '" data-faq-category="' + item.category.toLowerCase() + '">' +
+        '<button class="faq-question" onclick="toggleFaq(' + i + ')" aria-expanded="false">' +
+          '<span class="faq-question-text">' + item.q + '</span>' +
+          '<svg class="faq-question-icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
+        '</button>' +
+        '<div class="faq-answer">' +
+          '<div class="faq-answer-inner">' + item.a + '</div>' +
+        '</div>' +
+      '</div>';
+    }
+    list.innerHTML = html;
+  }
+
+  function toggleFaq(index) {
+    var item = document.querySelector('.faq-item[data-faq-index="' + index + '"]');
+    if (!item) return;
+    var btn = item.querySelector('.faq-question');
+    var isOpen = item.classList.contains('open');
+    item.classList.toggle('open');
+    if (btn) btn.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+    if (!isOpen) {
+      trackEvent('faq_open', { question: faqData[index].q });
+    }
+  }
+
+  function filterFaq(query) {
+    query = (query || '').trim().toLowerCase();
+    var items = document.querySelectorAll('.faq-item');
+    var noResults = document.getElementById('faq-no-results');
+    var clearBtn = document.getElementById('faq-search-clear');
+    var visibleCount = 0;
+
+    if (clearBtn) clearBtn.classList.toggle('visible', query.length > 0);
+
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      var idx = parseInt(item.getAttribute('data-faq-index'), 10);
+      var faq = faqData[idx];
+      var haystack = (faq.q + ' ' + faq.a + ' ' + faq.category).toLowerCase();
+      var matches = !query || haystack.indexOf(query) !== -1;
+      item.classList.toggle('hidden', !matches);
+      if (matches) visibleCount++;
+
+      // Highlight matched text in the question
+      var questionTextEl = item.querySelector('.faq-question-text');
+      if (questionTextEl) {
+        if (!query) {
+          questionTextEl.textContent = faq.q;
+        } else {
+          questionTextEl.innerHTML = highlightMatch(faq.q, query);
+        }
+      }
+
+      // Auto-expand items when there's a query (helps user see the answer faster)
+      if (query && visibleCount <= 3 && matches) {
+        item.classList.add('open');
+        var btn = item.querySelector('.faq-question');
+        if (btn) btn.setAttribute('aria-expanded', 'true');
+      } else if (!query) {
+        item.classList.remove('open');
+        var btn2 = item.querySelector('.faq-question');
+        if (btn2) btn2.setAttribute('aria-expanded', 'false');
+      }
+    }
+
+    if (noResults) noResults.classList.toggle('visible', visibleCount === 0 && query.length > 0);
+
+    if (query) {
+      trackEvent('faq_search', { query: query, results_count: visibleCount });
+    }
+  }
+
+  function highlightMatch(text, query) {
+    if (!query) return escapeHtml(text);
+    var lower = text.toLowerCase();
+    var qLower = query.toLowerCase();
+    var idx = lower.indexOf(qLower);
+    if (idx === -1) return escapeHtml(text);
+    return escapeHtml(text.substring(0, idx)) +
+      '<span class="faq-highlight">' + escapeHtml(text.substring(idx, idx + query.length)) + '</span>' +
+      escapeHtml(text.substring(idx + query.length));
+  }
+
+  function clearFaqSearch() {
+    var input = document.getElementById('faq-search');
+    if (input) {
+      input.value = '';
+      filterFaq('');
+      input.focus();
+    }
+  }
+
+  function openFaq() {
+    document.getElementById('faq-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    trackEvent('faq_open_modal', {});
+    // Reset state on open
+    var input = document.getElementById('faq-search');
+    if (input) input.value = '';
+    filterFaq('');
+  }
+
+  function closeFaq() {
+    document.getElementById('faq-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  loadWishlist();
+  checkSession();
+  fetchNewArrivals();
+  fetchCollections();
+  showCookieBanner();
+  startIgPopupTimer();
+  renderIgBubbles();
+  fetchIgPosts();
+  renderFaq();
+
+  // ============================================
+  // PWA — Service Worker + Install Prompt
+  // ============================================
+  // Register the service worker for offline support and "Add to Home Screen" capability
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('/sw.js')
+        .then(function(reg) {
+          console.log('[PWA] Service worker registered:', reg.scope);
+          // Check for updates immediately
+          reg.update();
+          // If a new SW is waiting to activate, tell it to take over now
+          if (reg.waiting) {
+            reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+          }
+          // Listen for new SW versions becoming available
+          reg.addEventListener('updatefound', function() {
+            var newWorker = reg.installing;
+            if (newWorker) {
+              newWorker.addEventListener('statechange', function() {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  console.log('[PWA] New version available — activating');
+                  newWorker.postMessage({ type: 'SKIP_WAITING' });
+                }
+              });
+            }
+          });
+        })
+        .catch(function(err) { console.warn('[PWA] Service worker registration failed:', err); });
+
+      // When the SW takes control of a new version, reload the page once so it serves fresh content
+      var refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', function() {
+        if (refreshing) return;
+        refreshing = true;
+        console.log('[PWA] New service worker controlling — reloading');
+      });
+    });
+  }
+
+  // Capture the install prompt event (Android/Chrome) so we can trigger it from our own button
+  var deferredInstallPrompt = null;
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    console.log('[PWA] Install prompt captured — Android install button is ready');
+    // The Get the App banner is always visible — no need to show floating button
+  });
+
+  // When the app gets installed, hide the prompt
+  window.addEventListener('appinstalled', function() {
+    console.log('[PWA] App installed');
+    try { localStorage.setItem('gc_pwa_installed', '1'); } catch(err) {}
+    hidePwaInstallBtn();
+    if (typeof trackEvent === 'function') trackEvent('pwa_installed', {});
+  });
+
+  // Detect iOS so we can show appropriate install instructions (iOS doesn't fire beforeinstallprompt)
+  function isIos() {
+    var ua = navigator.userAgent || '';
+    return /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+  }
+  function isInStandaloneMode() {
+    // Already running as installed PWA
+    return (window.matchMedia('(display-mode: standalone)').matches) ||
+           (window.navigator.standalone === true);
+  }
+
+  function showPwaInstallBtn() {
+    // Floating button is no longer used — install is now in the "Get the App" banner.
+    // Function kept for backward compatibility but does nothing.
+  }
+  function hidePwaInstallBtn() {
+    var btn = document.getElementById('pwa-install-btn');
+    if (btn) btn.classList.remove('show');
+    var modal = document.getElementById('pwa-install-modal');
+    if (modal) modal.classList.remove('open');
+  }
+
+  // Open install instructions — accepts 'ios' or 'android' to show the right guide
+  function openPwaInstallModal(platform) {
+    if (typeof trackEvent === 'function') trackEvent('pwa_install_clicked', { platform: platform || 'auto' });
+
+    // Auto-detect if not specified
+    if (!platform) {
+      platform = isIos() ? 'ios' : 'android';
+    }
+
+    // Always show the instructions modal — it has the green "Install" button
+    // at the top when Chrome's native prompt is available, and falls back to
+    // manual steps otherwise.
+    showInstallInstructions(platform);
+  }
+
+  function showInstallInstructions(platform) {
+    var modal = document.getElementById('pwa-install-modal');
+    var iosSteps = document.getElementById('pwa-steps-ios');
+    var androidSteps = document.getElementById('pwa-steps-android');
+    var title = document.getElementById('pwa-install-title');
+    var nativeBtn = document.getElementById('pwa-native-install-btn');
+    var orDivider = document.getElementById('pwa-or-divider');
+
+    if (platform === 'android') {
+      if (iosSteps) iosSteps.style.display = 'none';
+      if (androidSteps) androidSteps.style.display = 'block';
+      if (title) title.innerHTML = 'Install <em>on Android</em>';
+      // Show the native install button only if Chrome has fired beforeinstallprompt
+      var hasPrompt = !!deferredInstallPrompt;
+      if (nativeBtn) nativeBtn.classList.toggle('show', hasPrompt);
+      if (orDivider) orDivider.classList.toggle('show', hasPrompt);
+    } else {
+      if (iosSteps) iosSteps.style.display = 'block';
+      if (androidSteps) androidSteps.style.display = 'none';
+      if (title) title.innerHTML = 'Install <em>on iPhone</em>';
+    }
+    if (modal) modal.classList.add('open');
+  }
+
+  // Trigger Chrome's native install prompt from inside the instructions modal
+  function triggerNativeInstall() {
+    if (!deferredInstallPrompt) {
+      console.log('[PWA] Native install prompt not available');
+      return;
+    }
+    if (typeof trackEvent === 'function') trackEvent('pwa_native_install_clicked', {});
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.then(function(result) {
+      console.log('[PWA] User choice:', result.outcome);
+      if (result.outcome === 'accepted') {
+        closePwaInstallModal();
+      }
+      deferredInstallPrompt = null;
+      // Hide the native button since the prompt has been used
+      var nativeBtn = document.getElementById('pwa-native-install-btn');
+      var orDivider = document.getElementById('pwa-or-divider');
+      if (nativeBtn) nativeBtn.classList.remove('show');
+      if (orDivider) orDivider.classList.remove('show');
+    });
+  }
+
+  function closePwaInstallModal() {
+    document.getElementById('pwa-install-modal').classList.remove('open');
+  }
+
+  function dismissPwaInstall() {
+    try { localStorage.setItem('gc_pwa_dismissed', '1'); } catch(err) {}
+    hidePwaInstallBtn();
+    if (typeof trackEvent === 'function') trackEvent('pwa_install_dismissed', {});
+  }
+
+  // On page load, decide whether to hide the install banner:
+  // — Already installed? hide the banner
+  // — Otherwise show it (it's part of the page now, not a popup)
+  document.addEventListener('DOMContentLoaded', function() {
+    if (isInStandaloneMode()) {
+      var banner = document.getElementById('get-app-banner');
+      if (banner) banner.style.display = 'none';
+    }
+  });
+</script>
+
+<!-- Custom dismiss button styles for Tawk.to widget -->
+<style>
+  /* Small × button that lets visitors dismiss the chat widget for this session */
+  .tawk-dismiss-btn {
+    position: fixed;
+    bottom: 86px;
+    right: 22px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #3a3633;
+    border: 2px solid white;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    cursor: pointer;
+    z-index: 1000000001;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: transform 0.15s, background 0.15s;
+  }
+  .tawk-dismiss-btn:hover {
+    background: #1c1917;
+    transform: scale(1.1);
+  }
+  .tawk-dismiss-btn svg {
+    width: 11px;
+    height: 11px;
+    stroke: white;
+    fill: none;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+  }
+
+  /* "Need help?" pill button — opens a popup menu of options */
+  .help-launcher-btn {
+    position: fixed;
+    bottom: 22px;
+    left: 22px;
+    padding: 11px 18px 11px 14px;
+    background: #3a3633;
+    color: white;
+    border: none;
+    border-radius: 24px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+    cursor: pointer;
+    z-index: 9990;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    transition: transform 0.15s, background 0.15s, box-shadow 0.15s;
+  }
+
+  /* Glo's AI Assistant Bot */
+  .bot-new-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #c4995a 0%, #a87c3f 100%);
+    color: white;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .glo-bot-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 10000050;
+    align-items: flex-end;
+    justify-content: flex-end;
+    padding: 24px;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  .glo-bot-overlay.open { display: flex; }
+  .glo-bot-window {
+    width: 380px;
+    max-width: 100%;
+    height: 600px;
+    max-height: 90vh;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: botSlideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes botSlideUp {
+    from { opacity: 0; transform: translateY(40px) scale(0.94); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .glo-bot-header {
+    background: linear-gradient(135deg, #1c1917 0%, #44403c 100%);
+    color: white;
+    padding: 18px 18px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .glo-bot-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  .glo-bot-avatar svg {
+    width: 22px;
+    height: 22px;
+    stroke: white;
+    fill: none;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+  }
+  .glo-bot-header-text { flex: 1; }
+  .glo-bot-header-text h4 {
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 400;
+    margin: 0 0 2px;
+  }
+  .glo-bot-header-text p {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: rgba(255,255,255,0.65);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .glo-bot-online-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #4ade80;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  .glo-bot-close {
+    background: rgba(255,255,255,0.1);
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+  }
+  .glo-bot-close:hover { background: rgba(255,255,255,0.2); }
+  .glo-bot-close svg {
+    width: 14px;
+    height: 14px;
+    stroke: white;
+    fill: none;
+    stroke-width: 2;
+  }
+  .glo-bot-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 18px 16px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: var(--stone-50);
+  }
+  .glo-bot-msg {
+    max-width: 85%;
+    padding: 10px 14px;
+    border-radius: 16px;
+    font-family: var(--font-body);
+    font-size: 13px;
+    line-height: 1.5;
+    animation: msgIn 0.3s ease;
+  }
+  @keyframes msgIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .glo-bot-msg.bot {
+    align-self: flex-start;
+    background: white;
+    color: var(--stone-800);
+    border: 1px solid var(--stone-200);
+    border-bottom-left-radius: 4px;
+  }
+  .glo-bot-msg.user {
+    align-self: flex-end;
+    background: var(--stone-900);
+    color: white;
+    border-bottom-right-radius: 4px;
+  }
+  .glo-bot-msg a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  .glo-bot-msg.bot a { color: #c4995a; }
+  .glo-bot-msg-products {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .glo-bot-product-card {
+    background: white;
+    border: 1px solid var(--stone-200);
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .glo-bot-product-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.1);
+  }
+  .glo-bot-product-card img {
+    width: 100%;
+    aspect-ratio: 1/1;
+    object-fit: cover;
+  }
+  .glo-bot-product-card-info {
+    padding: 8px 10px;
+  }
+  .glo-bot-product-card-name {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--stone-800);
+    line-height: 1.3;
+    margin: 0 0 3px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .glo-bot-product-card-price {
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--stone-900);
+    margin: 0;
+  }
+  .glo-bot-typing {
+    align-self: flex-start;
+    display: flex;
+    gap: 4px;
+    padding: 12px 14px;
+    background: white;
+    border: 1px solid var(--stone-200);
+    border-radius: 16px;
+    border-bottom-left-radius: 4px;
+  }
+  .glo-bot-typing span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--stone-400);
+    animation: typing 1.4s ease-in-out infinite;
+  }
+  .glo-bot-typing span:nth-child(2) { animation-delay: 0.15s; }
+  .glo-bot-typing span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes typing {
+    0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+    30% { opacity: 1; transform: translateY(-4px); }
+  }
+  .glo-bot-quick-prompts {
+    padding: 8px 14px 12px;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    background: white;
+    border-top: 1px solid var(--stone-200);
+    flex-shrink: 0;
+    scrollbar-width: none;
+  }
+  .glo-bot-quick-prompts::-webkit-scrollbar { display: none; }
+  .glo-bot-prompt {
+    flex-shrink: 0;
+    background: var(--stone-100);
+    color: var(--stone-700);
+    border: 1px solid var(--stone-200);
+    border-radius: 14px;
+    padding: 6px 12px;
+    font-family: var(--font-body);
+    font-size: 11px;
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+  }
+  .glo-bot-prompt:hover { background: var(--stone-200); }
+  .glo-bot-input-row {
+    display: flex;
+    gap: 8px;
+    padding: 10px 14px 14px;
+    background: white;
+    border-top: 1px solid var(--stone-200);
+    flex-shrink: 0;
+  }
+  .glo-bot-input {
+    flex: 1;
+    border: 1px solid var(--stone-300);
+    border-radius: 18px;
+    padding: 10px 14px;
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--stone-900);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .glo-bot-input:focus { border-color: var(--stone-700); }
+  .glo-bot-send {
+    width: 38px;
+    height: 38px;
+    background: var(--stone-900);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, transform 0.15s;
+    flex-shrink: 0;
+  }
+  .glo-bot-send:hover { background: var(--stone-800); transform: scale(1.05); }
+  .glo-bot-send svg {
+    width: 16px;
+    height: 16px;
+    stroke: white;
+    fill: white;
+    stroke-width: 2;
+  }
+  .glo-bot-footer-note {
+    font-family: var(--font-body);
+    font-size: 10px;
+    color: var(--stone-500);
+    text-align: center;
+    padding: 0 14px 12px;
+    margin: 0;
+    background: white;
+    flex-shrink: 0;
+  }
+  .glo-bot-footer-note a {
+    color: var(--stone-700);
+    text-decoration: underline;
+  }
+
+  @media (max-width: 600px) {
+    .glo-bot-overlay { padding: 0; align-items: stretch; justify-content: stretch; }
+    .glo-bot-window { width: 100%; height: 100%; max-height: 100%; border-radius: 0; }
+  }
+  .help-launcher-btn.show { display: inline-flex !important; }
+  .help-launcher-btn:hover {
+    background: #1c1917;
+    transform: translateY(-2px);
+  }
+  /* Online/available state — gentle green that signals "live agent ready" */
+  .help-launcher-btn.online {
+    background: #166534;
+    box-shadow: 0 4px 14px rgba(22,101,52,0.25);
+  }
+  .help-launcher-btn.online:hover {
+    background: #14532d;
+  }
+  /* Pulsing green dot to reinforce live availability */
+  .help-launcher-online-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #4ade80;
+    box-shadow: 0 0 0 2px rgba(74,222,128,0.35);
+    margin-right: 2px;
+    display: none;
+    animation: helpPulse 2s ease-in-out infinite;
+  }
+  .help-launcher-btn.online .help-launcher-online-dot { display: inline-block; }
+  .help-launcher-btn.online .help-icon { display: none; }
+  @keyframes helpPulse {
+    0%, 100% { box-shadow: 0 0 0 2px rgba(74,222,128,0.35); }
+    50% { box-shadow: 0 0 0 6px rgba(74,222,128,0); }
+  }
+  .help-launcher-btn svg.help-icon {
+    width: 16px;
+    height: 16px;
+    stroke: white;
+    fill: none;
+    stroke-width: 2;
+  }
+  .help-launcher-btn svg.help-chevron {
+    width: 12px;
+    height: 12px;
+    stroke: white;
+    fill: none;
+    stroke-width: 2.5;
+    margin-left: 2px;
+    transition: transform 0.2s;
+  }
+  .help-launcher-btn.menu-open svg.help-chevron { transform: rotate(180deg); }
+
+  /* Popup menu of help options */
+  .help-menu {
+    position: fixed;
+    bottom: 78px;
+    left: 22px;
+    width: 260px;
+    background: white;
+    border-radius: 14px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.18);
+    border: 1px solid var(--stone-200);
+    z-index: 99999; /* Must be above backdrop (9989) and launcher (9990) */
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+  }
+  .help-menu.open {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+  }
+  .help-menu-header {
+    padding: 16px 18px 10px;
+    border-bottom: 1px solid var(--stone-100);
+  }
+  .help-menu-header h4 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--stone-900);
+    margin: 0 0 3px 0;
+  }
+  .help-menu-header p {
+    font-family: 'Inter', sans-serif;
+    font-size: 11.5px;
+    color: var(--stone-500);
+    margin: 0;
+    line-height: 1.4;
+  }
+  .help-menu-options { padding: 6px; }
+  .help-menu-option {
+    width: 100%;
+    background: transparent;
+    border: none;
+    text-align: left;
+    padding: 11px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: 'Inter', sans-serif;
+    transition: background 0.12s;
+    color: var(--stone-800);
+    text-decoration: none;
+  }
+  .help-menu-option:hover { background: var(--stone-50); }
+  .help-menu-option-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--stone-100);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .help-menu-option-icon svg {
+    width: 17px;
+    height: 17px;
+    stroke: var(--stone-700);
+    fill: none;
+    stroke-width: 1.8;
+  }
+  .help-menu-option-text { flex: 1; min-width: 0; }
+  .help-menu-option-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--stone-900);
+    margin: 0 0 1px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .help-menu-option-desc {
+    font-size: 11px;
+    color: var(--stone-500);
+    margin: 0;
+    line-height: 1.35;
+  }
+  .help-menu-online-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 0 2px rgba(34,197,94,0.2);
+  }
+
+  @media (max-width: 600px) {
+    .tawk-dismiss-btn { bottom: 76px; right: 16px; }
+    /* Hide the floating "Need help?" button on mobile — it's accessed via hamburger menu instead */
+    .help-launcher-btn,
+    .help-launcher-btn.show { display: none !important; }
+    /* When menu is triggered from hamburger, center it nicely on screen */
+    .help-menu {
+      bottom: auto;
+      top: 50%;
+      right: auto;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.97);
+      width: calc(100vw - 32px);
+      max-width: 320px;
+    }
+    .help-menu.open {
+      transform: translate(-50%, -50%) scale(1);
+    }
+    /* Show backdrop on mobile when menu is open */
+    .help-menu-backdrop.open {
+      display: block;
+    }
+  }
+  /* Backdrop — only visible on mobile */
+  .help-menu-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 9989; /* BELOW help-menu (9991) and help-launcher-btn (9990) so clicks land properly */
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+  }
+  .help-menu-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+</style>
+
+<!-- Custom dismiss button overlaid on Tawk.to widget -->
+<button class="tawk-dismiss-btn" id="tawk-dismiss-btn" onclick="dismissTawkChat()" aria-label="Hide chat" title="Hide chat">
+  <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+</button>
+
+<!-- "Need help?" launcher — appears after visitor dismisses chat -->
+<button class="help-launcher-btn" id="help-launcher-btn" onclick="toggleHelpMenu()" aria-haspopup="true" aria-expanded="false">
+  <span class="help-launcher-online-dot"></span>
+  <svg class="help-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+  Need help?
+  <svg class="help-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+</button>
+
+<!-- Mobile backdrop for help menu (only shown on mobile when menu is open) -->
+<div class="help-menu-backdrop" id="help-menu-backdrop" onclick="closeHelpMenu()"></div>
+
+<!-- Glo's AI Assistant Bot -->
+<div class="glo-bot-overlay" id="glo-bot-overlay" onclick="if(event.target===this)closeGloBot()">
+  <div class="glo-bot-window">
+    <div class="glo-bot-header">
+      <div class="glo-bot-avatar">
+        <svg viewBox="0 0 24 24"><path d="M12 8V4H8"/><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M2 14h2M20 14h2M15 13v2M9 13v2"/></svg>
+      </div>
+      <div class="glo-bot-header-text">
+        <h4>Glo's Assistant</h4>
+        <p><span class="glo-bot-online-dot"></span> Always here to help</p>
+      </div>
+      <button class="glo-bot-close" onclick="closeGloBot()" aria-label="Close">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="glo-bot-messages" id="glo-bot-messages">
+      <!-- Messages get appended here dynamically -->
+    </div>
+    <div class="glo-bot-quick-prompts" id="glo-bot-quick-prompts">
+      <button class="glo-bot-prompt" onclick="askGloBot('Are these waterproof?')">Are these waterproof?</button>
+      <button class="glo-bot-prompt" onclick="askGloBot('How long until my order ships?')">Shipping time?</button>
+      <button class="glo-bot-prompt" onclick="askGloBot('Do you have green earrings?')">Green earrings?</button>
+      <button class="glo-bot-prompt" onclick="askGloBot('How do I install the app?')">Install the app</button>
+      <button class="glo-bot-prompt" onclick="askGloBot('What is your return policy?')">Return policy</button>
+    </div>
+    <form class="glo-bot-input-row" onsubmit="submitGloBotInput(event);return false;">
+      <input type="text" class="glo-bot-input" id="glo-bot-input" placeholder="Type your question..." autocomplete="off">
+      <button type="submit" class="glo-bot-send" aria-label="Send">
+        <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </form>
+    <p class="glo-bot-footer-note">Glo's Assistant searches our FAQ and products. For complex questions, <a href="#" onclick="closeGloBot();helpMenuChooseEmail();return false;">email us</a>.</p>
+  </div>
+</div>
+
+<!-- Popup menu — FAQ / Email / Live Chat -->
+<div class="help-menu" id="help-menu" role="menu">
+  <div class="help-menu-header">
+    <h4>How can we help?</h4>
+    <p>Pick the option that works best for you.</p>
+  </div>
+  <div class="help-menu-options">
+    <button class="help-menu-option help-menu-option-bot" role="menuitem" onclick="openGloBot()">
+      <div class="help-menu-option-icon" style="background:linear-gradient(135deg,#1c1917,#44403c);">
+        <svg viewBox="0 0 24 24" style="stroke:white;"><path d="M12 8V4H8"/><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M2 14h2M20 14h2M15 13v2M9 13v2"/></svg>
+      </div>
+      <div class="help-menu-option-text">
+        <p class="help-menu-option-title">Ask Glo's Assistant <span class="bot-new-badge">AI</span></p>
+        <p class="help-menu-option-desc">Instant answers about products & policies</p>
+      </div>
+    </button>
+    <button class="help-menu-option" role="menuitem" onclick="helpMenuChooseFaq()">
+      <div class="help-menu-option-icon">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      </div>
+      <div class="help-menu-option-text">
+        <p class="help-menu-option-title">Browse FAQ</p>
+        <p class="help-menu-option-desc">Quick answers to common questions</p>
+      </div>
+    </button>
+    <a class="help-menu-option" role="menuitem" href="mailto:sales@gloscreations316.com" onclick="helpMenuChooseEmail()">
+      <div class="help-menu-option-icon">
+        <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      </div>
+      <div class="help-menu-option-text">
+        <p class="help-menu-option-title">Email us</p>
+        <p class="help-menu-option-desc">sales@gloscreations316.com · ~24h reply</p>
+      </div>
+    </a>
+    <button class="help-menu-option" id="help-menu-livechat" role="menuitem" onclick="helpMenuChooseLiveChat()" style="display:none;">
+      <div class="help-menu-option-icon">
+        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <div class="help-menu-option-text">
+        <p class="help-menu-option-title">
+          Live chat <span class="help-menu-online-dot"></span>
+        </p>
+        <p class="help-menu-option-desc">Glo's online — chat with her now</p>
+      </div>
+    </button>
+  </div>
+</div>
+
+<script>
+  // ============================================
+  // TAWK.TO CHAT — dismissable widget + help menu
+  // ============================================
+  // The "Need help?" button is the DEFAULT entry point. The Tawk.to chat bubble
+  // is hidden by default — it only appears when the visitor explicitly clicks
+  // "Live chat" from the help menu. This keeps the homepage clean and gives
+  // visitors a choice of FAQ / Email / Chat instead of forcing chat on them.
+  var helpMenuOpen = false;
+  // Suppresses click-outside detection for ~50ms after the menu opens, so the same
+  // click that opened the menu (e.g. tapping "Need Help?" in the mobile hamburger)
+  // doesn't immediately bubble up and close it.
+  var helpMenuJustOpened = false;
+
+  function dismissTawkChat() {
+    if (window.Tawk_API && Tawk_API.hideWidget) {
+      Tawk_API.hideWidget();
+    }
+    document.getElementById('tawk-dismiss-btn').style.display = 'none';
+    document.getElementById('help-launcher-btn').classList.add('show');
+    try { sessionStorage.setItem('gc_tawk_hidden', '1'); } catch(e) {}
+    try { sessionStorage.removeItem('gc_tawk_active'); } catch(e) {}
+  }
+
+  function toggleHelpMenu() {
+    var menu = document.getElementById('help-menu');
+    var btn = document.getElementById('help-launcher-btn');
+    var backdrop = document.getElementById('help-menu-backdrop');
+    helpMenuOpen = !helpMenuOpen;
+    menu.classList.toggle('open', helpMenuOpen);
+    if (backdrop) backdrop.classList.toggle('open', helpMenuOpen);
+    if (btn) {
+      btn.classList.toggle('menu-open', helpMenuOpen);
+      btn.setAttribute('aria-expanded', helpMenuOpen ? 'true' : 'false');
+    }
+    if (helpMenuOpen) {
+      // Refresh Live Chat option visibility based on current Tawk.to status
+      updateLiveChatOption();
+      // Set a flag to prevent the same click from closing the menu via the
+      // document-level click-outside handler. The flag clears 50ms later.
+      helpMenuJustOpened = true;
+      setTimeout(function() { helpMenuJustOpened = false; }, 50);
+    }
+  }
+
+  function closeHelpMenu() {
+    helpMenuOpen = false;
+    document.getElementById('help-menu').classList.remove('open');
+    var backdrop = document.getElementById('help-menu-backdrop');
+    if (backdrop) backdrop.classList.remove('open');
+    var btn = document.getElementById('help-launcher-btn');
+    if (btn) {
+      btn.classList.remove('menu-open');
+      btn.setAttribute('aria-expanded', 'false');
+    }
+  }
+
+  // Determine if live chat is currently available (Tawk.to status === 'online')
+  // Tawk.to returns 'online', 'away', or 'offline'. We only want green for 'online'.
+  function isLiveChatAvailable() {
+    if (!window.Tawk_API) {
+      console.log('[Glo Status Check] Tawk_API not loaded');
+      return false;
+    }
+    if (typeof Tawk_API.getStatus === 'function') {
+      try {
+        var status = Tawk_API.getStatus();
+        console.log('[Glo Status Check] Tawk reports status:', status, '— Live chat will be:', status === 'online' ? 'AVAILABLE (green)' : 'HIDDEN (dark)');
+        return status === 'online';
+      } catch(e) {
+        console.log('[Glo Status Check] Error reading status:', e);
+        return false;
+      }
+    }
+    console.log('[Glo Status Check] getStatus function not available');
+    return false;
+  }
+
+  function updateLiveChatOption() {
+    var item = document.getElementById('help-menu-livechat');
+    var launcher = document.getElementById('help-launcher-btn');
+    var mobileChat = document.getElementById('mobile-livechat-btn');
+    var available = isLiveChatAvailable();
+    if (item) item.style.display = available ? 'flex' : 'none';
+    if (launcher) launcher.classList.toggle('online', available);
+    if (mobileChat) mobileChat.classList.toggle('online', available);
+  }
+
+  // ============================================
+  // Glo's AI Assistant — In-Browser Smart Bot
+  // ============================================
+  // Combines fuzzy FAQ matching + product search + smart fallbacks.
+  // No external services, no API keys, runs entirely in the browser.
+
+  var gloBotOpen = false;
+  var gloBotConversationStarted = false;
+
+  function openGloBot() {
+    closeHelpMenu();
+    var overlay = document.getElementById('glo-bot-overlay');
+    if (!overlay) return;
+    overlay.classList.add('open');
+    gloBotOpen = true;
+    if (typeof trackEvent === 'function') trackEvent('glo_bot_open', {});
+    if (!gloBotConversationStarted) {
+      // Greet the user the first time
+      setTimeout(function() {
+        addGloBotMessage('bot', "Hi! I'm Glo's Assistant ✨ I can help you find products, answer questions about shipping, materials, the app, and more. What can I help you with today?");
+        gloBotConversationStarted = true;
+      }, 300);
+    }
+    // Focus the input shortly after open animation
+    setTimeout(function() {
+      var input = document.getElementById('glo-bot-input');
+      if (input) input.focus();
+    }, 400);
+  }
+
+  function closeGloBot() {
+    var overlay = document.getElementById('glo-bot-overlay');
+    if (overlay) overlay.classList.remove('open');
+    gloBotOpen = false;
+  }
+
+  function submitGloBotInput(e) {
+    if (e) e.preventDefault();
+    var input = document.getElementById('glo-bot-input');
+    if (!input) return;
+    var question = input.value.trim();
+    if (!question) return;
+    input.value = '';
+    askGloBot(question);
+  }
+
+  function askGloBot(question) {
+    addGloBotMessage('user', question);
+    if (typeof trackEvent === 'function') trackEvent('glo_bot_question', { question: question.substring(0, 100) });
+    showGloBotTyping();
+    // Simulate a brief thinking delay for natural feel
+    setTimeout(function() {
+      var response = generateGloBotResponse(question);
+      // If our smart matcher returned a "not sure" fallback, try real AI instead
+      if (response.fallback === true) {
+        callGloBotAI(question);
+      } else {
+        hideGloBotTyping();
+        addGloBotMessage('bot', response.text, response.products);
+      }
+    }, 600 + Math.random() * 600);
+  }
+
+  // Call the AI proxy when the smart matcher couldn't find a confident answer
+  function callGloBotAI(question) {
+    if (typeof trackEvent === 'function') trackEvent('glo_bot_ai_fallback', { question: question.substring(0, 100) });
+    fetch('/api/glo-bot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: question })
+    })
+    .then(function(res) {
+      return res.json().then(function(data) {
+        return { ok: res.ok, data: data };
+      });
+    })
+    .then(function(result) {
+      hideGloBotTyping();
+      if (result.ok && result.data.answer) {
+        // Convert plain newlines to <br> for display
+        var answer = result.data.answer.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
+        addGloBotMessage('bot', answer);
+      } else {
+        // API error — show the friendly message from the server, or a default
+        var msg = (result.data && result.data.message) || "I'm not quite sure on that one. Please email <a href=\"mailto:sales@gloscreations316.com\">sales@gloscreations316.com</a> and Glo will help personally. 💛";
+        addGloBotMessage('bot', msg);
+      }
+    })
+    .catch(function(err) {
+      hideGloBotTyping();
+      console.error('[Glo Bot] AI fallback failed:', err);
+      addGloBotMessage('bot', "I'm having trouble thinking right now. Please email <a href=\"mailto:sales@gloscreations316.com\">sales@gloscreations316.com</a> and Glo will help you personally. 💛");
+    });
+  }
+
+  function addGloBotMessage(sender, text, productResults) {
+    var container = document.getElementById('glo-bot-messages');
+    if (!container) return;
+    var msg = document.createElement('div');
+    msg.className = 'glo-bot-msg ' + sender;
+    msg.innerHTML = text;
+    if (productResults && productResults.length > 0) {
+      var grid = document.createElement('div');
+      grid.className = 'glo-bot-msg-products';
+      for (var i = 0; i < productResults.length && i < 4; i++) {
+        var p = productResults[i];
+        var card = document.createElement('div');
+        card.className = 'glo-bot-product-card';
+        card.onclick = (function(idx) {
+          return function() {
+            closeGloBot();
+            openModal(idx);
+            if (typeof trackEvent === 'function') trackEvent('glo_bot_product_click', { product_name: products[idx].name });
+          };
+        })(p.index);
+        card.innerHTML = '<img src="' + p.image + '" alt="' + p.name.replace(/"/g, '&quot;') + '"><div class="glo-bot-product-card-info"><p class="glo-bot-product-card-name">' + p.name + '</p><p class="glo-bot-product-card-price">$' + p.price + '</p></div>';
+        grid.appendChild(card);
+      }
+      msg.appendChild(grid);
+    }
+    container.appendChild(msg);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function showGloBotTyping() {
+    var container = document.getElementById('glo-bot-messages');
+    if (!container) return;
+    var typing = document.createElement('div');
+    typing.className = 'glo-bot-typing';
+    typing.id = 'glo-bot-typing-indicator';
+    typing.innerHTML = '<span></span><span></span><span></span>';
+    container.appendChild(typing);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function hideGloBotTyping() {
+    var typing = document.getElementById('glo-bot-typing-indicator');
+    if (typing) typing.remove();
+  }
+
+  // The "brain" — only returns a confident smart-bot answer when there's
+  // a near-certain match. For anything ambiguous, falls back to real AI
+  // rather than guessing. Better silent than wrong.
+  function generateGloBotResponse(question) {
+    var lower = question.toLowerCase().trim();
+    var words = lower.split(/[\s,?!.]+/).filter(function(w) { return w.length > 1; });
+
+    // Quick greetings — these are obvious enough to handle locally
+    if (/^(hi|hello|hey|yo|sup|hola)\b\s*\.?$/i.test(lower)) {
+      return { text: "Hi there! 👋 Ask me anything about Glo's Creations — products, shipping, materials, our app, or anything else.", products: null };
+    }
+    if (/^(thanks|thank you|thx|ty)\b\s*[.!]?$/i.test(lower)) {
+      return { text: "You're welcome! Anything else I can help with? 💛", products: null };
+    }
+    if (/^(bye|goodbye|see ya|later)\b\s*[.!]?$/i.test(lower)) {
+      return { text: "Take care! Come back anytime. ✨", products: null };
+    }
+
+    // Product search — only if customer is CLEARLY asking to see products
+    var isClearProductQuery = /\b(show|find|see|browse|looking for|do you have|got any|any\s+\w+\s+earrings|any\s+\w+\s+pieces)\b/i.test(lower);
+    if (isClearProductQuery) {
+      var matches = searchProducts(lower);
+      if (matches.length > 0) {
+        var prefix = matches.length === 1 ? "Here's the piece I found:" : "Here's what I found that matches:";
+        return { text: prefix, products: matches };
+      }
+      // No matches → let AI handle it (it can give a thoughtful "we don't currently have that" response)
+    }
+
+    // FAQ matching — but ONLY return if the match is overwhelmingly strong.
+    // The threshold is intentionally high so the bot stays silent when uncertain.
+    var faqMatch = findBestFaqMatch(lower, words);
+    if (faqMatch && faqMatch.score >= 10) {
+      return { text: faqMatch.faq.a, products: null };
+    }
+
+    // Anything else → fall back to real AI. No guessing, no fluff.
+    return { text: "", products: null, fallback: true };
+  }
+
+  // Search FAQ entries — returns the highest-scoring match
+  function findBestFaqMatch(lower, words) {
+    if (typeof faqData === 'undefined' || !faqData.length) return null;
+    var bestMatch = null;
+    var bestScore = 0;
+    for (var i = 0; i < faqData.length; i++) {
+      var faq = faqData[i];
+      var score = 0;
+      var qLower = faq.q.toLowerCase();
+      var aLower = (faq.a || '').toLowerCase();
+
+      // Direct substring match in question = strong signal
+      if (qLower.indexOf(lower) !== -1) score += 5;
+
+      // Word matches in question = 2 pts each
+      for (var w = 0; w < words.length; w++) {
+        if (qLower.indexOf(words[w]) !== -1) score += 2;
+        if (aLower.indexOf(words[w]) !== -1) score += 1;
+      }
+
+      // Specific high-value keyword boosts
+      var hotWords = {
+        'waterproof': ['waterproof', 'water', 'shower', 'swim', 'wet'],
+        'shipping': ['ship', 'delivery', 'when', 'how long', 'arrive', 'fast'],
+        'allergic': ['allerg', 'sensitive', 'reaction', 'itch', 'hypoallergenic'],
+        'return': ['return', 'refund', 'exchange', 'money back'],
+        'care': ['care', 'clean', 'wash', 'maintain', 'store'],
+        'custom': ['custom', 'personalize', 'special order', 'request'],
+        'install': ['install', 'download', 'app', 'add to home', 'home screen'],
+        'iphone': ['iphone', 'ios', 'apple', 'safari'],
+        'android': ['android', 'chrome', 'samsung', 'pixel', 'google play'],
+        'meaning': ['meaning', '3:16', '316', 'deuteronomy', 'name', 'why']
+      };
+      for (var hot in hotWords) {
+        if (qLower.indexOf(hot) !== -1 || aLower.indexOf(hot) !== -1) {
+          for (var k = 0; k < hotWords[hot].length; k++) {
+            if (lower.indexOf(hotWords[hot][k]) !== -1) score += 3;
+          }
+        }
+      }
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = faq;
+      }
+    }
+    return bestMatch ? { faq: bestMatch, score: bestScore } : null;
+  }
+
+  // Search products — returns matching products with their original index
+  function searchProducts(lower) {
+    if (typeof products === 'undefined' || !products.length) return [];
+    var matches = [];
+    var words = lower.split(/[\s,?!.]+/).filter(function(w) { return w.length > 2; });
+
+    for (var i = 0; i < products.length; i++) {
+      var p = products[i];
+      if (!p || !p.name) continue;
+      var name = (p.name || '').toLowerCase();
+      var desc = (p.description || '').toLowerCase();
+      var cat = (p.category || '').toLowerCase();
+      var score = 0;
+
+      for (var w = 0; w < words.length; w++) {
+        var word = words[w];
+        // Skip generic words
+        if (['have', 'show', 'find', 'want', 'any', 'available', 'sell', 'pair', 'piece', 'pieces', 'look', 'looking', 'need', 'one', 'some', 'thing', 'things', 'jewelry', 'earrings', 'product', 'products'].indexOf(word) !== -1) continue;
+        if (name.indexOf(word) !== -1) score += 5;
+        if (desc.indexOf(word) !== -1) score += 2;
+        if (cat.indexOf(word) !== -1) score += 1;
+      }
+
+      if (score > 0) {
+        matches.push({
+          index: i,
+          name: p.name,
+          image: p.image,
+          price: p.price,
+          score: score
+        });
+      }
+    }
+
+    // Sort by score, return top 4
+    matches.sort(function(a, b) { return b.score - a.score; });
+    return matches.slice(0, 4);
+  }
+
+  function helpMenuChooseFaq() {
+    closeHelpMenu();
+    if (typeof openFaq === 'function') openFaq();
+    if (typeof trackEvent === 'function') trackEvent('help_menu_select', { option: 'faq' });
+  }
+
+  function helpMenuChooseEmail() {
+    // The mailto href handles opening the email — we just track and close
+    closeHelpMenu();
+    if (typeof trackEvent === 'function') trackEvent('help_menu_select', { option: 'email' });
+  }
+
+  function helpMenuChooseLiveChat() {
+    closeHelpMenu();
+    if (window.Tawk_API && Tawk_API.maximize) {
+      Tawk_API.maximize();
+    }
+    if (typeof trackEvent === 'function') trackEvent('help_menu_select', { option: 'live_chat' });
+  }
+
+  // Close the help menu when clicking outside it
+  document.addEventListener('click', function(e) {
+    if (!helpMenuOpen) return;
+    if (helpMenuJustOpened) return; // ignore the click that opened the menu
+    var menu = document.getElementById('help-menu');
+    var btn = document.getElementById('help-launcher-btn');
+    var inMenu = menu && menu.contains(e.target);
+    var inBtn = btn && btn.contains(e.target);
+    if (!inMenu && !inBtn) {
+      closeHelpMenu();
+    }
+  });
+
+  // Show the "Need help?" button immediately on page load (don't wait for Tawk to finish loading)
+  // This keeps the entry point consistent and clean even if Tawk.to is slow.
+  document.addEventListener('DOMContentLoaded', function() {
+    var launcher = document.getElementById('help-launcher-btn');
+    if (launcher) launcher.classList.add('show');
+    // Kick off status polling 5 seconds after page load. Tawk.to should be loaded by then.
+    // We don't rely on Tawk_API.onLoad because that callback doesn't always fire when the
+    // widget is hidden via dashboard settings.
+    setTimeout(function() {
+      // Run an immediate first check
+      if (window.Tawk_API && typeof Tawk_API.getStatus === 'function') {
+        try {
+          lastKnownTawkStatus = Tawk_API.getStatus();
+          updateLiveChatOption();
+        } catch(e) {}
+      }
+      // Wire up status refresh to happen on natural visitor actions
+      setupActionTriggeredStatusRefresh();
+    }, 5000);
+  });
+
+  // Configure Tawk.to event listeners
+  var Tawk_API = Tawk_API || {};
+
+  // Hide the Tawk.to chat bubble when status is anything other than 'online'
+  // (This complements the dashboard "Hide on desktop/mobile" settings — code-level safety net.)
+  function syncTawkWidgetVisibility() {
+    if (!window.Tawk_API) return;
+    var available = isLiveChatAvailable();
+    if (available) {
+      // Online: keep the widget hidden too (only show when visitor explicitly clicks Live Chat)
+      // The dashboard "Hide on desktop/mobile" setting handles this automatically.
+    } else {
+      // Offline/Away: ensure the widget is hidden as a safety net
+      if (Tawk_API.hideWidget) Tawk_API.hideWidget();
+    }
+  }
+
+  Tawk_API.onLoad = function() {
+    updateLiveChatOption();
+    syncTawkWidgetVisibility();
+  };
+
+  // Action-triggered status refresh — every time the visitor does something on the site,
+  // we silently re-check Tawk's status. This is more efficient than constant polling and
+  // updates the button right when they're likely to interact with it.
+  var lastKnownTawkStatus = null;
+  var lastStatusRefreshTime = 0;
+  var STATUS_REFRESH_THROTTLE_MS = 5000; // Don't refresh more than once every 5 seconds
+
+  function refreshTawkStatus() {
+    if (!window.Tawk_API) return;
+    // Throttle so rapid actions (e.g., scrolling) don't hammer the API
+    var now = Date.now();
+    if (now - lastStatusRefreshTime < STATUS_REFRESH_THROTTLE_MS) return;
+    lastStatusRefreshTime = now;
+
+    try {
+      // Force a reconnection so Tawk pushes a fresh status from their server
+      if (typeof Tawk_API.shutdown === 'function' && typeof Tawk_API.start === 'function') {
+        Tawk_API.shutdown();
+        setTimeout(function() {
+          try { Tawk_API.start(); } catch(e) {}
+          // Re-check status after reconnecting
+          setTimeout(function() {
+            try {
+              var fresh = Tawk_API.getStatus();
+              if (fresh !== lastKnownTawkStatus) {
+                console.log('[Glo Status Refresh] Status changed:', lastKnownTawkStatus, '→', fresh);
+                lastKnownTawkStatus = fresh;
+                updateLiveChatOption();
+                syncTawkWidgetVisibility();
+              }
+            } catch(e) {}
+          }, 1500);
+        }, 300);
+      } else if (typeof Tawk_API.getStatus === 'function') {
+        // Fallback: just check cached status
+        var current = Tawk_API.getStatus();
+        if (current !== lastKnownTawkStatus) {
+          lastKnownTawkStatus = current;
+          updateLiveChatOption();
+          syncTawkWidgetVisibility();
+        }
+      }
+    } catch(e) {}
+  }
+
+  // Wire up the refresh to happen on natural visitor actions
+  function setupActionTriggeredStatusRefresh() {
+    // 1. When visitor returns to the tab (most likely time for stale status)
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden) refreshTawkStatus();
+    });
+
+    // 2. When visitor scrolls (active engagement) — debounced via the throttle
+    var scrollHandler = function() { refreshTawkStatus(); };
+    window.addEventListener('scroll', scrollHandler, { passive: true });
+
+    // 3. When visitor opens a product modal (high-intent moment)
+    // We hook into openModal by wrapping it
+    if (typeof window.openModal === 'function') {
+      var originalOpenModal = window.openModal;
+      window.openModal = function() {
+        refreshTawkStatus();
+        return originalOpenModal.apply(this, arguments);
+      };
+    }
+
+    // 4. When visitor opens the cart
+    if (typeof window.toggleCart === 'function') {
+      var originalToggleCart = window.toggleCart;
+      window.toggleCart = function() {
+        refreshTawkStatus();
+        return originalToggleCart.apply(this, arguments);
+      };
+    }
+
+    // 5. When visitor moves their mouse near the bottom-right (where the help button lives)
+    document.addEventListener('mousemove', function(e) {
+      if (e.clientX > window.innerWidth - 200 && e.clientY > window.innerHeight - 200) {
+        refreshTawkStatus();
+      }
+    }, { passive: true });
+
+    // 6. When visitor clicks anywhere on the page
+    document.addEventListener('click', function() { refreshTawkStatus(); }, { passive: true });
+  }
+
+  Tawk_API.onStatusChange = function(status) {
+    console.log('[Glo Status] onStatusChange fired:', status);
+    lastKnownTawkStatus = status;
+    updateLiveChatOption();
+    syncTawkWidgetVisibility();
+    // If visitor was in a chat and we just went offline, minimize the chat
+    if (status !== 'online' && Tawk_API.minimize) {
+      Tawk_API.minimize();
+    }
+  };
+
+  // When the chat is minimized after a conversation, re-hide if we're offline
+  Tawk_API.onChatMinimized = function() {
+    syncTawkWidgetVisibility();
+  };
+  Tawk_API.onChatEnded = function() {
+    syncTawkWidgetVisibility();
+  };
+</script>
+
+<!--Start of Tawk.to Script-->
+<script type="text/javascript">
+var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
+(function(){
+var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
+s1.async=true;
+s1.src='https://embed.tawk.to/69fa458d090d301c347c5ea8/1jnspvc8g';
+s1.charset='UTF-8';
+s1.setAttribute('crossorigin','*');
+s0.parentNode.insertBefore(s1,s0);
+})();
+</script>
+<!--End of Tawk.to Script-->
+
+<!-- PWA Install Button — appears in bottom-left, prompts user to add to home screen -->
+<style>
+  /* Floating "Install App" button — appears bottom-left when app is installable */
+  .pwa-install-btn {
+    position: fixed;
+    bottom: 22px;
+    left: 22px;
+    padding: 11px 14px 11px 12px;
+    background: white;
+    color: var(--stone-800);
+    border: 1px solid var(--stone-300);
+    border-radius: 24px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+    cursor: pointer;
+    z-index: 1000000000;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  /* Floating install button removed — install moved to "Get the App" banner */
+  .pwa-install-btn { display: none !important; }
+  .pwa-install-btn.show { display: none !important; }
+  .pwa-install-btn:hover {
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+  }
+  .pwa-install-btn-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: var(--stone-900);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .pwa-install-btn-icon svg {
+    width: 14px;
+    height: 14px;
+    stroke: white;
+    fill: none;
+    stroke-width: 2;
+  }
+  .pwa-install-btn-text { line-height: 1.2; }
+  .pwa-install-btn-label { display: block; font-size: 10px; color: var(--stone-500); letter-spacing: 0.1em; text-transform: uppercase; }
+  .pwa-install-btn-title { display: block; font-size: 12px; color: var(--stone-900); font-weight: 500; margin-top: 1px; }
+  .pwa-install-btn-close {
+    background: var(--stone-100);
+    border: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    margin-left: 4px;
+    transition: background 0.15s;
+  }
+  .pwa-install-btn-close:hover { background: var(--stone-200); }
+  .pwa-install-btn-close svg {
+    width: 10px;
+    height: 10px;
+    stroke: var(--stone-600);
+    fill: none;
+    stroke-width: 2.5;
+  }
+
+  /* iOS install instructions modal */
+  .pwa-install-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000000010;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .pwa-install-modal.open { display: flex; }
+  .pwa-install-modal-card {
+    background: white;
+    border-radius: 18px;
+    max-width: 380px;
+    width: 100%;
+    padding: 28px 26px 24px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.25);
+    text-align: center;
+    position: relative;
+    animation: modalIn 0.3s ease;
+  }
+  .pwa-install-modal-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--stone-100);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .pwa-install-modal-close:hover { background: var(--stone-200); }
+  .pwa-install-modal-close svg { width: 14px; height: 14px; stroke: var(--stone-700); fill: none; stroke-width: 2; }
+  .pwa-install-icon-large {
+    width: 64px;
+    height: 64px;
+    border-radius: 14px;
+    background: var(--stone-900);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 4px auto 18px;
+    box-shadow: 0 8px 20px rgba(28,25,23,0.2);
+  }
+  .pwa-install-icon-large img {
+    width: 80%;
+    height: 80%;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+  }
+  .pwa-install-modal-title {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 400;
+    color: var(--stone-900);
+    margin-bottom: 6px;
+  }
+  .pwa-install-modal-title em { font-style: italic; }
+  .pwa-install-modal-subtitle {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--stone-500);
+    line-height: 1.5;
+    margin-bottom: 24px;
+  }
+  .pwa-install-steps {
+    text-align: left;
+    background: var(--stone-50);
+    border-radius: 12px;
+    padding: 18px 18px 18px 18px;
+    margin-bottom: 16px;
+    border: 1px solid var(--stone-200);
+  }
+  .pwa-install-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 14px;
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--stone-700);
+    line-height: 1.5;
+  }
+  .pwa-install-step:last-child { margin-bottom: 0; }
+  .pwa-install-step-num {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--stone-900);
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+  }
+  .pwa-install-step-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    background: var(--stone-200);
+    border-radius: 5px;
+    margin: 0 3px;
+    vertical-align: middle;
+  }
+  .pwa-install-step-icon svg { width: 13px; height: 13px; stroke: var(--stone-700); fill: none; stroke-width: 2; }
+
+  /* Native install button inside Android instructions modal */
+  .pwa-native-install-btn {
+    display: none; /* shown via JS only when prompt is available */
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 14px 20px;
+    background: #166534;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    margin-bottom: 14px;
+    box-shadow: 0 4px 14px rgba(22,101,52,0.25);
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  }
+  .pwa-native-install-btn:hover {
+    background: #14532d;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(22,101,52,0.35);
+  }
+  .pwa-native-install-btn.show { display: inline-flex; }
+  .pwa-native-install-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke: white;
+    fill: none;
+    stroke-width: 2;
+    flex-shrink: 0;
+  }
+  .pwa-or-divider {
+    display: none;
+    text-align: center;
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--stone-400);
+    margin: 4px 0 16px;
+    letter-spacing: 0.05em;
+    font-style: italic;
+  }
+  .pwa-or-divider.show { display: block; }
+
+  .pwa-install-perks {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--stone-500);
+    line-height: 1.6;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--stone-100);
+  }
+
+  @media (max-width: 600px) {
+    .pwa-install-btn {
+      bottom: 16px;
+      left: 16px;
+      padding: 10px 12px 10px 10px;
+    }
+    .pwa-install-btn-title { font-size: 11px; }
+    .pwa-install-btn-label { font-size: 9px; }
+  }
+</style>
+
+<!-- PWA Install Button -->
+<button class="pwa-install-btn" id="pwa-install-btn" onclick="openPwaInstallModal()" aria-label="Install Glo's Creations app">
+  <span class="pwa-install-btn-icon">
+    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+  </span>
+  <span class="pwa-install-btn-text">
+    <span class="pwa-install-btn-label">Install</span>
+    <span class="pwa-install-btn-title">Add to Home</span>
+  </span>
+  <button class="pwa-install-btn-close" onclick="event.stopPropagation();dismissPwaInstall();" aria-label="Dismiss">
+    <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
+</button>
+
+<!-- Install Instructions Modal — supports both iOS and Android -->
+<div class="pwa-install-modal" id="pwa-install-modal" onclick="if(event.target===this)closePwaInstallModal()">
+  <div class="pwa-install-modal-card">
+    <button class="pwa-install-modal-close" onclick="closePwaInstallModal()" aria-label="Close">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="pwa-install-icon-large">
+      <img src="https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/logo.png" alt="Glo's Creations">
+    </div>
+    <h3 class="pwa-install-modal-title" id="pwa-install-title">Install <em>Glo's Creations</em></h3>
+    <p class="pwa-install-modal-subtitle">Add the shop to your home screen for quick, app-like access.</p>
+
+    <!-- iOS Steps -->
+    <div class="pwa-install-steps" id="pwa-steps-ios">
+      <div class="pwa-install-step">
+        <span class="pwa-install-step-num">1</span>
+        <span>Open this site in <strong>Safari</strong> (not Chrome) on your iPhone</span>
+      </div>
+      <div class="pwa-install-step">
+        <span class="pwa-install-step-num">2</span>
+        <span>Tap the
+          <span class="pwa-install-step-icon">
+            <svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          </span>
+          Share button at the bottom of Safari
+        </span>
+      </div>
+      <div class="pwa-install-step">
+        <span class="pwa-install-step-num">3</span>
+        <span>Scroll down and tap <strong>"Add to Home Screen"</strong></span>
+      </div>
+      <div class="pwa-install-step">
+        <span class="pwa-install-step-num">4</span>
+        <span>Tap <strong>"Add"</strong> in the top right corner</span>
+      </div>
+    </div>
+
+    <!-- Android Steps -->
+    <div class="pwa-install-steps" id="pwa-steps-android" style="display:none;">
+      <button class="pwa-native-install-btn" id="pwa-native-install-btn" onclick="triggerNativeInstall()">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Install Glo's Creations
+      </button>
+      <p class="pwa-or-divider" id="pwa-or-divider">— or follow these steps manually —</p>
+      <div class="pwa-install-step">
+        <span class="pwa-install-step-num">1</span>
+        <span>Open this site in <strong>Chrome</strong> on your Android phone</span>
+      </div>
+      <div class="pwa-install-step">
+        <span class="pwa-install-step-num">2</span>
+        <span>Tap the
+          <span class="pwa-install-step-icon">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+          </span>
+          three-dot menu in the top right
+        </span>
+      </div>
+      <div class="pwa-install-step">
+        <span class="pwa-install-step-num">3</span>
+        <span>Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong></span>
+      </div>
+      <div class="pwa-install-step">
+        <span class="pwa-install-step-num">4</span>
+        <span>Tap <strong>"Install"</strong> to confirm</span>
+      </div>
+    </div>
+
+    <p class="pwa-install-perks">Once installed, tap the icon on your home screen to launch — works just like an app, no browser bar. ✨</p>
+  </div>
+</div>
+
+</body>
+</html>
