@@ -8575,26 +8575,8 @@
 
   function helpMenuChooseLiveChat() {
     closeHelpMenu();
-    if (window.Tawk_API) {
-      try {
-        // Show the widget if it's hidden
-        if (Tawk_API.showWidget) Tawk_API.showWidget();
-        // Use toggle() — Tawk's most reliable open method, works even when widget was hidden
-        // Try toggle first, fall back to maximize
-        setTimeout(function() {
-          try {
-            if (Tawk_API.toggle) {
-              Tawk_API.toggle();
-            } else if (Tawk_API.maximize) {
-              Tawk_API.maximize();
-            }
-          } catch(e) {
-            console.log('[Live Chat] Error opening:', e);
-          }
-        }, 400);
-      } catch(e) {
-        console.log('[Live Chat] Error showing widget:', e);
-      }
+    if (window.Tawk_API && Tawk_API.maximize) {
+      Tawk_API.maximize();
     }
     if (typeof trackEvent === 'function') trackEvent('help_menu_select', { option: 'live_chat' });
   }
