@@ -7599,7 +7599,7 @@
     border-radius: 24px;
     box-shadow: 0 4px 14px rgba(0,0,0,0.18);
     cursor: pointer;
-    z-index: 9990;
+    z-index: 1999999999;
     display: none;
     align-items: center;
     gap: 8px;
@@ -7978,7 +7978,7 @@
     border-radius: 14px;
     box-shadow: 0 12px 40px rgba(0,0,0,0.18);
     border: 1px solid var(--stone-200);
-    z-index: 99999; /* Must be above backdrop (9989) and launcher (9990) */
+    z-index: 2000000000; /* Above all other UI to guarantee click-through */
     overflow: hidden;
     opacity: 0;
     transform: translateY(8px) scale(0.97);
@@ -8008,7 +8008,7 @@
     margin: 0;
     line-height: 1.4;
   }
-  .help-menu-options { padding: 6px; }
+  .help-menu-options { padding: 6px; position: relative; z-index: 2; }
   .help-menu-option {
     width: 100%;
     background: transparent;
@@ -8024,6 +8024,9 @@
     transition: background 0.12s;
     color: var(--stone-800);
     text-decoration: none;
+    pointer-events: auto;
+    position: relative;
+    z-index: 2;
   }
   .help-menu-option:hover { background: var(--stone-50); }
   .help-menu-option-icon {
@@ -8096,7 +8099,7 @@
     position: fixed;
     inset: 0;
     background: rgba(0,0,0,0.4);
-    z-index: 9989; /* BELOW help-menu (9991) and help-launcher-btn (9990) so clicks land properly */
+    z-index: 1999999998; /* Just below launcher and menu */
     backdrop-filter: blur(2px);
     -webkit-backdrop-filter: blur(2px);
     opacity: 0;
@@ -8265,8 +8268,11 @@
     }
   }
 
-  // Determine if live chat is currently available (Tawk.to status === 'online')
-  // Tawk.to returns 'online', 'away', or 'offline'. We only want green for 'online'.
+  // Determine if live chat is currently available.
+  // Tawk.to returns 'online', 'away', or 'offline'.
+  // We show the live chat option when online OR away (away = agent is signed in
+  // but inactive — customers can still leave a message and get a reply).
+  // Only hide when explicitly 'offline'.
   function isLiveChatAvailable() {
     if (!window.Tawk_API) {
       console.log('[Glo Status Check] Tawk_API not loaded');
@@ -8275,8 +8281,9 @@
     if (typeof Tawk_API.getStatus === 'function') {
       try {
         var status = Tawk_API.getStatus();
-        console.log('[Glo Status Check] Tawk reports status:', status, '— Live chat will be:', status === 'online' ? 'AVAILABLE (green)' : 'HIDDEN (dark)');
-        return status === 'online';
+        var available = (status === 'online' || status === 'away');
+        console.log('[Glo Status Check] Tawk reports status:', status, '— Live chat will be:', available ? 'AVAILABLE' : 'HIDDEN');
+        return available;
       } catch(e) {
         console.log('[Glo Status Check] Error reading status:', e);
         return false;
