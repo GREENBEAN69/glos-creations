@@ -8466,11 +8466,12 @@
       }
     }
 
-    // Try FAQ matching
+    // Try FAQ matching — require a stronger match before trusting it.
+    // Lower threshold caused the bot to confidently return wrong answers
+    // for ambiguous questions. We'd rather fall back to real AI than guess wrong.
     var faqMatch = findBestFaqMatch(lower, words);
-    if (faqMatch && faqMatch.score >= 2) {
+    if (faqMatch && faqMatch.score >= 6) {
       var answer = faqMatch.faq.a;
-      // Strip HTML tags for clean message but keep links
       return { text: answer, products: null };
     }
 
