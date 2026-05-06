@@ -3,8 +3,104 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Glo's Creations 3:16 · Handcrafted Polymer Clay Jewelry</title>
-<meta name="description" content="Handmade polymer clay jewelry designed and sculpted with care. Each piece is one of a kind.">
+
+<!-- ===== SEO Meta Tags ===== -->
+<title>Glo's Creations 3:16 · Handcrafted Polymer Clay Jewelry & Earrings</title>
+<meta name="description" content="Handmade polymer clay earrings, necklaces, and jewelry designed and sculpted by hand. Lightweight, hypoallergenic, and one-of-a-kind pieces. Free shipping on orders $50+. Inspired by Deuteronomy 31:6.">
+<meta name="keywords" content="polymer clay earrings, handmade jewelry, polymer clay jewelry, lightweight earrings, statement earrings, faith jewelry, christian jewelry, handcrafted earrings, small batch jewelry, glo's creations, deuteronomy 31:6, polymer clay studs, dangle earrings, hypoallergenic earrings">
+<meta name="author" content="Glo's Creations 3:16">
+<link rel="canonical" href="https://gloscreations316.com/">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="googlebot" content="index, follow">
+
+<!-- Geo tags for local SEO -->
+<meta name="geo.region" content="US-GA">
+<meta name="geo.placename" content="Cherokee County, Georgia">
+
+<!-- ===== Open Graph (Facebook, LinkedIn, iMessage previews) ===== -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Glo's Creations 3:16">
+<meta property="og:title" content="Glo's Creations 3:16 · Handcrafted Polymer Clay Jewelry">
+<meta property="og:description" content="Handmade polymer clay earrings and jewelry designed and sculpted by hand. Each piece is one of a kind. ✨">
+<meta property="og:url" content="https://gloscreations316.com/">
+<meta property="og:image" content="https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/logo.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Glo's Creations 3:16 — Handcrafted Polymer Clay Jewelry">
+<meta property="og:locale" content="en_US">
+
+<!-- ===== Twitter Card ===== -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Glo's Creations 3:16 · Handcrafted Polymer Clay Jewelry">
+<meta name="twitter:description" content="Handmade polymer clay earrings designed and sculpted by hand. Each piece is one of a kind. ✨">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/logo.png">
+
+<!-- ===== Schema.org Structured Data — tells Google we're a jewelry store ===== -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Store",
+  "@id": "https://gloscreations316.com/#store",
+  "name": "Glo's Creations 3:16",
+  "alternateName": "Glo's Creations",
+  "description": "Handmade polymer clay jewelry designed and sculpted with care. Each piece is one of a kind.",
+  "url": "https://gloscreations316.com/",
+  "logo": "https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/logo.png",
+  "image": "https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/logo.png",
+  "telephone": "",
+  "email": "sales@gloscreations316.com",
+  "priceRange": "$$",
+  "currenciesAccepted": "USD",
+  "paymentAccepted": "Credit Card, Debit Card, Apple Pay, Google Pay, Shop Pay",
+  "address": {
+    "@type": "PostalAddress",
+    "addressRegion": "GA",
+    "addressCountry": "US"
+  },
+  "sameAs": [
+    "https://www.instagram.com/gloscreations31_6"
+  ],
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://gloscreations316.com/?search={search_term_string}",
+    "query-input": "required name=search_term_string"
+  }
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Glo's Creations 3:16",
+  "legalName": "Marjoel LLC",
+  "url": "https://gloscreations316.com/",
+  "logo": "https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/logo.png",
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "email": "sales@gloscreations316.com",
+    "contactType": "Customer Service",
+    "availableLanguage": "English"
+  },
+  "sameAs": [
+    "https://www.instagram.com/gloscreations31_6"
+  ]
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "Glo's Creations 3:16",
+  "url": "https://gloscreations316.com/",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://gloscreations316.com/?search={search_term_string}",
+    "query-input": "required name=search_term_string"
+  }
+}
+</script>
 
 <!-- PWA Manifest -->
 <link rel="manifest" href="/manifest.json?v=3">
@@ -5261,6 +5357,9 @@
       items: [{ item_id: modalProduct.id, item_name: modalProduct.name, item_category: modalProduct.category, price: modalProduct.price }]
     });
 
+    // Inject Product schema for SEO — helps Google show this product in search results
+    injectProductSchema(modalProduct);
+
     document.getElementById('modal-category').textContent = modalProduct.category;
     document.getElementById('modal-title').textContent = modalProduct.name;
     document.getElementById('modal-price').textContent = '$' + modalProduct.price.toFixed(2);
@@ -5311,6 +5410,49 @@
   function closeModal() {
     document.getElementById('modal-overlay').classList.remove('open');
     document.body.style.overflow = '';
+    // Remove product schema when modal closes (so it doesn't pollute when no product is shown)
+    var schemaEl = document.getElementById('dynamic-product-schema');
+    if (schemaEl) schemaEl.remove();
+  }
+
+  // Inject Product schema for the currently-open product so Google can index it for rich results.
+  // Removes any previous product schema before injecting the new one.
+  function injectProductSchema(product) {
+    var existing = document.getElementById('dynamic-product-schema');
+    if (existing) existing.remove();
+    if (!product) return;
+
+    var inStock = (product.stock > 0 && product.available);
+    var schema = {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      "name": product.name,
+      "description": product.description || ('Handcrafted polymer clay ' + (product.category || 'jewelry') + ' — sculpted, baked, and finished by hand. One-of-a-kind piece by Glo\'s Creations 3:16.'),
+      "image": product.image || product.images,
+      "category": product.category || 'Jewelry',
+      "brand": {
+        "@type": "Brand",
+        "name": "Glo's Creations 3:16"
+      },
+      "sku": product.id,
+      "offers": {
+        "@type": "Offer",
+        "url": "https://gloscreations316.com/",
+        "priceCurrency": "USD",
+        "price": product.price,
+        "availability": inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+        "seller": {
+          "@type": "Organization",
+          "name": "Glo's Creations 3:16"
+        }
+      }
+    };
+
+    var script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.id = 'dynamic-product-schema';
+    script.textContent = JSON.stringify(schema);
+    document.head.appendChild(script);
   }
 
   function renderModalImage() {
@@ -5454,6 +5596,7 @@
       closePolicy();
       closeLightbox();
       closeTryonConsent();
+      if (gloBotOpen) closeGloBot();
       if (document.getElementById('cart-drawer').classList.contains('open')) toggleCart();
     }
   });
@@ -7025,6 +7168,104 @@
       category: 'About',
       q: 'How can I stay updated on new pieces?',
       a: 'Follow us on Instagram <a href="https://instagram.com/gloscreations31_6" target="_blank" rel="noopener">@gloscreations31_6</a> for first looks at new drops, behind-the-scenes content, and exclusive previews. New pieces are posted there before anywhere else.'
+    },
+    {
+      category: 'App',
+      q: 'Do you have a mobile app?',
+      a: 'Yes! Our website can be installed on your phone like an app — it appears on your home screen with our logo and opens in full-screen, just like apps from the App Store or Google Play. It\'s called a Progressive Web App (PWA), and it\'s completely free. Scroll to the bottom of any page and tap the "Get the App" section to install.'
+    },
+    {
+      category: 'App',
+      q: 'How do I install the app on my iPhone?',
+      a: 'Installing on iPhone takes about 10 seconds:<br><br>' +
+         '<strong>1.</strong> Open Safari (the install only works in Safari, not Chrome on iPhone)<br>' +
+         '<strong>2.</strong> Visit <a href="https://gloscreations316.com">gloscreations316.com</a><br>' +
+         '<strong>3.</strong> Tap the Share button (square with an up arrow) at the bottom of the screen<br>' +
+         '<strong>4.</strong> Scroll down and tap "Add to Home Screen"<br>' +
+         '<strong>5.</strong> Tap "Add" in the top right corner<br><br>' +
+         'The Glo\'s Creations icon will appear on your home screen. Tap it anytime to open the shop in full-screen mode.'
+    },
+    {
+      category: 'App',
+      q: 'How do I install the app on my Android phone?',
+      a: 'Android makes installing super easy:<br><br>' +
+         '<strong>1.</strong> Open Chrome on your phone<br>' +
+         '<strong>2.</strong> Visit <a href="https://gloscreations316.com">gloscreations316.com</a><br>' +
+         '<strong>3.</strong> Scroll to the "Get the App" section near the bottom of the page<br>' +
+         '<strong>4.</strong> Tap "Install on Android"<br>' +
+         '<strong>5.</strong> Tap the green "Install Glo\'s Creations" button<br>' +
+         '<strong>6.</strong> Confirm by tapping "Install" in the dialog that appears<br><br>' +
+         'You\'ll find the Glo\'s Creations icon on your home screen and in your app drawer, just like any other app.'
+    },
+    {
+      category: 'App',
+      q: 'Is the app available in the App Store or Google Play?',
+      a: 'Not currently. We use a Progressive Web App (PWA) instead, which works just like a regular app but is installed directly through your phone\'s browser. The advantage is faster updates and a smoother experience. You won\'t find us by searching the App Store or Google Play — you have to install from our website.'
+    },
+    {
+      category: 'App',
+      q: 'Does the app cost anything?',
+      a: 'No — installing the app is completely free. There are no hidden fees, subscriptions, or in-app purchases beyond purchasing jewelry from the shop itself.'
+    },
+    {
+      category: 'App',
+      q: 'How is the app different from the website?',
+      a: 'The "app" is actually our website running in a special full-screen mode. The differences you\'ll notice:<br>' +
+         '• <strong>Full-screen experience</strong> — no browser bar at the top<br>' +
+         '• <strong>Home screen icon</strong> — quick access in one tap<br>' +
+         '• <strong>Faster repeat loads</strong> — content is cached on your device<br>' +
+         '• <strong>Offline browsing</strong> — already-viewed pages work without internet<br><br>' +
+         'All site features (cart, checkout, virtual try-on, account, reviews) work identically.'
+    },
+    {
+      category: 'App',
+      q: 'How do I update the app?',
+      a: 'Updates happen automatically. Whenever we release new features, products, or fixes, your app picks them up the next time you open it with an internet connection. There\'s no "update" button to tap and no waiting for App Store approval — just close and reopen the app.'
+    },
+    {
+      category: 'App',
+      q: 'How do I uninstall the app?',
+      a: '<strong>iPhone:</strong> Touch and hold the Glo\'s Creations icon → tap "Remove App" → tap "Delete from Home Screen."<br><br>' +
+         '<strong>Android:</strong> Touch and hold the Glo\'s Creations icon → tap "Uninstall" or drag to "Remove" → confirm.<br><br>' +
+         'Uninstalling clears all locally cached data. You can reinstall anytime from gloscreations316.com.'
+    },
+    {
+      category: 'App',
+      q: 'Will the app use my data or storage?',
+      a: 'A small amount of storage (typically under 5 MB) is used to cache pages for offline access and faster loading. The app does not run in the background, does not use mobile data when closed, and does not send notifications unless you allow them. We do not collect any data through the app that we don\'t collect through the website.'
+    },
+    {
+      category: 'App',
+      q: 'Does the virtual try-on work in the app?',
+      a: 'Yes! The virtual try-on feature works the same way in the app as on the website. When you tap "Virtual Try-On" on a product, your phone will ask for camera permission. All facial detection happens locally on your device — nothing is sent to our servers. See our <a href="#" onclick="closeFaq();openPolicy(\'privacy\');return false;">Privacy Policy</a> for full details.'
+    },
+    {
+      category: 'App',
+      q: 'Can I use the app offline?',
+      a: 'Partially. Once you\'ve visited the site or opened the app online, key pages are cached so you can browse them offline. However, you\'ll need an internet connection to: place orders, see live inventory, fetch new products, use live chat, or use the virtual try-on. The cached version is great for showing pieces to friends when you\'re out and about without WiFi.'
+    },
+    {
+      category: 'App',
+      q: 'I installed the app but it\'s showing an old logo or design. How do I fix it?',
+      a: '<strong>iPhone:</strong> Delete the app, then reinstall it from Safari following the install steps above.<br><br>' +
+         '<strong>Android:</strong> Long-press the app and tap "Uninstall." Then open Chrome → tap the three-dot menu → Settings → Privacy and Security → Clear browsing data → check "Cached images and files" → Clear data. Then reinstall the app.<br><br>' +
+         'This forces your phone to grab the latest version. If problems persist, contact us at <a href="mailto:sales@gloscreations316.com">sales@gloscreations316.com</a>.'
+    },
+    {
+      category: 'App',
+      q: 'Can I use the app on multiple devices?',
+      a: 'Yes! Install the app on as many phones, tablets, or computers as you\'d like — there\'s no device limit. Your account, wishlist, and cart sync when you\'re signed into your Glo\'s Creations customer account.'
+    },
+    {
+      category: 'App',
+      q: 'Why doesn\'t the install button appear on my phone?',
+      a: 'A few reasons this can happen:<br>' +
+         '• <strong>Already installed</strong> — check your home screen first<br>' +
+         '• <strong>iPhone:</strong> install is only available in Safari (not Chrome, Firefox, or other browsers on iOS)<br>' +
+         '• <strong>Android:</strong> install works best in Chrome, Edge, or Samsung Internet<br>' +
+         '• <strong>Previously dismissed</strong> — try clearing browser data and revisiting the site<br>' +
+         '• <strong>Older browser</strong> — make sure your browser is up to date<br><br>' +
+         'On any device, you can always reach the manual install instructions by scrolling to the "Get the App" section at the bottom of our homepage.'
     }
   ];
 
@@ -7368,6 +7609,317 @@
     letter-spacing: 0.05em;
     transition: transform 0.15s, background 0.15s, box-shadow 0.15s;
   }
+
+  /* Glo's AI Assistant Bot */
+  .bot-new-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #c4995a 0%, #a87c3f 100%);
+    color: white;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .glo-bot-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 10000050;
+    align-items: flex-end;
+    justify-content: flex-end;
+    padding: 24px;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  .glo-bot-overlay.open { display: flex; }
+  .glo-bot-window {
+    width: 380px;
+    max-width: 100%;
+    height: 600px;
+    max-height: 90vh;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: botSlideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes botSlideUp {
+    from { opacity: 0; transform: translateY(40px) scale(0.94); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .glo-bot-header {
+    background: linear-gradient(135deg, #1c1917 0%, #44403c 100%);
+    color: white;
+    padding: 18px 18px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .glo-bot-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  .glo-bot-avatar svg {
+    width: 22px;
+    height: 22px;
+    stroke: white;
+    fill: none;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+  }
+  .glo-bot-header-text { flex: 1; }
+  .glo-bot-header-text h4 {
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 400;
+    margin: 0 0 2px;
+  }
+  .glo-bot-header-text p {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: rgba(255,255,255,0.65);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .glo-bot-online-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #4ade80;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  .glo-bot-close {
+    background: rgba(255,255,255,0.1);
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+  }
+  .glo-bot-close:hover { background: rgba(255,255,255,0.2); }
+  .glo-bot-close svg {
+    width: 14px;
+    height: 14px;
+    stroke: white;
+    fill: none;
+    stroke-width: 2;
+  }
+  .glo-bot-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 18px 16px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: var(--stone-50);
+  }
+  .glo-bot-msg {
+    max-width: 85%;
+    padding: 10px 14px;
+    border-radius: 16px;
+    font-family: var(--font-body);
+    font-size: 13px;
+    line-height: 1.5;
+    animation: msgIn 0.3s ease;
+  }
+  @keyframes msgIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .glo-bot-msg.bot {
+    align-self: flex-start;
+    background: white;
+    color: var(--stone-800);
+    border: 1px solid var(--stone-200);
+    border-bottom-left-radius: 4px;
+  }
+  .glo-bot-msg.user {
+    align-self: flex-end;
+    background: var(--stone-900);
+    color: white;
+    border-bottom-right-radius: 4px;
+  }
+  .glo-bot-msg a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  .glo-bot-msg.bot a { color: #c4995a; }
+  .glo-bot-msg-products {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .glo-bot-product-card {
+    background: white;
+    border: 1px solid var(--stone-200);
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .glo-bot-product-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.1);
+  }
+  .glo-bot-product-card img {
+    width: 100%;
+    aspect-ratio: 1/1;
+    object-fit: cover;
+  }
+  .glo-bot-product-card-info {
+    padding: 8px 10px;
+  }
+  .glo-bot-product-card-name {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--stone-800);
+    line-height: 1.3;
+    margin: 0 0 3px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .glo-bot-product-card-price {
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--stone-900);
+    margin: 0;
+  }
+  .glo-bot-typing {
+    align-self: flex-start;
+    display: flex;
+    gap: 4px;
+    padding: 12px 14px;
+    background: white;
+    border: 1px solid var(--stone-200);
+    border-radius: 16px;
+    border-bottom-left-radius: 4px;
+  }
+  .glo-bot-typing span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--stone-400);
+    animation: typing 1.4s ease-in-out infinite;
+  }
+  .glo-bot-typing span:nth-child(2) { animation-delay: 0.15s; }
+  .glo-bot-typing span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes typing {
+    0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+    30% { opacity: 1; transform: translateY(-4px); }
+  }
+  .glo-bot-quick-prompts {
+    padding: 8px 14px 12px;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    background: white;
+    border-top: 1px solid var(--stone-200);
+    flex-shrink: 0;
+    scrollbar-width: none;
+  }
+  .glo-bot-quick-prompts::-webkit-scrollbar { display: none; }
+  .glo-bot-prompt {
+    flex-shrink: 0;
+    background: var(--stone-100);
+    color: var(--stone-700);
+    border: 1px solid var(--stone-200);
+    border-radius: 14px;
+    padding: 6px 12px;
+    font-family: var(--font-body);
+    font-size: 11px;
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+  }
+  .glo-bot-prompt:hover { background: var(--stone-200); }
+  .glo-bot-input-row {
+    display: flex;
+    gap: 8px;
+    padding: 10px 14px 14px;
+    background: white;
+    border-top: 1px solid var(--stone-200);
+    flex-shrink: 0;
+  }
+  .glo-bot-input {
+    flex: 1;
+    border: 1px solid var(--stone-300);
+    border-radius: 18px;
+    padding: 10px 14px;
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--stone-900);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .glo-bot-input:focus { border-color: var(--stone-700); }
+  .glo-bot-send {
+    width: 38px;
+    height: 38px;
+    background: var(--stone-900);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, transform 0.15s;
+    flex-shrink: 0;
+  }
+  .glo-bot-send:hover { background: var(--stone-800); transform: scale(1.05); }
+  .glo-bot-send svg {
+    width: 16px;
+    height: 16px;
+    stroke: white;
+    fill: white;
+    stroke-width: 2;
+  }
+  .glo-bot-footer-note {
+    font-family: var(--font-body);
+    font-size: 10px;
+    color: var(--stone-500);
+    text-align: center;
+    padding: 0 14px 12px;
+    margin: 0;
+    background: white;
+    flex-shrink: 0;
+  }
+  .glo-bot-footer-note a {
+    color: var(--stone-700);
+    text-decoration: underline;
+  }
+
+  @media (max-width: 600px) {
+    .glo-bot-overlay { padding: 0; align-items: stretch; justify-content: stretch; }
+    .glo-bot-window { width: 100%; height: 100%; max-height: 100%; border-radius: 0; }
+  }
   .help-launcher-btn.show { display: inline-flex; }
   .help-launcher-btn:hover {
     background: #1c1917;
@@ -7572,6 +8124,41 @@
 <!-- Mobile backdrop for help menu (only shown on mobile when menu is open) -->
 <div class="help-menu-backdrop" id="help-menu-backdrop" onclick="closeHelpMenu()"></div>
 
+<!-- Glo's AI Assistant Bot -->
+<div class="glo-bot-overlay" id="glo-bot-overlay" onclick="if(event.target===this)closeGloBot()">
+  <div class="glo-bot-window">
+    <div class="glo-bot-header">
+      <div class="glo-bot-avatar">
+        <svg viewBox="0 0 24 24"><path d="M12 8V4H8"/><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M2 14h2M20 14h2M15 13v2M9 13v2"/></svg>
+      </div>
+      <div class="glo-bot-header-text">
+        <h4>Glo's Assistant</h4>
+        <p><span class="glo-bot-online-dot"></span> Always here to help</p>
+      </div>
+      <button class="glo-bot-close" onclick="closeGloBot()" aria-label="Close">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="glo-bot-messages" id="glo-bot-messages">
+      <!-- Messages get appended here dynamically -->
+    </div>
+    <div class="glo-bot-quick-prompts" id="glo-bot-quick-prompts">
+      <button class="glo-bot-prompt" onclick="askGloBot('Are these waterproof?')">Are these waterproof?</button>
+      <button class="glo-bot-prompt" onclick="askGloBot('How long until my order ships?')">Shipping time?</button>
+      <button class="glo-bot-prompt" onclick="askGloBot('Do you have green earrings?')">Green earrings?</button>
+      <button class="glo-bot-prompt" onclick="askGloBot('How do I install the app?')">Install the app</button>
+      <button class="glo-bot-prompt" onclick="askGloBot('What is your return policy?')">Return policy</button>
+    </div>
+    <form class="glo-bot-input-row" onsubmit="submitGloBotInput(event);return false;">
+      <input type="text" class="glo-bot-input" id="glo-bot-input" placeholder="Type your question..." autocomplete="off">
+      <button type="submit" class="glo-bot-send" aria-label="Send">
+        <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </form>
+    <p class="glo-bot-footer-note">Glo's Assistant searches our FAQ and products. For complex questions, <a href="#" onclick="closeGloBot();helpMenuChooseEmail();return false;">email us</a>.</p>
+  </div>
+</div>
+
 <!-- Popup menu — FAQ / Email / Live Chat -->
 <div class="help-menu" id="help-menu" role="menu">
   <div class="help-menu-header">
@@ -7579,6 +8166,15 @@
     <p>Pick the option that works best for you.</p>
   </div>
   <div class="help-menu-options">
+    <button class="help-menu-option help-menu-option-bot" role="menuitem" onclick="openGloBot()">
+      <div class="help-menu-option-icon" style="background:linear-gradient(135deg,#1c1917,#44403c);">
+        <svg viewBox="0 0 24 24" style="stroke:white;"><path d="M12 8V4H8"/><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M2 14h2M20 14h2M15 13v2M9 13v2"/></svg>
+      </div>
+      <div class="help-menu-option-text">
+        <p class="help-menu-option-title">Ask Glo's Assistant <span class="bot-new-badge">AI</span></p>
+        <p class="help-menu-option-desc">Instant answers about products & policies</p>
+      </div>
+    </button>
     <button class="help-menu-option" role="menuitem" onclick="helpMenuChooseFaq()">
       <div class="help-menu-option-icon">
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
@@ -7697,6 +8293,301 @@
     if (item) item.style.display = available ? 'flex' : 'none';
     if (launcher) launcher.classList.toggle('online', available);
     if (mobileChat) mobileChat.classList.toggle('online', available);
+  }
+
+  // ============================================
+  // Glo's AI Assistant — In-Browser Smart Bot
+  // ============================================
+  // Combines fuzzy FAQ matching + product search + smart fallbacks.
+  // No external services, no API keys, runs entirely in the browser.
+
+  var gloBotOpen = false;
+  var gloBotConversationStarted = false;
+
+  function openGloBot() {
+    closeHelpMenu();
+    var overlay = document.getElementById('glo-bot-overlay');
+    if (!overlay) return;
+    overlay.classList.add('open');
+    gloBotOpen = true;
+    if (typeof trackEvent === 'function') trackEvent('glo_bot_open', {});
+    if (!gloBotConversationStarted) {
+      // Greet the user the first time
+      setTimeout(function() {
+        addGloBotMessage('bot', "Hi! I'm Glo's Assistant ✨ I can help you find products, answer questions about shipping, materials, the app, and more. What can I help you with today?");
+        gloBotConversationStarted = true;
+      }, 300);
+    }
+    // Focus the input shortly after open animation
+    setTimeout(function() {
+      var input = document.getElementById('glo-bot-input');
+      if (input) input.focus();
+    }, 400);
+  }
+
+  function closeGloBot() {
+    var overlay = document.getElementById('glo-bot-overlay');
+    if (overlay) overlay.classList.remove('open');
+    gloBotOpen = false;
+  }
+
+  function submitGloBotInput(e) {
+    if (e) e.preventDefault();
+    var input = document.getElementById('glo-bot-input');
+    if (!input) return;
+    var question = input.value.trim();
+    if (!question) return;
+    input.value = '';
+    askGloBot(question);
+  }
+
+  function askGloBot(question) {
+    addGloBotMessage('user', question);
+    if (typeof trackEvent === 'function') trackEvent('glo_bot_question', { question: question.substring(0, 100) });
+    showGloBotTyping();
+    // Simulate a brief thinking delay for natural feel
+    setTimeout(function() {
+      var response = generateGloBotResponse(question);
+      // If our smart matcher returned a "not sure" fallback, try real AI instead
+      if (response.fallback === true) {
+        callGloBotAI(question);
+      } else {
+        hideGloBotTyping();
+        addGloBotMessage('bot', response.text, response.products);
+      }
+    }, 600 + Math.random() * 600);
+  }
+
+  // Call the AI proxy when the smart matcher couldn't find a confident answer
+  function callGloBotAI(question) {
+    if (typeof trackEvent === 'function') trackEvent('glo_bot_ai_fallback', { question: question.substring(0, 100) });
+    fetch('/api/glo-bot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: question })
+    })
+    .then(function(res) {
+      return res.json().then(function(data) {
+        return { ok: res.ok, data: data };
+      });
+    })
+    .then(function(result) {
+      hideGloBotTyping();
+      if (result.ok && result.data.answer) {
+        // Convert plain newlines to <br> for display
+        var answer = result.data.answer.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
+        addGloBotMessage('bot', answer);
+      } else {
+        // API error — show the friendly message from the server, or a default
+        var msg = (result.data && result.data.message) || "I'm not quite sure on that one. Please email <a href=\"mailto:sales@gloscreations316.com\">sales@gloscreations316.com</a> and Glo will help personally. 💛";
+        addGloBotMessage('bot', msg);
+      }
+    })
+    .catch(function(err) {
+      hideGloBotTyping();
+      console.error('[Glo Bot] AI fallback failed:', err);
+      addGloBotMessage('bot', "I'm having trouble thinking right now. Please email <a href=\"mailto:sales@gloscreations316.com\">sales@gloscreations316.com</a> and Glo will help you personally. 💛");
+    });
+  }
+
+  function addGloBotMessage(sender, text, productResults) {
+    var container = document.getElementById('glo-bot-messages');
+    if (!container) return;
+    var msg = document.createElement('div');
+    msg.className = 'glo-bot-msg ' + sender;
+    msg.innerHTML = text;
+    if (productResults && productResults.length > 0) {
+      var grid = document.createElement('div');
+      grid.className = 'glo-bot-msg-products';
+      for (var i = 0; i < productResults.length && i < 4; i++) {
+        var p = productResults[i];
+        var card = document.createElement('div');
+        card.className = 'glo-bot-product-card';
+        card.onclick = (function(idx) {
+          return function() {
+            closeGloBot();
+            openModal(idx);
+            if (typeof trackEvent === 'function') trackEvent('glo_bot_product_click', { product_name: products[idx].name });
+          };
+        })(p.index);
+        card.innerHTML = '<img src="' + p.image + '" alt="' + p.name.replace(/"/g, '&quot;') + '"><div class="glo-bot-product-card-info"><p class="glo-bot-product-card-name">' + p.name + '</p><p class="glo-bot-product-card-price">$' + p.price + '</p></div>';
+        grid.appendChild(card);
+      }
+      msg.appendChild(grid);
+    }
+    container.appendChild(msg);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function showGloBotTyping() {
+    var container = document.getElementById('glo-bot-messages');
+    if (!container) return;
+    var typing = document.createElement('div');
+    typing.className = 'glo-bot-typing';
+    typing.id = 'glo-bot-typing-indicator';
+    typing.innerHTML = '<span></span><span></span><span></span>';
+    container.appendChild(typing);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function hideGloBotTyping() {
+    var typing = document.getElementById('glo-bot-typing-indicator');
+    if (typing) typing.remove();
+  }
+
+  // The "brain" — figures out the best response by scoring intent
+  function generateGloBotResponse(question) {
+    var lower = question.toLowerCase().trim();
+    var words = lower.split(/[\s,?!.]+/).filter(function(w) { return w.length > 1; });
+
+    // Quick greetings
+    if (/^(hi|hello|hey|yo|sup|hola)\b/i.test(lower)) {
+      return { text: "Hi there! 👋 I can answer questions about products, shipping, materials, our app, and more. What would you like to know?", products: null };
+    }
+    if (/^(thanks|thank you|thx|ty)\b/i.test(lower)) {
+      return { text: "You're welcome! Anything else I can help with? 💛", products: null };
+    }
+    if (/^(bye|goodbye|see ya|later)\b/i.test(lower)) {
+      return { text: "Take care! Come back anytime. ✨", products: null };
+    }
+
+    // Try product search first if it looks like a product/style query
+    var productKeywords = ['earring', 'jewelry', 'necklace', 'piece', 'product', 'style', 'color', 'green', 'blue', 'pink', 'red', 'yellow', 'orange', 'purple', 'black', 'white', 'gold', 'silver', 'flower', 'daisy', 'bee', 'heart', 'star', 'cross', 'leaf', 'bow', 'butterfly', 'mushroom', 'cherry', 'show', 'find', 'see', 'looking for', 'want', 'have', 'available', 'sell'];
+    var isProductQuery = productKeywords.some(function(kw) { return lower.indexOf(kw) !== -1; });
+
+    if (isProductQuery) {
+      var matches = searchProducts(lower);
+      if (matches.length > 0) {
+        var prefix = "Here's what I found that matches:";
+        if (matches.length === 1) prefix = "Here's the piece I found:";
+        return { text: prefix, products: matches };
+      } else if (lower.indexOf('green') !== -1 || lower.indexOf('blue') !== -1 || lower.indexOf('pink') !== -1 || lower.indexOf('red') !== -1 || lower.indexOf('yellow') !== -1 || lower.indexOf('purple') !== -1) {
+        return { text: "I couldn't find any pieces matching that description right now. New collections drop regularly — follow us on <a href=\"https://instagram.com/gloscreations31_6\" target=\"_blank\">Instagram</a> for first looks! Want me to <a href=\"#\" onclick=\"closeGloBot();document.querySelector('.shop-grid')?.scrollIntoView({behavior:'smooth'});return false;\">show all current pieces</a>?", products: null };
+      }
+    }
+
+    // Try FAQ matching
+    var faqMatch = findBestFaqMatch(lower, words);
+    if (faqMatch && faqMatch.score >= 2) {
+      var answer = faqMatch.faq.a;
+      // Strip HTML tags for clean message but keep links
+      return { text: answer, products: null };
+    }
+
+    // Special intents
+    if (lower.indexOf('contact') !== -1 || lower.indexOf('email') !== -1 || lower.indexOf('reach') !== -1) {
+      return { text: "You can reach Glo directly at <a href=\"mailto:sales@gloscreations316.com\">sales@gloscreations316.com</a> — typical reply is within 24 hours. 💌", products: null };
+    }
+    if (lower.indexOf('chat') !== -1 || lower.indexOf('live') !== -1 || lower.indexOf('talk to') !== -1 || lower.indexOf('human') !== -1 || lower.indexOf('person') !== -1) {
+      return { text: "If you'd like to talk to a human, you can <a href=\"#\" onclick=\"closeGloBot();helpMenuChooseEmail();return false;\">email us</a> or check if Glo's available for live chat (look for the green 'LIVE CHAT' badge in the menu). 💛", products: null };
+    }
+    if (lower.indexOf('account') !== -1 || lower.indexOf('login') !== -1 || lower.indexOf('sign in') !== -1) {
+      return { text: "You can sign in or create an account using the person icon in the top right. Your account saves your wishlist, addresses, and order history.", products: null };
+    }
+    if (lower.indexOf('wishlist') !== -1 || lower.indexOf('save') !== -1 || lower.indexOf('favorites') !== -1) {
+      return { text: "Tap the heart icon on any product to save it to your wishlist. Access your wishlist anytime from the heart icon in the navigation. 💛", products: null };
+    }
+    if (lower.indexOf('try') !== -1 && lower.indexOf('on') !== -1) {
+      return { text: "Our Virtual Try-On lets you see earrings on your face right from your phone! Open any earring product page and tap '✨ Virtual Try-On' to start. Your camera stays private — face detection happens entirely on your device.", products: null };
+    }
+    if (lower.indexOf('discount') !== -1 || lower.indexOf('coupon') !== -1 || lower.indexOf('sale') !== -1 || lower.indexOf('promo') !== -1) {
+      return { text: "We don't currently have any promo codes running, but follow us on <a href=\"https://instagram.com/gloscreations31_6\" target=\"_blank\">Instagram</a> for sale announcements and exclusive previews! 💛", products: null };
+    }
+
+    // Final fallback — flag this so the caller knows to try real AI
+    return {
+      text: "",
+      products: null,
+      fallback: true
+    };
+  }
+
+  // Search FAQ entries — returns the highest-scoring match
+  function findBestFaqMatch(lower, words) {
+    if (typeof faqData === 'undefined' || !faqData.length) return null;
+    var bestMatch = null;
+    var bestScore = 0;
+    for (var i = 0; i < faqData.length; i++) {
+      var faq = faqData[i];
+      var score = 0;
+      var qLower = faq.q.toLowerCase();
+      var aLower = (faq.a || '').toLowerCase();
+
+      // Direct substring match in question = strong signal
+      if (qLower.indexOf(lower) !== -1) score += 5;
+
+      // Word matches in question = 2 pts each
+      for (var w = 0; w < words.length; w++) {
+        if (qLower.indexOf(words[w]) !== -1) score += 2;
+        if (aLower.indexOf(words[w]) !== -1) score += 1;
+      }
+
+      // Specific high-value keyword boosts
+      var hotWords = {
+        'waterproof': ['waterproof', 'water', 'shower', 'swim', 'wet'],
+        'shipping': ['ship', 'delivery', 'when', 'how long', 'arrive', 'fast'],
+        'allergic': ['allerg', 'sensitive', 'reaction', 'itch', 'hypoallergenic'],
+        'return': ['return', 'refund', 'exchange', 'money back'],
+        'care': ['care', 'clean', 'wash', 'maintain', 'store'],
+        'custom': ['custom', 'personalize', 'special order', 'request'],
+        'install': ['install', 'download', 'app', 'add to home', 'home screen'],
+        'iphone': ['iphone', 'ios', 'apple', 'safari'],
+        'android': ['android', 'chrome', 'samsung', 'pixel', 'google play'],
+        'meaning': ['meaning', '3:16', '316', 'deuteronomy', 'name', 'why']
+      };
+      for (var hot in hotWords) {
+        if (qLower.indexOf(hot) !== -1 || aLower.indexOf(hot) !== -1) {
+          for (var k = 0; k < hotWords[hot].length; k++) {
+            if (lower.indexOf(hotWords[hot][k]) !== -1) score += 3;
+          }
+        }
+      }
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = faq;
+      }
+    }
+    return bestMatch ? { faq: bestMatch, score: bestScore } : null;
+  }
+
+  // Search products — returns matching products with their original index
+  function searchProducts(lower) {
+    if (typeof products === 'undefined' || !products.length) return [];
+    var matches = [];
+    var words = lower.split(/[\s,?!.]+/).filter(function(w) { return w.length > 2; });
+
+    for (var i = 0; i < products.length; i++) {
+      var p = products[i];
+      if (!p || !p.name) continue;
+      var name = (p.name || '').toLowerCase();
+      var desc = (p.description || '').toLowerCase();
+      var cat = (p.category || '').toLowerCase();
+      var score = 0;
+
+      for (var w = 0; w < words.length; w++) {
+        var word = words[w];
+        // Skip generic words
+        if (['have', 'show', 'find', 'want', 'any', 'available', 'sell', 'pair', 'piece', 'pieces', 'look', 'looking', 'need', 'one', 'some', 'thing', 'things', 'jewelry', 'earrings', 'product', 'products'].indexOf(word) !== -1) continue;
+        if (name.indexOf(word) !== -1) score += 5;
+        if (desc.indexOf(word) !== -1) score += 2;
+        if (cat.indexOf(word) !== -1) score += 1;
+      }
+
+      if (score > 0) {
+        matches.push({
+          index: i,
+          name: p.name,
+          image: p.image,
+          price: p.price,
+          score: score
+        });
+      }
+    }
+
+    // Sort by score, return top 4
+    matches.sort(function(a, b) { return b.score - a.score; });
+    return matches.slice(0, 4);
   }
 
   function helpMenuChooseFaq() {
