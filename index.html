@@ -1662,6 +1662,170 @@
   .addr-actions button:hover { color: var(--stone-900); }
 
   /* Virtual Try-On */
+  /* Try-On Consent Modal */
+  .tryon-consent-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 10000020;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .tryon-consent-overlay.open { display: flex; }
+  .tryon-consent-modal {
+    background: white;
+    border-radius: 18px;
+    max-width: 460px;
+    width: 100%;
+    padding: 32px 28px 24px;
+    max-height: 92vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.3);
+    animation: modalIn 0.3s ease;
+  }
+  .tryon-consent-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--stone-100);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .tryon-consent-close:hover { background: var(--stone-200); }
+  .tryon-consent-close svg {
+    width: 14px;
+    height: 14px;
+    stroke: var(--stone-700);
+    fill: none;
+    stroke-width: 2;
+  }
+  .tryon-consent-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #1c1917 0%, #44403c 100%);
+    margin: 0 auto 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 22px rgba(28,25,23,0.25);
+  }
+  .tryon-consent-title {
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 300;
+    text-align: center;
+    color: var(--stone-900);
+    margin-bottom: 6px;
+  }
+  .tryon-consent-title em { font-style: italic; }
+  .tryon-consent-subtitle {
+    font-family: var(--font-body);
+    font-size: 13px;
+    text-align: center;
+    color: var(--stone-500);
+    margin-bottom: 22px;
+  }
+  .tryon-consent-points {
+    background: var(--stone-50);
+    border-radius: 14px;
+    padding: 18px 16px;
+    margin-bottom: 18px;
+    border: 1px solid var(--stone-200);
+  }
+  .tryon-consent-point {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin-bottom: 14px;
+  }
+  .tryon-consent-point:last-child { margin-bottom: 0; }
+  .tryon-consent-bullet {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    background: white;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    border: 1px solid var(--stone-200);
+  }
+  .tryon-consent-point strong {
+    display: block;
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--stone-900);
+    margin-bottom: 2px;
+    font-weight: 500;
+  }
+  .tryon-consent-point p {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--stone-600);
+    line-height: 1.5;
+    margin: 0;
+  }
+  .tryon-consent-footnote {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--stone-500);
+    line-height: 1.6;
+    text-align: center;
+    margin-bottom: 18px;
+  }
+  .tryon-consent-footnote a {
+    color: var(--stone-700);
+    text-decoration: underline;
+  }
+  .tryon-consent-actions {
+    display: flex;
+    gap: 10px;
+  }
+  .tryon-consent-decline,
+  .tryon-consent-accept {
+    flex: 1;
+    padding: 13px 16px;
+    border-radius: 10px;
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    border: none;
+  }
+  .tryon-consent-decline {
+    background: var(--stone-100);
+    color: var(--stone-700);
+    border: 1px solid var(--stone-200);
+  }
+  .tryon-consent-decline:hover { background: var(--stone-200); }
+  .tryon-consent-accept {
+    background: var(--stone-900);
+    color: white;
+  }
+  .tryon-consent-accept:hover { background: #2a2521; transform: translateY(-1px); }
+  @media (max-width: 600px) {
+    .tryon-consent-modal { padding: 26px 20px 20px; }
+    .tryon-consent-title { font-size: 22px; }
+    .tryon-consent-actions { flex-direction: column-reverse; }
+  }
+
   .tryon-overlay {
     display: none;
     position: fixed;
@@ -3177,6 +3341,61 @@
 </div>
 
 <!-- Virtual Try-On Modal -->
+<!-- Try-On Consent Modal -->
+<div class="tryon-consent-overlay" id="tryon-consent-overlay" onclick="if(event.target===this)closeTryonConsent()">
+  <div class="tryon-consent-modal">
+    <button class="tryon-consent-close" onclick="closeTryonConsent()" aria-label="Close">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="tryon-consent-icon">
+      <svg viewBox="0 0 24 24" style="width:32px;height:32px;stroke:white;fill:none;stroke-width:1.8;">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+    </div>
+    <h3 class="tryon-consent-title">Before You <em>Try On</em></h3>
+    <p class="tryon-consent-subtitle">Please review how Virtual Try-On works.</p>
+
+    <div class="tryon-consent-points">
+      <div class="tryon-consent-point">
+        <span class="tryon-consent-bullet">📷</span>
+        <div>
+          <strong>Camera Access Required</strong>
+          <p>We\'ll ask your browser for camera permission to overlay earrings on your face.</p>
+        </div>
+      </div>
+      <div class="tryon-consent-point">
+        <span class="tryon-consent-bullet">🔒</span>
+        <div>
+          <strong>Nothing Leaves Your Device</strong>
+          <p>Face detection happens entirely in your browser. We do not collect, store, or transmit your camera feed, photos, or any facial data.</p>
+        </div>
+      </div>
+      <div class="tryon-consent-point">
+        <span class="tryon-consent-bullet">✨</span>
+        <div>
+          <strong>Just a Preview</strong>
+          <p>The Try-On is a visualization aid — not an exact representation of size, fit, or color. Final purchase decisions should not be based solely on this preview.</p>
+        </div>
+      </div>
+      <div class="tryon-consent-point">
+        <span class="tryon-consent-bullet">💾</span>
+        <div>
+          <strong>Saved Images Stay With You</strong>
+          <p>If you save a Try-On photo, it\'s created and stored on your device only. You\'re responsible for how you use or share it.</p>
+        </div>
+      </div>
+    </div>
+
+    <p class="tryon-consent-footnote">By continuing, you agree to our <a href="#" onclick="closeTryonConsent();openPolicy(\'terms\');return false;">Terms of Service</a> and <a href="#" onclick="closeTryonConsent();openPolicy(\'privacy\');return false;">Privacy Policy</a>. Children under 13 should not use this feature; users under 18 should have parental supervision.</p>
+
+    <div class="tryon-consent-actions">
+      <button class="tryon-consent-decline" onclick="declineTryonConsent()">No Thanks</button>
+      <button class="tryon-consent-accept" onclick="acceptTryonConsent()">I Understand — Continue</button>
+    </div>
+  </div>
+</div>
+
 <div class="tryon-overlay" id="tryon-overlay" onclick="if(event.target===this)closeTryon()">
   <div class="tryon-modal">
     <div class="tryon-header">
@@ -5234,6 +5453,7 @@
       closeLoginModal();
       closePolicy();
       closeLightbox();
+      closeTryonConsent();
       if (document.getElementById('cart-drawer').classList.contains('open')) toggleCart();
     }
   });
@@ -5744,22 +5964,52 @@
     privacy: {
       title: 'Privacy Policy',
       content: '<p><strong>Last Updated: May 2026</strong></p>' +
-        '<p>Glo\'s Creations 3:16 ("we," "us," or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website gloscreations316.com and make purchases from our store.</p>' +
+        '<p>Glo\'s Creations 3:16 ("we," "us," or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website gloscreations316.com (including when installed as a Progressive Web App on your device) and make purchases from our store.</p>' +
         '<h4>Information We Collect</h4>' +
         '<p><strong>Personal Information:</strong> When you make a purchase or create an account, we may collect your name, email address, shipping address, billing address, phone number, and payment information. Payment card details are processed securely by Shopify Payments and are never stored on our servers.</p>' +
-        '<p><strong>Automatically Collected Information:</strong> We may collect information about your device, browser type, IP address, and browsing behavior on our site through cookies and similar technologies.</p>' +
+        '<p><strong>Automatically Collected Information:</strong> We may collect information about your device, browser type, IP address, and browsing behavior on our site through cookies and similar technologies. This includes interaction events such as product views, cart actions, search queries, and page navigation patterns.</p>' +
+        '<p><strong>Locally Stored Data:</strong> We use your browser\'s local storage to save your wishlist, cart contents, cookie preferences, and certain user interface preferences. This data stays on your device and is not transmitted to us unless you explicitly take an action (such as adding to cart or checking out).</p>' +
+        '<p><strong>Virtual Try-On Data:</strong> Our Virtual Try-On feature uses your device\'s camera and on-device facial landmark detection (powered by Google\'s MediaPipe technology). All facial detection happens locally in your web browser. We do not collect, store, transmit, or have access to your camera feed, photos, or any biometric/facial geometry data. If you choose to save or download a try-on image, that file is created and stored on your device only. Use of the Virtual Try-On feature is entirely optional and requires your explicit consent each time you use it. See "Virtual Try-On Disclosure" below for more detail.</p>' +
+        '<h4>Virtual Try-On Disclosure</h4>' +
+        '<p>The Virtual Try-On feature requires camera access. When you use this feature:</p>' +
+        '<ul style="margin:8px 0 12px 20px;">' +
+          '<li>Your browser asks for camera permission, which you may grant or deny</li>' +
+          '<li>Facial landmark detection runs entirely on your device (no facial data leaves your device)</li>' +
+          '<li>We do not record, capture, transmit, or store images, video, or facial geometry from your camera</li>' +
+          '<li>Camera access ends as soon as you close the try-on feature</li>' +
+          '<li>You may revoke camera permission at any time through your browser settings</li>' +
+        '</ul>' +
+        '<p>We make no representation that the Virtual Try-On accurately depicts how a product will appear in real life. The feature is provided for entertainment and visualization purposes only.</p>' +
         '<h4>How We Use Your Information</h4>' +
         '<p>We use the information we collect to: process and fulfill your orders; communicate with you about your orders, products, and promotions; improve our website and customer experience; comply with legal obligations; and prevent fraud.</p>' +
-        '<h4>Information Sharing</h4>' +
-        '<p>We do not sell, trade, or rent your personal information to third parties. We may share your information with: Shopify (our e-commerce platform provider); shipping carriers to deliver your orders; payment processors to process transactions; Google Analytics for website usage analytics (anonymized); and law enforcement if required by law.</p>' +
+        '<h4>Information Sharing & Third-Party Services</h4>' +
+        '<p>We do not sell, trade, or rent your personal information to third parties. We use the following third-party services that may process limited information about your visit:</p>' +
+        '<ul style="margin:8px 0 12px 20px;">' +
+          '<li><strong>Shopify</strong> — our e-commerce and payment processing platform</li>' +
+          '<li><strong>Shipping carriers</strong> — to deliver your orders</li>' +
+          '<li><strong>Google Analytics 4</strong> — for anonymized website usage analytics (with consent)</li>' +
+          '<li><strong>Tawk.to</strong> — our live chat platform; conversations are stored on Tawk.to\'s servers and may be reviewed by Tawk.to staff for service quality. Do not share sensitive information such as payment card numbers in chat.</li>' +
+          '<li><strong>Judge.me</strong> — our customer review platform; reviews you submit are stored by Judge.me and displayed publicly on our site</li>' +
+          '<li><strong>Instagram (Meta)</strong> — when you view embedded Instagram content, Meta may collect data about your interaction per their privacy policy</li>' +
+          '<li><strong>Vercel</strong> — our website hosting provider</li>' +
+          '<li><strong>GitHub</strong> — hosts certain images and assets</li>' +
+          '<li><strong>Law enforcement</strong> — if required by law</li>' +
+        '</ul>' +
+        '<h4>Live Chat Notice</h4>' +
+        '<p>Our live chat feature is provided by Tawk.to. By initiating a chat, you acknowledge that the conversation is recorded and stored on Tawk.to\'s servers. Please do not share sensitive personal information (credit card numbers, social security numbers, passwords, etc.) through chat.</p>' +
+        '<h4>Progressive Web App (PWA) Notice</h4>' +
+        '<p>Our website may be installed on your device as a Progressive Web App (PWA). When installed, the app uses a service worker to cache certain content for offline use and faster performance. This cached data is stored on your device only and is not transmitted to us. You can clear cached data at any time through your browser settings or by uninstalling the app from your home screen.</p>' +
         '<h4>Data Security</h4>' +
         '<p>We implement appropriate technical and organizational measures to protect your personal information. All transactions are processed through Shopify\'s secure, PCI-compliant payment system. However, no method of transmission over the Internet is 100% secure, and we cannot guarantee absolute security.</p>' +
-        '<h4>Cookies</h4>' +
-        '<p>Our website uses cookies and similar technologies to enhance your browsing experience, analyze site traffic, and personalize content. You can control cookie settings through your browser preferences.</p>' +
+        '<h4>Cookies & Consent</h4>' +
+        '<p>Our website uses cookies and similar technologies to enhance your browsing experience, analyze site traffic, and personalize content. We use a cookie consent banner to obtain your consent for non-essential cookies (such as analytics). You can control cookie settings through your browser preferences and revoke consent at any time.</p>' +
         '<h4>Your Rights</h4>' +
-        '<p>You have the right to: access the personal information we hold about you; request correction of inaccurate information; request deletion of your information (subject to legal obligations); opt out of marketing communications at any time.</p>' +
+        '<p>You have the right to: access the personal information we hold about you; request correction of inaccurate information; request deletion of your information (subject to legal obligations); opt out of marketing communications at any time; revoke consent for non-essential cookies and tracking. To exercise these rights, contact us at the email below.</p>' +
+        '<p><strong>California Residents (CCPA):</strong> California residents have additional rights including the right to know what personal information is collected, the right to delete personal information, and the right to opt out of the sale of personal information. We do not sell personal information.</p>' +
+        '<h4>Biometric Information Notice</h4>' +
+        '<p>The Virtual Try-On feature uses real-time facial landmark detection that runs entirely on your device. We do not collect, store, share, sell, or transmit any biometric identifiers, facial geometry, or facial recognition data. No facial data is sent to our servers or any third party at any time. This notice is provided in accordance with applicable biometric privacy laws including the Illinois Biometric Information Privacy Act (BIPA), Texas Capture or Use of Biometric Identifier Act (CUBI), and the Washington Biometric Privacy Act, even though we believe these laws may not apply to fully on-device processing.</p>' +
         '<h4>Children\'s Privacy</h4>' +
-        '<p>Our website is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13.</p>' +
+        '<p>Our website is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13. The Virtual Try-On feature should not be used by children without parental supervision.</p>' +
         '<h4>Changes to This Policy</h4>' +
         '<p>We may update this Privacy Policy from time to time. Changes will be posted on this page with an updated revision date.</p>' +
         '<h4>Contact Us</h4>' +
@@ -5768,25 +6018,57 @@
     terms: {
       title: 'Terms of Service',
       content: '<p><strong>Last Updated: May 2026</strong></p>' +
-        '<p>Welcome to Glo\'s Creations 3:16. By accessing or using our website gloscreations316.com, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our website.</p>' +
+        '<p>Welcome to Glo\'s Creations 3:16. By accessing or using our website gloscreations316.com (including the installable Progressive Web App version) or any of its features, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our website.</p>' +
         '<h4>General Conditions</h4>' +
-        '<p>We reserve the right to refuse service to anyone for any reason at any time. Prices for our products are subject to change without notice. We reserve the right to modify or discontinue any product at any time without notice.</p>' +
+        '<p>We reserve the right to refuse service to anyone for any reason at any time. Prices for our products are subject to change without notice. We reserve the right to modify or discontinue any product, feature, or service (including the Virtual Try-On, live chat, or PWA functionality) at any time without notice.</p>' +
         '<h4>Accuracy of Information</h4>' +
         '<p>We make every effort to display our products as accurately as possible. However, due to variations in photography, screen displays, and the handmade nature of our products, actual colors, textures, and dimensions may vary slightly from what is shown on the website. Each piece of polymer clay jewelry is handcrafted individually, making every item unique. Minor variations in color, pattern, and size are inherent to handmade products and are not considered defects.</p>' +
         '<h4>Products & Pricing</h4>' +
         '<p>All products are handmade polymer clay jewelry. Prices are listed in US Dollars (USD) and are subject to change without prior notice. We are not responsible for typographical errors in pricing. In the event of a pricing error, we reserve the right to cancel the order and notify you of the error.</p>' +
         '<h4>Orders & Payment</h4>' +
         '<p>By placing an order, you represent that the information you provide is accurate and that you are authorized to use the payment method provided. We reserve the right to refuse or cancel any order for any reason, including suspected fraud, unauthorized transactions, or product availability issues. All payments are processed securely through Shopify Payments.</p>' +
+        '<h4>Virtual Try-On Feature</h4>' +
+        '<p>Our website offers a Virtual Try-On feature that uses your device\'s camera and on-device facial detection technology to overlay product images onto your face for visualization purposes. By using this feature, you acknowledge and agree that:</p>' +
+        '<ul style="margin:8px 0 12px 20px;">' +
+          '<li>The Virtual Try-On is a visualization aid only and does not represent the actual appearance, fit, size, weight, or quality of the physical product when worn</li>' +
+          '<li>You are responsible for granting and revoking camera access through your browser</li>' +
+          '<li>The feature requires good lighting, a clear view of your face, and may not work on all devices, browsers, or with all hairstyles, glasses, or coverings</li>' +
+          '<li>We make no warranty regarding the accuracy, sizing, color rendering, or appearance shown by the Virtual Try-On</li>' +
+          '<li>Final purchase decisions should not be made solely based on the Virtual Try-On preview</li>' +
+          '<li>Any image you save or capture using the Virtual Try-On is created entirely on your device, and you are solely responsible for how you use, store, share, or distribute such images</li>' +
+          '<li>You will not use the Virtual Try-On feature in any unlawful manner or to create content that violates the rights of others</li>' +
+          '<li>Children under 13 should not use this feature; users under 18 should have parental supervision</li>' +
+        '</ul>' +
+        '<p>We disclaim all liability for any decisions made, dissatisfaction with purchased products, or any other consequences arising from your use of the Virtual Try-On feature.</p>' +
+        '<h4>Live Chat</h4>' +
+        '<p>Live chat is provided through Tawk.to. Conversations are recorded and stored on Tawk.to\'s servers. We endeavor to respond promptly during business hours but make no guarantee of response time. Do not share sensitive personal or financial information in chat (such as credit card numbers or passwords). Misuse of the chat feature, including abusive language or spam, may result in being blocked.</p>' +
+        '<h4>Progressive Web App ("App") Disclaimer</h4>' +
+        '<p>Our website may be installed on your device as a Progressive Web App (PWA) through your browser\'s "Add to Home Screen" or "Install" feature. This is a web application — not a native application distributed through Apple\'s App Store or Google Play Store. By installing the PWA, you acknowledge that:</p>' +
+        '<ul style="margin:8px 0 12px 20px;">' +
+          '<li>The "app" is the same website running in a standalone window</li>' +
+          '<li>It requires an internet connection for most functionality (some content may be available offline through cached data)</li>' +
+          '<li>Updates are delivered automatically when you have internet access — there is no separate update process</li>' +
+          '<li>The PWA is not affiliated with, distributed by, or endorsed by Apple, Google, or any app store</li>' +
+          '<li>You can uninstall the PWA at any time by long-pressing its icon and selecting "Uninstall" or "Remove"</li>' +
+        '</ul>' +
+        '<h4>User Accounts</h4>' +
+        '<p>If you create a customer account, you are responsible for maintaining the confidentiality of your password and for all activities that occur under your account. We reserve the right to suspend or terminate accounts that violate these Terms or are inactive for extended periods. You must provide accurate and current information when creating an account.</p>' +
+        '<h4>Customer Reviews</h4>' +
+        '<p>Reviews submitted through our review system (powered by Judge.me) become publicly visible on our site and on Judge.me\'s platform. You retain ownership of your review content but grant us and Judge.me a perpetual, royalty-free license to display, reproduce, and distribute your review. We reserve the right to remove reviews that contain offensive language, false claims, spam, or content unrelated to the product. By submitting a review, you confirm that the content is your own original work and that you have purchased and used the product.</p>' +
         '<h4>Intellectual Property</h4>' +
-        '<p>All content on this website, including but not limited to text, graphics, logos, images, product designs, and photographs, is the property of Glo\'s Creations 3:16 and is protected by copyright, trademark, and other intellectual property laws. You may not reproduce, distribute, modify, or create derivative works from any content without our express written permission.</p>' +
+        '<p>All content on this website, including but not limited to text, graphics, logos, images, product designs, and photographs, is the property of Glo\'s Creations 3:16 and is protected by copyright, trademark, and other intellectual property laws. You may not reproduce, distribute, modify, or create derivative works from any content without our express written permission. Our brand name, logo, and the name "Glo\'s Creations 3:16" are trademarks of Marjoel LLC.</p>' +
+        '<h4>Acceptable Use</h4>' +
+        '<p>You agree not to: use our website or any feature for any unlawful purpose; attempt to interfere with the security or operation of our website; use automated tools (bots, scrapers, etc.) to access our site without permission; impersonate any person or entity; transmit malware or harmful code; circumvent any access controls or security features; or use the Virtual Try-On feature to create misleading, harmful, or non-consensual imagery of any third party.</p>' +
         '<h4>Limitation of Liability</h4>' +
-        '<p>To the fullest extent permitted by applicable law, Glo\'s Creations 3:16 shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to loss of profits, data, or other intangible losses, resulting from: your use or inability to use our website or products; any unauthorized access to or alteration of your personal information; any errors or omissions in any content; or any other matter relating to our website or products.</p>' +
+        '<p>To the fullest extent permitted by applicable law, Glo\'s Creations 3:16, Marjoel LLC, and its owners, officers, employees, and agents shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to loss of profits, data, or other intangible losses, resulting from: your use or inability to use our website, products, or any feature including the Virtual Try-On, live chat, or PWA; any unauthorized access to or alteration of your personal information; any errors or omissions in any content; any decisions made based on Virtual Try-On previews; or any other matter relating to our website, products, or services.</p>' +
         '<h4>Indemnification</h4>' +
-        '<p>You agree to indemnify, defend, and hold harmless Glo\'s Creations 3:16 and its owners, officers, employees, and agents from and against any claims, liabilities, damages, losses, and expenses arising out of or in any way connected with your access to or use of our website or products.</p>' +
+        '<p>You agree to indemnify, defend, and hold harmless Glo\'s Creations 3:16, Marjoel LLC, and its owners, officers, employees, and agents from and against any claims, liabilities, damages, losses, and expenses (including reasonable attorney\'s fees) arising out of or in any way connected with your access to or use of our website, products, or any feature, including any content you submit (such as reviews) or any images you create using the Virtual Try-On.</p>' +
         '<h4>Allergies & Sensitivities Disclaimer</h4>' +
         '<p>While our polymer clay jewelry is generally hypoallergenic, we cannot guarantee that our products will not cause allergic reactions or skin sensitivities in all individuals. If you have known sensitivities to jewelry materials, earring hooks, or adhesives, please review product descriptions carefully or contact us before purchasing. Glo\'s Creations 3:16 is not liable for any allergic reactions or skin irritations caused by our products.</p>' +
         '<h4>Product Safety</h4>' +
         '<p>Our products are decorative jewelry items and are not intended as toys. Small parts may present a choking hazard for children under 3 years of age. Keep jewelry out of reach of small children and pets. Our products are not intended for use in the mouth and should not be ingested.</p>' +
+        '<h4>No Warranty</h4>' +
+        '<p>Our website, products, and all features are provided on an "as is" and "as available" basis without warranties of any kind, either express or implied, including but not limited to implied warranties of merchantability, fitness for a particular purpose, or non-infringement. We do not warrant that the website or any feature (including the Virtual Try-On, live chat, or PWA) will be uninterrupted, error-free, secure, or free from viruses or other harmful components.</p>' +
         '<h4>Governing Law</h4>' +
         '<p>These Terms of Service shall be governed by and construed in accordance with the laws of the State of Georgia, United States, without regard to its conflict of law provisions. Any disputes shall be resolved in the courts of Cherokee County, Georgia.</p>' +
         '<h4>Changes to Terms</h4>' +
@@ -6162,7 +6444,27 @@
     return TRYON_EARRINGS[bestKey];
   }
 
+  // Track try-on consent for this session (sessionStorage clears on tab close)
+  function hasTryonConsent() {
+    try { return sessionStorage.getItem('gc_tryon_consent') === '1'; }
+    catch(e) { return false; }
+  }
+  function setTryonConsent() {
+    try { sessionStorage.setItem('gc_tryon_consent', '1'); } catch(e) {}
+  }
+
   function openTryon() {
+    if (!modalProduct) return;
+    // Show consent modal first if user hasn't agreed this session
+    if (!hasTryonConsent()) {
+      openTryonConsent();
+      return;
+    }
+    proceedWithTryon();
+  }
+
+  // Called after user agrees to consent (or if already agreed this session)
+  function proceedWithTryon() {
     if (!modalProduct) return;
     var earringSrc = getTryonEarringForProduct(modalProduct);
     if (!earringSrc) {
@@ -6193,6 +6495,24 @@
     tryonEarringImg.src = earringSrc;
     showUploadState();
     document.getElementById('tryon-overlay').classList.add('open');
+  }
+
+  function openTryonConsent() {
+    document.getElementById('tryon-consent-overlay').classList.add('open');
+    trackEvent('tryon_consent_shown', {});
+  }
+  function closeTryonConsent() {
+    document.getElementById('tryon-consent-overlay').classList.remove('open');
+  }
+  function acceptTryonConsent() {
+    setTryonConsent();
+    closeTryonConsent();
+    trackEvent('tryon_consent_accepted', {});
+    proceedWithTryon();
+  }
+  function declineTryonConsent() {
+    closeTryonConsent();
+    trackEvent('tryon_consent_declined', {});
   }
 
   function closeTryon() {
