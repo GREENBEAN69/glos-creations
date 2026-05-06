@@ -3263,7 +3263,7 @@
     <a href="#about" onclick="document.getElementById('mobile-nav').classList.remove('show')">About</a>
     <a href="#" onclick="document.getElementById('mobile-nav').classList.remove('show');openFaq();return false;">FAQ</a>
     <a href="#contact" onclick="document.getElementById('mobile-nav').classList.remove('show')">Contact</a>
-    <a href="#" onclick="document.getElementById('mobile-nav').classList.remove('show');toggleHelpMenu();return false;" style="display:flex;align-items:center;gap:8px;">
+    <a href="#" onclick="event.stopPropagation();document.getElementById('mobile-nav').classList.remove('show');toggleHelpMenu();return false;" style="display:flex;align-items:center;gap:8px;">
       <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--stone-700);fill:none;stroke-width:1.5;"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
       Need Help?
     </a>
@@ -8008,7 +8008,7 @@
     margin: 0;
     line-height: 1.4;
   }
-  .help-menu-options { padding: 6px; }
+  .help-menu-options { padding: 6px; position: relative; z-index: 2; }
   .help-menu-option {
     width: 100%;
     background: transparent;
@@ -8024,7 +8024,12 @@
     transition: background 0.12s;
     color: var(--stone-800);
     text-decoration: none;
+    pointer-events: auto;
+    position: relative;
+    z-index: 2;
   }
+  /* Inner content is non-interactive so the button itself always catches the click */
+  .help-menu-option > * { pointer-events: none; }
   .help-menu-option:hover { background: var(--stone-50); }
   .help-menu-option-icon {
     width: 36px;
@@ -8085,27 +8090,15 @@
     .help-menu.open {
       transform: translate(-50%, -50%) scale(1);
     }
-    /* Show backdrop on mobile when menu is open */
-    .help-menu-backdrop.open {
-      display: block;
+    /* No backdrop — menu floats above the page; tap outside to close handled by JS */
+    .help-menu-backdrop, .help-menu-backdrop.open {
+      display: none !important;
     }
   }
-  /* Backdrop — only visible on mobile */
+  /* Backdrop disabled entirely — was causing click-through issues on mobile */
   .help-menu-backdrop {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.4);
-    z-index: 9988;
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
-    opacity: 0;
-    transition: opacity 0.2s;
-    pointer-events: none;
-  }
-  .help-menu-backdrop.open {
-    opacity: 1;
-    pointer-events: auto;
+    display: none !important;
+    pointer-events: none !important;
   }
 </style>
 
@@ -8140,7 +8133,9 @@
         <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
-    <div class="glo-bot-messages" id="glo-bot-messages"></div>
+    <div class="glo-bot-messages" id="glo-bot-messages">
+      <!-- Messages get appended here dynamically -->
+    </div>
     <div class="glo-bot-quick-prompts" id="glo-bot-quick-prompts">
       <button class="glo-bot-prompt" onclick="askGloBot('Are these waterproof?')">Are these waterproof?</button>
       <button class="glo-bot-prompt" onclick="askGloBot('How long until my order ships?')">Shipping time?</button>
@@ -8245,9 +8240,9 @@
       // Refresh Live Chat option visibility based on current Tawk.to status
       updateLiveChatOption();
       // Set a flag to prevent the same click from closing the menu via the
-      // document-level click-outside handler. The flag clears 50ms later.
+      // document-level click-outside handler. 350ms covers the mobile tap delay.
       helpMenuJustOpened = true;
-      setTimeout(function() { helpMenuJustOpened = false; }, 50);
+      setTimeout(function() { helpMenuJustOpened = false; }, 350);
     }
   }
 
@@ -8263,35 +8258,29 @@
     }
   }
 
-  // Determine if live chat is currently available (Tawk.to status === 'online')
-  // Tawk.to returns 'online', 'away', or 'offline'. We only want green for 'online'.
+  // Determine if live chat is currently available.
+  // Tawk.to returns 'online', 'away', 'offline', or sometimes empty string when its session is broken.
+  // Strategy: hide ONLY when explicitly 'offline'. For online/away/empty, show the option —
+  // worst case the customer reaches a "leave a message" form, which is fine.
   function isLiveChatAvailable() {
-    // Comprehensive diagnostic logging to debug status detection
-    console.log('[Glo Status DIAGNOSTIC] ===== Live chat check =====');
-    console.log('[Glo Status DIAGNOSTIC] window.Tawk_API exists:', !!window.Tawk_API);
     if (!window.Tawk_API) {
-      console.log('[Glo Status DIAGNOSTIC] Tawk_API not loaded — returning FALSE');
-      return false;
+      console.log('[Glo Status Check] Tawk_API not loaded — defaulting to AVAILABLE');
+      return true; // optimistic default: show the option
     }
-    console.log('[Glo Status DIAGNOSTIC] getStatus is a function:', typeof Tawk_API.getStatus === 'function');
-    console.log('[Glo Status DIAGNOSTIC] All Tawk_API methods:', Object.keys(Tawk_API || {}).join(', '));
-
     if (typeof Tawk_API.getStatus === 'function') {
       try {
         var status = Tawk_API.getStatus();
-        console.log('[Glo Status DIAGNOSTIC] Raw status returned:', JSON.stringify(status));
-        console.log('[Glo Status DIAGNOSTIC] Status type:', typeof status);
-        console.log('[Glo Status DIAGNOSTIC] Status === "online":', status === 'online');
-        var isOnline = status === 'online';
-        console.log('[Glo Status DIAGNOSTIC] Final decision:', isOnline ? 'AVAILABLE (will show)' : 'HIDDEN (will hide)');
-        return isOnline;
+        // Only hide when EXPLICITLY offline. Empty/unknown = show.
+        var available = (status !== 'offline');
+        console.log('[Glo Status Check] Tawk reports status:', status || '(empty)', '— Live chat will be:', available ? 'AVAILABLE' : 'HIDDEN');
+        return available;
       } catch(e) {
-        console.log('[Glo Status DIAGNOSTIC] Error calling getStatus:', e.message);
-        return false;
+        console.log('[Glo Status Check] Error reading status — defaulting to AVAILABLE:', e);
+        return true;
       }
     }
-    console.log('[Glo Status DIAGNOSTIC] getStatus not available — returning FALSE');
-    return false;
+    console.log('[Glo Status Check] getStatus not available — defaulting to AVAILABLE');
+    return true;
   }
 
   function updateLiveChatOption() {
