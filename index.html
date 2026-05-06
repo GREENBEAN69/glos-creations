@@ -2524,6 +2524,157 @@
 
   /* Footer */
   .footer { border-top: 1px solid var(--stone-200); padding: 56px 0; }
+
+  /* Get the App Banner */
+  .get-app-banner {
+    background: linear-gradient(135deg, #f5f0e8 0%, #ede4d6 100%);
+    padding: 64px 0;
+    border-top: 1px solid var(--stone-200);
+  }
+  .get-app-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 40px;
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 48px;
+    align-items: center;
+  }
+  .get-app-content {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+  }
+  .get-app-icon-preview {
+    flex-shrink: 0;
+    width: 100px;
+    height: 100px;
+    border-radius: 22px;
+    background: white;
+    box-shadow: 0 12px 32px rgba(28,25,23,0.15), 0 2px 6px rgba(28,25,23,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px;
+    transition: transform 0.3s ease;
+  }
+  .get-app-icon-preview:hover { transform: rotate(-3deg) scale(1.05); }
+  .get-app-icon-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  .get-app-text { flex: 1; }
+  .get-app-tag {
+    font-family: var(--font-body);
+    font-size: 10.5px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--stone-500);
+    margin-bottom: 12px;
+  }
+  .get-app-banner h2 {
+    font-family: var(--font-display);
+    font-size: clamp(28px, 3.5vw, 42px);
+    font-weight: 300;
+    color: var(--stone-900);
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+  .get-app-banner h2 em { font-weight: 300; font-style: italic; }
+  .get-app-desc {
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--stone-600);
+    line-height: 1.6;
+    max-width: 480px;
+  }
+  .get-app-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .get-app-btn {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--stone-900);
+    color: white;
+    border: none;
+    border-radius: 14px;
+    padding: 14px 22px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+    text-decoration: none;
+    min-width: 220px;
+  }
+  .get-app-btn:hover {
+    background: #2a2521;
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(28,25,23,0.25);
+  }
+  .get-app-btn-icon {
+    width: 28px;
+    height: 28px;
+    fill: white;
+    stroke: white;
+    stroke-width: 0;
+    flex-shrink: 0;
+  }
+  .get-app-btn-ios .get-app-btn-icon {
+    fill: white;
+    stroke: none;
+  }
+  .get-app-btn-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.1;
+    text-align: left;
+  }
+  .get-app-btn-label {
+    font-family: var(--font-body);
+    font-size: 9.5px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 3px;
+  }
+  .get-app-btn-platform {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 400;
+    color: white;
+    font-style: italic;
+  }
+
+  @media (max-width: 900px) {
+    .get-app-inner {
+      grid-template-columns: 1fr;
+      gap: 36px;
+      text-align: center;
+    }
+    .get-app-content {
+      flex-direction: column;
+      gap: 20px;
+    }
+    .get-app-text { text-align: center; }
+    .get-app-desc { margin: 0 auto; }
+    .get-app-buttons {
+      flex-direction: row;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+  }
+  @media (max-width: 600px) {
+    .get-app-banner { padding: 48px 0; }
+    .get-app-inner { padding: 0 20px; }
+    .get-app-icon-preview { width: 84px; height: 84px; padding: 12px; border-radius: 18px; }
+    .get-app-buttons { flex-direction: column; align-items: stretch; }
+    .get-app-btn { min-width: 0; padding: 13px 18px; }
+    .get-app-btn-platform { font-size: 19px; }
+  }
+
   .footer-inner { max-width: 1280px; margin: 0 auto; padding: 0 40px; }
   .footer-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 36px; margin-bottom: 40px; }
   .footer-brand { font-size: 20px; font-style: italic; margin-bottom: 12px; }
@@ -3414,6 +3565,42 @@
     <button class="ig-popup-dismiss" onclick="dismissIgPopup()">Maybe later</button>
   </div>
 </div>
+
+<!-- Get the App Banner -->
+<section class="get-app-banner" id="get-app-banner">
+  <div class="get-app-inner">
+    <div class="get-app-content">
+      <div class="get-app-icon-preview">
+        <img src="https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/logo.png" alt="Glo's Creations app icon">
+      </div>
+      <div class="get-app-text">
+        <p class="get-app-tag">Take us with you</p>
+        <h2>Add <em>Glo's</em> to your phone.</h2>
+        <p class="get-app-desc">Get the full shop right on your home screen. Browse new pieces, track orders, and check out faster — works just like an app.</p>
+      </div>
+    </div>
+    <div class="get-app-buttons">
+      <button class="get-app-btn get-app-btn-android" id="get-app-android-btn" onclick="openPwaInstallModal('android')">
+        <svg viewBox="0 0 24 24" class="get-app-btn-icon">
+          <path d="M17.523 15.34c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1m-11 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1m11.4-6.05l1.99-3.46a.41.41 0 0 0-.15-.55.41.41 0 0 0-.55.15l-2.02 3.5C15.59 8.13 13.86 7.7 12 7.7s-3.6.43-5.19 1.23L4.79 5.43a.41.41 0 0 0-.55-.15.41.41 0 0 0-.15.55L6.08 9.29C2.65 11.1.42 14.55 0 18.7h24c-.42-4.15-2.65-7.6-6.08-9.41" fill="currentColor" stroke="none"/>
+        </svg>
+        <span class="get-app-btn-text">
+          <span class="get-app-btn-label">Install on</span>
+          <span class="get-app-btn-platform">Android</span>
+        </span>
+      </button>
+      <button class="get-app-btn get-app-btn-ios" id="get-app-ios-btn" onclick="openPwaInstallModal('ios')">
+        <svg viewBox="0 0 24 24" class="get-app-btn-icon">
+          <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35c-1.09-.46-2.09-.48-3.24 0c-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8c1.18-.24 2.31-.93 3.57-.84c1.51.12 2.65.72 3.4 1.8c-3.12 1.87-2.38 5.98.48 7.13c-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25c.29 2.58-2.34 4.5-3.74 4.25"/>
+        </svg>
+        <span class="get-app-btn-text">
+          <span class="get-app-btn-label">Install on</span>
+          <span class="get-app-btn-platform">iPhone</span>
+        </span>
+      </button>
+    </div>
+  </div>
+</section>
 
 <footer class="footer">
   <div class="footer-inner">
@@ -6612,11 +6799,8 @@
   window.addEventListener('beforeinstallprompt', function(e) {
     e.preventDefault();
     deferredInstallPrompt = e;
-    console.log('[PWA] Install prompt captured — install button can be shown');
-    // Show our custom install button if user hasn't dismissed it
-    var dismissed = false;
-    try { dismissed = localStorage.getItem('gc_pwa_dismissed') === '1'; } catch(err) {}
-    if (!dismissed) showPwaInstallBtn();
+    console.log('[PWA] Install prompt captured — Android install button is ready');
+    // The Get the App banner is always visible — no need to show floating button
   });
 
   // When the app gets installed, hide the prompt
@@ -6639,8 +6823,8 @@
   }
 
   function showPwaInstallBtn() {
-    var btn = document.getElementById('pwa-install-btn');
-    if (btn) btn.classList.add('show');
+    // Floating button is no longer used — install is now in the "Get the App" banner.
+    // Function kept for backward compatibility but does nothing.
   }
   function hidePwaInstallBtn() {
     var btn = document.getElementById('pwa-install-btn');
@@ -6649,22 +6833,45 @@
     if (modal) modal.classList.remove('open');
   }
 
-  function openPwaInstallModal() {
-    if (typeof trackEvent === 'function') trackEvent('pwa_install_clicked', {});
-    if (deferredInstallPrompt) {
-      // Android/Chrome — use the native browser prompt
+  // Open install instructions — accepts 'ios' or 'android' to show the right guide
+  function openPwaInstallModal(platform) {
+    if (typeof trackEvent === 'function') trackEvent('pwa_install_clicked', { platform: platform || 'auto' });
+
+    // Auto-detect if not specified
+    if (!platform) {
+      platform = isIos() ? 'ios' : 'android';
+    }
+
+    // If Android user clicks Android button AND we have the deferred prompt, use native install
+    if (platform === 'android' && deferredInstallPrompt) {
       deferredInstallPrompt.prompt();
       deferredInstallPrompt.userChoice.then(function(result) {
         console.log('[PWA] User choice:', result.outcome);
-        if (result.outcome === 'accepted') {
-          hidePwaInstallBtn();
-        }
         deferredInstallPrompt = null;
       });
-    } else {
-      // iOS or other — show our manual instructions modal
-      document.getElementById('pwa-install-modal').classList.add('open');
+      return;
     }
+
+    // Otherwise show the manual instructions modal for the requested platform
+    showInstallInstructions(platform);
+  }
+
+  function showInstallInstructions(platform) {
+    var modal = document.getElementById('pwa-install-modal');
+    var iosSteps = document.getElementById('pwa-steps-ios');
+    var androidSteps = document.getElementById('pwa-steps-android');
+    var title = document.getElementById('pwa-install-title');
+
+    if (platform === 'android') {
+      if (iosSteps) iosSteps.style.display = 'none';
+      if (androidSteps) androidSteps.style.display = 'block';
+      if (title) title.innerHTML = 'Install <em>on Android</em>';
+    } else {
+      if (iosSteps) iosSteps.style.display = 'block';
+      if (androidSteps) androidSteps.style.display = 'none';
+      if (title) title.innerHTML = 'Install <em>on iPhone</em>';
+    }
+    if (modal) modal.classList.add('open');
   }
 
   function closePwaInstallModal() {
@@ -6677,24 +6884,14 @@
     if (typeof trackEvent === 'function') trackEvent('pwa_install_dismissed', {});
   }
 
-  // On page load, decide whether to show the install button:
-  // — Already installed? hide
-  // — Previously dismissed? hide
-  // — iOS Safari (not installed)? show (since iOS doesn't fire beforeinstallprompt)
-  // — Android/Chrome? wait for beforeinstallprompt to fire (handled above)
+  // On page load, decide whether to hide the install banner:
+  // — Already installed? hide the banner
+  // — Otherwise show it (it's part of the page now, not a popup)
   document.addEventListener('DOMContentLoaded', function() {
     if (isInStandaloneMode()) {
-      hidePwaInstallBtn();
-      return;
+      var banner = document.getElementById('get-app-banner');
+      if (banner) banner.style.display = 'none';
     }
-    var dismissed = false;
-    try { dismissed = localStorage.getItem('gc_pwa_dismissed') === '1'; } catch(err) {}
-    if (dismissed) return;
-    if (isIos()) {
-      // Show button after a short delay so it doesn't feel pushy
-      setTimeout(showPwaInstallBtn, 8000);
-    }
-    // Android: handled by beforeinstallprompt event
   });
 </script>
 
@@ -7305,7 +7502,9 @@ s0.parentNode.insertBefore(s1,s0);
     letter-spacing: 0.05em;
     transition: transform 0.15s, box-shadow 0.15s;
   }
-  .pwa-install-btn.show { display: inline-flex; }
+  /* Floating install button removed — install moved to "Get the App" banner */
+  .pwa-install-btn { display: none !important; }
+  .pwa-install-btn.show { display: none !important; }
   .pwa-install-btn:hover {
     box-shadow: 0 8px 20px rgba(0,0,0,0.15);
     transform: translateY(-2px);
@@ -7505,7 +7704,7 @@ s0.parentNode.insertBefore(s1,s0);
   </button>
 </button>
 
-<!-- iOS Install Instructions Modal -->
+<!-- Install Instructions Modal — supports both iOS and Android -->
 <div class="pwa-install-modal" id="pwa-install-modal" onclick="if(event.target===this)closePwaInstallModal()">
   <div class="pwa-install-modal-card">
     <button class="pwa-install-modal-close" onclick="closePwaInstallModal()" aria-label="Close">
@@ -7514,11 +7713,17 @@ s0.parentNode.insertBefore(s1,s0);
     <div class="pwa-install-icon-large">
       <img src="https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/logo.png" alt="Glo's Creations">
     </div>
-    <h3 class="pwa-install-modal-title">Install <em>Glo's Creations</em></h3>
+    <h3 class="pwa-install-modal-title" id="pwa-install-title">Install <em>Glo's Creations</em></h3>
     <p class="pwa-install-modal-subtitle">Add the shop to your home screen for quick, app-like access.</p>
-    <div class="pwa-install-steps">
+
+    <!-- iOS Steps -->
+    <div class="pwa-install-steps" id="pwa-steps-ios">
       <div class="pwa-install-step">
         <span class="pwa-install-step-num">1</span>
+        <span>Open this site in <strong>Safari</strong> (not Chrome) on your iPhone</span>
+      </div>
+      <div class="pwa-install-step">
+        <span class="pwa-install-step-num">2</span>
         <span>Tap the
           <span class="pwa-install-step-icon">
             <svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
@@ -7527,15 +7732,41 @@ s0.parentNode.insertBefore(s1,s0);
         </span>
       </div>
       <div class="pwa-install-step">
-        <span class="pwa-install-step-num">2</span>
+        <span class="pwa-install-step-num">3</span>
         <span>Scroll down and tap <strong>"Add to Home Screen"</strong></span>
       </div>
       <div class="pwa-install-step">
-        <span class="pwa-install-step-num">3</span>
+        <span class="pwa-install-step-num">4</span>
         <span>Tap <strong>"Add"</strong> in the top right corner</span>
       </div>
     </div>
-    <p class="pwa-install-perks">Once added, tap the icon on your home screen to launch — works just like an app, no browser bar. ✨</p>
+
+    <!-- Android Steps -->
+    <div class="pwa-install-steps" id="pwa-steps-android" style="display:none;">
+      <div class="pwa-install-step">
+        <span class="pwa-install-step-num">1</span>
+        <span>Open this site in <strong>Chrome</strong> on your Android phone</span>
+      </div>
+      <div class="pwa-install-step">
+        <span class="pwa-install-step-num">2</span>
+        <span>Tap the
+          <span class="pwa-install-step-icon">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+          </span>
+          three-dot menu in the top right
+        </span>
+      </div>
+      <div class="pwa-install-step">
+        <span class="pwa-install-step-num">3</span>
+        <span>Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong></span>
+      </div>
+      <div class="pwa-install-step">
+        <span class="pwa-install-step-num">4</span>
+        <span>Tap <strong>"Install"</strong> to confirm</span>
+      </div>
+    </div>
+
+    <p class="pwa-install-perks">Once installed, tap the icon on your home screen to launch — works just like an app, no browser bar. ✨</p>
   </div>
 </div>
 
