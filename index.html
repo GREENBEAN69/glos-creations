@@ -8575,8 +8575,13 @@
 
   function helpMenuChooseLiveChat() {
     closeHelpMenu();
-    if (window.Tawk_API && Tawk_API.maximize) {
-      Tawk_API.maximize();
+    if (window.Tawk_API) {
+      // Must show the widget before maximizing — on mobile the widget is hidden by default
+      if (Tawk_API.showWidget) Tawk_API.showWidget();
+      // Small delay so the widget has time to render before we maximize it
+      setTimeout(function() {
+        if (Tawk_API.maximize) Tawk_API.maximize();
+      }, 250);
     }
     if (typeof trackEvent === 'function') trackEvent('help_menu_select', { option: 'live_chat' });
   }
