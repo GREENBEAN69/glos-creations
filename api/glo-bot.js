@@ -8028,8 +8028,6 @@
     position: relative;
     z-index: 2;
   }
-  /* Inner content is non-interactive so the button itself always catches the click */
-  .help-menu-option > * { pointer-events: none; }
   .help-menu-option:hover { background: var(--stone-50); }
   .help-menu-option-icon {
     width: 36px;
@@ -8077,7 +8075,7 @@
     /* Hide the floating "Need help?" button on mobile — it's accessed via hamburger menu instead */
     .help-launcher-btn,
     .help-launcher-btn.show { display: none !important; }
-    /* When menu is triggered from hamburger, center it nicely on screen */
+    /* When menu is triggered from hamburger, center it nicely on screen with solid background */
     .help-menu {
       bottom: auto;
       top: 50%;
@@ -8085,20 +8083,46 @@
       left: 50%;
       transform: translate(-50%, -50%) scale(0.97);
       width: calc(100vw - 32px);
-      max-width: 320px;
+      max-width: 340px;
+      background: #ffffff !important;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.35) !important;
     }
     .help-menu.open {
       transform: translate(-50%, -50%) scale(1);
     }
-    /* No backdrop — menu floats above the page; tap outside to close handled by JS */
+    /* Menu options need to be fully opaque for readability */
+    .help-menu-options { background: #ffffff; }
+    .help-menu-option {
+      color: var(--stone-900) !important;
+      background: transparent;
+    }
+    .help-menu-option-title { color: var(--stone-900) !important; opacity: 1 !important; }
+    .help-menu-option-desc { color: var(--stone-600) !important; opacity: 1 !important; }
+    .help-menu-header { background: #ffffff; }
+    .help-menu-header h4 { color: var(--stone-900) !important; }
+    .help-menu-header p { color: var(--stone-600) !important; }
+    /* Show backdrop on mobile when menu is open for proper modal effect */
     .help-menu-backdrop, .help-menu-backdrop.open {
-      display: none !important;
+      display: block !important;
+    }
+    .help-menu-backdrop.open {
+      opacity: 1 !important;
     }
   }
-  /* Backdrop disabled entirely — was causing click-through issues on mobile */
+  /* Mobile backdrop - dims background when menu is open */
   .help-menu-backdrop {
-    display: none !important;
-    pointer-events: none !important;
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 9988;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+  }
+  .help-menu-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
   }
 </style>
 
@@ -8242,7 +8266,7 @@
       // Set a flag to prevent the same click from closing the menu via the
       // document-level click-outside handler. The flag clears 50ms later.
       helpMenuJustOpened = true;
-      setTimeout(function() { helpMenuJustOpened = false; }, 50);
+      setTimeout(function() { helpMenuJustOpened = false; }, 400);
     }
   }
 
@@ -8585,13 +8609,12 @@
   document.addEventListener('click', function(e) {
     if (!helpMenuOpen) return;
     if (helpMenuJustOpened) return; // ignore the click that opened the menu
-    var menu = document.getElementById('help-menu');
-    var btn = document.getElementById('help-launcher-btn');
-    var inMenu = menu && menu.contains(e.target);
-    var inBtn = btn && btn.contains(e.target);
-    if (!inMenu && !inBtn) {
-      closeHelpMenu();
+    // Use closest() — it checks if e.target is inside ANY ancestor matching the selector.
+    // More reliable than .contains() on mobile where touch events can have weird targets.
+    if (e.target.closest && (e.target.closest('#help-menu') || e.target.closest('#help-launcher-btn') || e.target.closest('.mobile-livechat-btn'))) {
+      return; // click was inside the menu or launcher, don't close
     }
+    closeHelpMenu();
   });
 
   // Show the "Need help?" button immediately on page load (don't wait for Tawk to finish loading)
