@@ -2,9 +2,28 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Glo's Creations 3:16 · Handcrafted Polymer Clay Jewelry</title>
 <meta name="description" content="Handmade polymer clay jewelry designed and sculpted with care. Each piece is one of a kind.">
+
+<!-- PWA Manifest -->
+<link rel="manifest" href="/manifest.json">
+
+<!-- Theme color (matches stone-900 for browser chrome on Android) -->
+<meta name="theme-color" content="#1c1917">
+
+<!-- Apple-specific PWA tags -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Glo's Creations">
+<link rel="apple-touch-icon" href="https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/logo.png">
+<link rel="apple-touch-icon" sizes="152x152" href="https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/logo.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/logo.png">
+<link rel="apple-touch-icon" sizes="167x167" href="https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/logo.png">
+
+<!-- Standard favicon -->
+<link rel="icon" type="image/png" href="https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/logo.png">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet">
@@ -6575,6 +6594,108 @@
   renderIgBubbles();
   fetchIgPosts();
   renderFaq();
+
+  // ============================================
+  // PWA — Service Worker + Install Prompt
+  // ============================================
+  // Register the service worker for offline support and "Add to Home Screen" capability
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('/sw.js')
+        .then(function(reg) { console.log('[PWA] Service worker registered:', reg.scope); })
+        .catch(function(err) { console.warn('[PWA] Service worker registration failed:', err); });
+    });
+  }
+
+  // Capture the install prompt event (Android/Chrome) so we can trigger it from our own button
+  var deferredInstallPrompt = null;
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    console.log('[PWA] Install prompt captured — install button can be shown');
+    // Show our custom install button if user hasn't dismissed it
+    var dismissed = false;
+    try { dismissed = localStorage.getItem('gc_pwa_dismissed') === '1'; } catch(err) {}
+    if (!dismissed) showPwaInstallBtn();
+  });
+
+  // When the app gets installed, hide the prompt
+  window.addEventListener('appinstalled', function() {
+    console.log('[PWA] App installed');
+    try { localStorage.setItem('gc_pwa_installed', '1'); } catch(err) {}
+    hidePwaInstallBtn();
+    if (typeof trackEvent === 'function') trackEvent('pwa_installed', {});
+  });
+
+  // Detect iOS so we can show appropriate install instructions (iOS doesn't fire beforeinstallprompt)
+  function isIos() {
+    var ua = navigator.userAgent || '';
+    return /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+  }
+  function isInStandaloneMode() {
+    // Already running as installed PWA
+    return (window.matchMedia('(display-mode: standalone)').matches) ||
+           (window.navigator.standalone === true);
+  }
+
+  function showPwaInstallBtn() {
+    var btn = document.getElementById('pwa-install-btn');
+    if (btn) btn.classList.add('show');
+  }
+  function hidePwaInstallBtn() {
+    var btn = document.getElementById('pwa-install-btn');
+    if (btn) btn.classList.remove('show');
+    var modal = document.getElementById('pwa-install-modal');
+    if (modal) modal.classList.remove('open');
+  }
+
+  function openPwaInstallModal() {
+    if (typeof trackEvent === 'function') trackEvent('pwa_install_clicked', {});
+    if (deferredInstallPrompt) {
+      // Android/Chrome — use the native browser prompt
+      deferredInstallPrompt.prompt();
+      deferredInstallPrompt.userChoice.then(function(result) {
+        console.log('[PWA] User choice:', result.outcome);
+        if (result.outcome === 'accepted') {
+          hidePwaInstallBtn();
+        }
+        deferredInstallPrompt = null;
+      });
+    } else {
+      // iOS or other — show our manual instructions modal
+      document.getElementById('pwa-install-modal').classList.add('open');
+    }
+  }
+
+  function closePwaInstallModal() {
+    document.getElementById('pwa-install-modal').classList.remove('open');
+  }
+
+  function dismissPwaInstall() {
+    try { localStorage.setItem('gc_pwa_dismissed', '1'); } catch(err) {}
+    hidePwaInstallBtn();
+    if (typeof trackEvent === 'function') trackEvent('pwa_install_dismissed', {});
+  }
+
+  // On page load, decide whether to show the install button:
+  // — Already installed? hide
+  // — Previously dismissed? hide
+  // — iOS Safari (not installed)? show (since iOS doesn't fire beforeinstallprompt)
+  // — Android/Chrome? wait for beforeinstallprompt to fire (handled above)
+  document.addEventListener('DOMContentLoaded', function() {
+    if (isInStandaloneMode()) {
+      hidePwaInstallBtn();
+      return;
+    }
+    var dismissed = false;
+    try { dismissed = localStorage.getItem('gc_pwa_dismissed') === '1'; } catch(err) {}
+    if (dismissed) return;
+    if (isIos()) {
+      // Show button after a short delay so it doesn't feel pushy
+      setTimeout(showPwaInstallBtn, 8000);
+    }
+    // Android: handled by beforeinstallprompt event
+  });
 </script>
 
 <!-- Custom dismiss button styles for Tawk.to widget -->
@@ -7159,5 +7280,264 @@ s0.parentNode.insertBefore(s1,s0);
 })();
 </script>
 <!--End of Tawk.to Script-->
+
+<!-- PWA Install Button — appears in bottom-left, prompts user to add to home screen -->
+<style>
+  /* Floating "Install App" button — appears bottom-left when app is installable */
+  .pwa-install-btn {
+    position: fixed;
+    bottom: 22px;
+    left: 22px;
+    padding: 11px 14px 11px 12px;
+    background: white;
+    color: var(--stone-800);
+    border: 1px solid var(--stone-300);
+    border-radius: 24px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+    cursor: pointer;
+    z-index: 1000000000;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .pwa-install-btn.show { display: inline-flex; }
+  .pwa-install-btn:hover {
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+  }
+  .pwa-install-btn-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: var(--stone-900);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .pwa-install-btn-icon svg {
+    width: 14px;
+    height: 14px;
+    stroke: white;
+    fill: none;
+    stroke-width: 2;
+  }
+  .pwa-install-btn-text { line-height: 1.2; }
+  .pwa-install-btn-label { display: block; font-size: 10px; color: var(--stone-500); letter-spacing: 0.1em; text-transform: uppercase; }
+  .pwa-install-btn-title { display: block; font-size: 12px; color: var(--stone-900); font-weight: 500; margin-top: 1px; }
+  .pwa-install-btn-close {
+    background: var(--stone-100);
+    border: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    margin-left: 4px;
+    transition: background 0.15s;
+  }
+  .pwa-install-btn-close:hover { background: var(--stone-200); }
+  .pwa-install-btn-close svg {
+    width: 10px;
+    height: 10px;
+    stroke: var(--stone-600);
+    fill: none;
+    stroke-width: 2.5;
+  }
+
+  /* iOS install instructions modal */
+  .pwa-install-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000000010;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .pwa-install-modal.open { display: flex; }
+  .pwa-install-modal-card {
+    background: white;
+    border-radius: 18px;
+    max-width: 380px;
+    width: 100%;
+    padding: 28px 26px 24px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.25);
+    text-align: center;
+    position: relative;
+    animation: modalIn 0.3s ease;
+  }
+  .pwa-install-modal-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--stone-100);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .pwa-install-modal-close:hover { background: var(--stone-200); }
+  .pwa-install-modal-close svg { width: 14px; height: 14px; stroke: var(--stone-700); fill: none; stroke-width: 2; }
+  .pwa-install-icon-large {
+    width: 64px;
+    height: 64px;
+    border-radius: 14px;
+    background: var(--stone-900);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 4px auto 18px;
+    box-shadow: 0 8px 20px rgba(28,25,23,0.2);
+  }
+  .pwa-install-icon-large img {
+    width: 80%;
+    height: 80%;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+  }
+  .pwa-install-modal-title {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 400;
+    color: var(--stone-900);
+    margin-bottom: 6px;
+  }
+  .pwa-install-modal-title em { font-style: italic; }
+  .pwa-install-modal-subtitle {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--stone-500);
+    line-height: 1.5;
+    margin-bottom: 24px;
+  }
+  .pwa-install-steps {
+    text-align: left;
+    background: var(--stone-50);
+    border-radius: 12px;
+    padding: 18px 18px 18px 18px;
+    margin-bottom: 16px;
+    border: 1px solid var(--stone-200);
+  }
+  .pwa-install-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 14px;
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--stone-700);
+    line-height: 1.5;
+  }
+  .pwa-install-step:last-child { margin-bottom: 0; }
+  .pwa-install-step-num {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--stone-900);
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+  }
+  .pwa-install-step-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    background: var(--stone-200);
+    border-radius: 5px;
+    margin: 0 3px;
+    vertical-align: middle;
+  }
+  .pwa-install-step-icon svg { width: 13px; height: 13px; stroke: var(--stone-700); fill: none; stroke-width: 2; }
+  .pwa-install-perks {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--stone-500);
+    line-height: 1.6;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--stone-100);
+  }
+
+  @media (max-width: 600px) {
+    .pwa-install-btn {
+      bottom: 16px;
+      left: 16px;
+      padding: 10px 12px 10px 10px;
+    }
+    .pwa-install-btn-title { font-size: 11px; }
+    .pwa-install-btn-label { font-size: 9px; }
+  }
+</style>
+
+<!-- PWA Install Button -->
+<button class="pwa-install-btn" id="pwa-install-btn" onclick="openPwaInstallModal()" aria-label="Install Glo's Creations app">
+  <span class="pwa-install-btn-icon">
+    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+  </span>
+  <span class="pwa-install-btn-text">
+    <span class="pwa-install-btn-label">Install</span>
+    <span class="pwa-install-btn-title">Add to Home</span>
+  </span>
+  <button class="pwa-install-btn-close" onclick="event.stopPropagation();dismissPwaInstall();" aria-label="Dismiss">
+    <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
+</button>
+
+<!-- iOS Install Instructions Modal -->
+<div class="pwa-install-modal" id="pwa-install-modal" onclick="if(event.target===this)closePwaInstallModal()">
+  <div class="pwa-install-modal-card">
+    <button class="pwa-install-modal-close" onclick="closePwaInstallModal()" aria-label="Close">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="pwa-install-icon-large">
+      <img src="https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/logo.png" alt="Glo's Creations">
+    </div>
+    <h3 class="pwa-install-modal-title">Install <em>Glo's Creations</em></h3>
+    <p class="pwa-install-modal-subtitle">Add the shop to your home screen for quick, app-like access.</p>
+    <div class="pwa-install-steps">
+      <div class="pwa-install-step">
+        <span class="pwa-install-step-num">1</span>
+        <span>Tap the
+          <span class="pwa-install-step-icon">
+            <svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          </span>
+          Share button at the bottom of Safari
+        </span>
+      </div>
+      <div class="pwa-install-step">
+        <span class="pwa-install-step-num">2</span>
+        <span>Scroll down and tap <strong>"Add to Home Screen"</strong></span>
+      </div>
+      <div class="pwa-install-step">
+        <span class="pwa-install-step-num">3</span>
+        <span>Tap <strong>"Add"</strong> in the top right corner</span>
+      </div>
+    </div>
+    <p class="pwa-install-perks">Once added, tap the icon on your home screen to launch — works just like an app, no browser bar. ✨</p>
+  </div>
+</div>
+
 </body>
 </html>
