@@ -3263,7 +3263,7 @@
     <a href="#about" onclick="document.getElementById('mobile-nav').classList.remove('show')">About</a>
     <a href="#" onclick="document.getElementById('mobile-nav').classList.remove('show');openFaq();return false;">FAQ</a>
     <a href="#contact" onclick="document.getElementById('mobile-nav').classList.remove('show')">Contact</a>
-    <a href="#" onclick="document.getElementById('mobile-nav').classList.remove('show');toggleHelpMenu();return false;" style="display:flex;align-items:center;gap:8px;">
+    <a href="#" onclick="event.stopPropagation();document.getElementById('mobile-nav').classList.remove('show');toggleHelpMenu();return false;" style="display:flex;align-items:center;gap:8px;">
       <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--stone-700);fill:none;stroke-width:1.5;"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
       Need Help?
     </a>
@@ -7920,7 +7920,7 @@
     .glo-bot-overlay { padding: 0; align-items: stretch; justify-content: stretch; }
     .glo-bot-window { width: 100%; height: 100%; max-height: 100%; border-radius: 0; }
   }
-  .help-launcher-btn.show { display: inline-flex; }
+  .help-launcher-btn.show { display: inline-flex !important; }
   .help-launcher-btn:hover {
     background: #1c1917;
     transform: translateY(-2px);
@@ -8008,7 +8008,7 @@
     margin: 0;
     line-height: 1.4;
   }
-  .help-menu-options { padding: 6px; }
+  .help-menu-options { padding: 6px; position: relative; z-index: 2; }
   .help-menu-option {
     width: 100%;
     background: transparent;
@@ -8024,7 +8024,12 @@
     transition: background 0.12s;
     color: var(--stone-800);
     text-decoration: none;
+    pointer-events: auto;
+    position: relative;
+    z-index: 2;
   }
+  /* Inner content is non-interactive so the button itself always catches the click */
+  .help-menu-option > * { pointer-events: none; }
   .help-menu-option:hover { background: var(--stone-50); }
   .help-menu-option-icon {
     width: 36px;
@@ -8070,7 +8075,8 @@
   @media (max-width: 600px) {
     .tawk-dismiss-btn { bottom: 76px; right: 16px; }
     /* Hide the floating "Need help?" button on mobile — it's accessed via hamburger menu instead */
-    .help-launcher-btn { display: none !important; }
+    .help-launcher-btn,
+    .help-launcher-btn.show { display: none !important; }
     /* When menu is triggered from hamburger, center it nicely on screen */
     .help-menu {
       bottom: auto;
@@ -8084,27 +8090,15 @@
     .help-menu.open {
       transform: translate(-50%, -50%) scale(1);
     }
-    /* Show backdrop on mobile when menu is open */
-    .help-menu-backdrop.open {
-      display: block;
+    /* No backdrop — menu floats above the page; tap outside to close handled by JS */
+    .help-menu-backdrop, .help-menu-backdrop.open {
+      display: none !important;
     }
   }
-  /* Backdrop — only visible on mobile */
+  /* Backdrop disabled entirely — was causing click-through issues on mobile */
   .help-menu-backdrop {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.4);
-    z-index: 1000000000;
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
-    opacity: 0;
-    transition: opacity 0.2s;
-    pointer-events: none;
-  }
-  .help-menu-backdrop.open {
-    opacity: 1;
-    pointer-events: auto;
+    display: none !important;
+    pointer-events: none !important;
   }
 </style>
 
@@ -8246,9 +8240,9 @@
       // Refresh Live Chat option visibility based on current Tawk.to status
       updateLiveChatOption();
       // Set a flag to prevent the same click from closing the menu via the
-      // document-level click-outside handler. The flag clears 50ms later.
+      // document-level click-outside handler. 350ms covers the mobile tap delay.
       helpMenuJustOpened = true;
-      setTimeout(function() { helpMenuJustOpened = false; }, 50);
+      setTimeout(function() { helpMenuJustOpened = false; }, 350);
     }
   }
 
@@ -8264,25 +8258,29 @@
     }
   }
 
-  // Determine if live chat is currently available (Tawk.to status === 'online')
-  // Tawk.to returns 'online', 'away', or 'offline'. We only want green for 'online'.
+  // Determine if live chat is currently available.
+  // Tawk.to returns 'online', 'away', 'offline', or sometimes empty string when its session is broken.
+  // Strategy: hide ONLY when explicitly 'offline'. For online/away/empty, show the option —
+  // worst case the customer reaches a "leave a message" form, which is fine.
   function isLiveChatAvailable() {
     if (!window.Tawk_API) {
-      console.log('[Glo Status Check] Tawk_API not loaded');
-      return false;
+      console.log('[Glo Status Check] Tawk_API not loaded — defaulting to AVAILABLE');
+      return true; // optimistic default: show the option
     }
     if (typeof Tawk_API.getStatus === 'function') {
       try {
         var status = Tawk_API.getStatus();
-        console.log('[Glo Status Check] Tawk reports status:', status, '— Live chat will be:', status === 'online' ? 'AVAILABLE (green)' : 'HIDDEN (dark)');
-        return status === 'online';
+        // Only hide when EXPLICITLY offline. Empty/unknown = show.
+        var available = (status !== 'offline');
+        console.log('[Glo Status Check] Tawk reports status:', status || '(empty)', '— Live chat will be:', available ? 'AVAILABLE' : 'HIDDEN');
+        return available;
       } catch(e) {
-        console.log('[Glo Status Check] Error reading status:', e);
-        return false;
+        console.log('[Glo Status Check] Error reading status — defaulting to AVAILABLE:', e);
+        return true;
       }
     }
-    console.log('[Glo Status Check] getStatus function not available');
-    return false;
+    console.log('[Glo Status Check] getStatus not available — defaulting to AVAILABLE');
+    return true;
   }
 
   function updateLiveChatOption() {
@@ -8684,45 +8682,14 @@
     } catch(e) {}
   }
 
-  // Wire up the refresh to happen on natural visitor actions
+  // Wire up the refresh to happen ONLY when the help menu opens — not on every click.
+  // The previous version refreshed on every click/scroll/etc which broke Tawk and
+  // intercepted clicks on the menu, making options unclickable on mobile.
   function setupActionTriggeredStatusRefresh() {
-    // 1. When visitor returns to the tab (most likely time for stale status)
+    // Only refresh when visitor returns to the tab — safe, infrequent
     document.addEventListener('visibilitychange', function() {
       if (!document.hidden) refreshTawkStatus();
     });
-
-    // 2. When visitor scrolls (active engagement) — debounced via the throttle
-    var scrollHandler = function() { refreshTawkStatus(); };
-    window.addEventListener('scroll', scrollHandler, { passive: true });
-
-    // 3. When visitor opens a product modal (high-intent moment)
-    // We hook into openModal by wrapping it
-    if (typeof window.openModal === 'function') {
-      var originalOpenModal = window.openModal;
-      window.openModal = function() {
-        refreshTawkStatus();
-        return originalOpenModal.apply(this, arguments);
-      };
-    }
-
-    // 4. When visitor opens the cart
-    if (typeof window.toggleCart === 'function') {
-      var originalToggleCart = window.toggleCart;
-      window.toggleCart = function() {
-        refreshTawkStatus();
-        return originalToggleCart.apply(this, arguments);
-      };
-    }
-
-    // 5. When visitor moves their mouse near the bottom-right (where the help button lives)
-    document.addEventListener('mousemove', function(e) {
-      if (e.clientX > window.innerWidth - 200 && e.clientY > window.innerHeight - 200) {
-        refreshTawkStatus();
-      }
-    }, { passive: true });
-
-    // 6. When visitor clicks anywhere on the page
-    document.addEventListener('click', function() { refreshTawkStatus(); }, { passive: true });
   }
 
   Tawk_API.onStatusChange = function(status) {
