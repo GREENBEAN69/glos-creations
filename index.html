@@ -8435,72 +8435,44 @@
     if (typing) typing.remove();
   }
 
-  // The "brain" — figures out the best response by scoring intent
+  // The "brain" — only returns a confident smart-bot answer when there's
+  // a near-certain match. For anything ambiguous, falls back to real AI
+  // rather than guessing. Better silent than wrong.
   function generateGloBotResponse(question) {
     var lower = question.toLowerCase().trim();
     var words = lower.split(/[\s,?!.]+/).filter(function(w) { return w.length > 1; });
 
-    // Quick greetings
-    if (/^(hi|hello|hey|yo|sup|hola)\b/i.test(lower)) {
-      return { text: "Hi there! 👋 I can answer questions about products, shipping, materials, our app, and more. What would you like to know?", products: null };
+    // Quick greetings — these are obvious enough to handle locally
+    if (/^(hi|hello|hey|yo|sup|hola)\b\s*\.?$/i.test(lower)) {
+      return { text: "Hi there! 👋 Ask me anything about Glo's Creations — products, shipping, materials, our app, or anything else.", products: null };
     }
-    if (/^(thanks|thank you|thx|ty)\b/i.test(lower)) {
+    if (/^(thanks|thank you|thx|ty)\b\s*[.!]?$/i.test(lower)) {
       return { text: "You're welcome! Anything else I can help with? 💛", products: null };
     }
-    if (/^(bye|goodbye|see ya|later)\b/i.test(lower)) {
+    if (/^(bye|goodbye|see ya|later)\b\s*[.!]?$/i.test(lower)) {
       return { text: "Take care! Come back anytime. ✨", products: null };
     }
 
-    // Try product search first if it looks like a product/style query
-    var productKeywords = ['earring', 'jewelry', 'necklace', 'piece', 'product', 'style', 'color', 'green', 'blue', 'pink', 'red', 'yellow', 'orange', 'purple', 'black', 'white', 'gold', 'silver', 'flower', 'daisy', 'bee', 'heart', 'star', 'cross', 'leaf', 'bow', 'butterfly', 'mushroom', 'cherry', 'show', 'find', 'see', 'looking for', 'want', 'have', 'available', 'sell'];
-    var isProductQuery = productKeywords.some(function(kw) { return lower.indexOf(kw) !== -1; });
-
-    if (isProductQuery) {
+    // Product search — only if customer is CLEARLY asking to see products
+    var isClearProductQuery = /\b(show|find|see|browse|looking for|do you have|got any|any\s+\w+\s+earrings|any\s+\w+\s+pieces)\b/i.test(lower);
+    if (isClearProductQuery) {
       var matches = searchProducts(lower);
       if (matches.length > 0) {
-        var prefix = "Here's what I found that matches:";
-        if (matches.length === 1) prefix = "Here's the piece I found:";
+        var prefix = matches.length === 1 ? "Here's the piece I found:" : "Here's what I found that matches:";
         return { text: prefix, products: matches };
-      } else if (lower.indexOf('green') !== -1 || lower.indexOf('blue') !== -1 || lower.indexOf('pink') !== -1 || lower.indexOf('red') !== -1 || lower.indexOf('yellow') !== -1 || lower.indexOf('purple') !== -1) {
-        return { text: "I couldn't find any pieces matching that description right now. New collections drop regularly — follow us on <a href=\"https://instagram.com/gloscreations31_6\" target=\"_blank\">Instagram</a> for first looks! Want me to <a href=\"#\" onclick=\"closeGloBot();document.querySelector('.shop-grid')?.scrollIntoView({behavior:'smooth'});return false;\">show all current pieces</a>?", products: null };
       }
+      // No matches → let AI handle it (it can give a thoughtful "we don't currently have that" response)
     }
 
-    // Try FAQ matching — require a stronger match before trusting it.
-    // Lower threshold caused the bot to confidently return wrong answers
-    // for ambiguous questions. We'd rather fall back to real AI than guess wrong.
+    // FAQ matching — but ONLY return if the match is overwhelmingly strong.
+    // The threshold is intentionally high so the bot stays silent when uncertain.
     var faqMatch = findBestFaqMatch(lower, words);
-    if (faqMatch && faqMatch.score >= 6) {
-      var answer = faqMatch.faq.a;
-      return { text: answer, products: null };
+    if (faqMatch && faqMatch.score >= 10) {
+      return { text: faqMatch.faq.a, products: null };
     }
 
-    // Special intents
-    if (lower.indexOf('contact') !== -1 || lower.indexOf('email') !== -1 || lower.indexOf('reach') !== -1) {
-      return { text: "You can reach Glo directly at <a href=\"mailto:sales@gloscreations316.com\">sales@gloscreations316.com</a> — typical reply is within 24 hours. 💌", products: null };
-    }
-    if (lower.indexOf('chat') !== -1 || lower.indexOf('live') !== -1 || lower.indexOf('talk to') !== -1 || lower.indexOf('human') !== -1 || lower.indexOf('person') !== -1) {
-      return { text: "If you'd like to talk to a human, you can <a href=\"#\" onclick=\"closeGloBot();helpMenuChooseEmail();return false;\">email us</a> or check if Glo's available for live chat (look for the green 'LIVE CHAT' badge in the menu). 💛", products: null };
-    }
-    if (lower.indexOf('account') !== -1 || lower.indexOf('login') !== -1 || lower.indexOf('sign in') !== -1) {
-      return { text: "You can sign in or create an account using the person icon in the top right. Your account saves your wishlist, addresses, and order history.", products: null };
-    }
-    if (lower.indexOf('wishlist') !== -1 || lower.indexOf('save') !== -1 || lower.indexOf('favorites') !== -1) {
-      return { text: "Tap the heart icon on any product to save it to your wishlist. Access your wishlist anytime from the heart icon in the navigation. 💛", products: null };
-    }
-    if (lower.indexOf('try') !== -1 && lower.indexOf('on') !== -1) {
-      return { text: "Our Virtual Try-On lets you see earrings on your face right from your phone! Open any earring product page and tap '✨ Virtual Try-On' to start. Your camera stays private — face detection happens entirely on your device.", products: null };
-    }
-    if (lower.indexOf('discount') !== -1 || lower.indexOf('coupon') !== -1 || lower.indexOf('sale') !== -1 || lower.indexOf('promo') !== -1) {
-      return { text: "We don't currently have any promo codes running, but follow us on <a href=\"https://instagram.com/gloscreations31_6\" target=\"_blank\">Instagram</a> for sale announcements and exclusive previews! 💛", products: null };
-    }
-
-    // Final fallback — flag this so the caller knows to try real AI
-    return {
-      text: "",
-      products: null,
-      fallback: true
-    };
+    // Anything else → fall back to real AI. No guessing, no fluff.
+    return { text: "", products: null, fallback: true };
   }
 
   // Search FAQ entries — returns the highest-scoring match
