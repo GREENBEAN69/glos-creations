@@ -2586,7 +2586,6 @@
     /* Use dvh (dynamic viewport height) so iOS Safari's collapsing toolbar
        doesn't push the cart footer below the visible area. Falls back to vh on older browsers. */
     height: 100vh;
-    height: 100dvh;
     background: var(--stone-50);
     z-index: 201;
     display: flex;
@@ -4089,11 +4088,10 @@
     localStorage.setItem('gc_ig_popup', 'followed');
     trackEvent('ig_popup_clicked', {});
     document.getElementById('ig-popup').classList.remove('show');
-    var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if (isMobile) {
-      window.location.href = 'https://www.instagram.com/gloscreations31_6/';
-    } else {
-      window.open('https://www.instagram.com/gloscreations31_6/', '_blank');
+    var igUrl = 'https://www.instagram.com/gloscreations31_6/';
+    var newWindow = window.open(igUrl, '_blank', 'noopener,noreferrer');
+    if (!newWindow) {
+      window.location.href = igUrl;
     }
   }
 
@@ -4264,11 +4262,10 @@
     var post = igPosts[currentPostIndex];
     if (!post) return;
     trackEvent('story_view_on_ig', { post_index: currentPostIndex, post_label: post.label || '' });
-    var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if (isMobile) {
+    // Open in external app/tab so the PWA stays put without iOS showing its address bar
+    var newWindow = window.open(post.url, '_blank', 'noopener,noreferrer');
+    if (!newWindow) {
       window.location.href = post.url;
-    } else {
-      window.open(post.url, '_blank');
     }
   }
 
@@ -6541,11 +6538,15 @@
 
   function openInstagram() {
     trackEvent('instagram_click', {});
-    var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if (isMobile) {
-      window.location.href = 'https://www.instagram.com/gloscreations31_6/';
-    } else {
-      window.open('https://www.instagram.com/gloscreations31_6/', '_blank');
+    // Always open Instagram externally so the PWA (or browser tab) stays put.
+    // Using window.open with _blank pops the Instagram app on mobile when
+    // installed, or a new tab in Safari/Chrome — without showing the URL bar
+    // overlay that window.location.href triggers in PWA mode.
+    var igUrl = 'https://www.instagram.com/gloscreations31_6/';
+    var newWindow = window.open(igUrl, '_blank', 'noopener,noreferrer');
+    // Fallback: if the browser blocked the popup (rare), use direct navigation
+    if (!newWindow) {
+      window.location.href = igUrl;
     }
   }
 
@@ -8563,12 +8564,39 @@
 
 
   // Call the AI proxy when the smart matcher couldn't find a confident answer
+  // Track recent conversation so AI has context for follow-up questions
+  var gloBotHistory = [];
+  var GLO_BOT_HISTORY_MAX = 6; // last 6 exchanges (3 turns each direction)
+
   function callGloBotAI(question) {
     if (typeof trackEvent === 'function') trackEvent('glo_bot_ai_fallback', { question: question.substring(0, 100) });
+
+    // Build a compact product catalog for the AI — name, price, category, availability,
+    // and a few description keywords. Limited to keep payload small but complete enough
+    // for smart recommendations.
+    var catalog = [];
+    if (typeof products !== 'undefined' && products.length) {
+      for (var i = 0; i < products.length; i++) {
+        var p = products[i];
+        if (!p || !p.name) continue;
+        catalog.push({
+          name: p.name,
+          price: p.price,
+          category: p.category || 'Earrings',
+          available: !!(p.available && p.stock > 0),
+          description: (p.description || '').substring(0, 200)
+        });
+      }
+    }
+
     fetch('/api/glo-bot', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question: question })
+      body: JSON.stringify({
+        question: question,
+        catalog: catalog,
+        history: gloBotHistory.slice(-GLO_BOT_HISTORY_MAX)
+      })
     })
     .then(function(res) {
       return res.json().then(function(data) {
@@ -8578,11 +8606,18 @@
     .then(function(result) {
       hideGloBotTyping();
       if (result.ok && result.data.answer) {
-        // Convert plain newlines to <br> for display
         var answer = result.data.answer.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
-        addGloBotMessage('bot', answer);
+
+        // Check if AI mentioned specific products by name — if so, find them in our
+        // catalog and append product cards to the message so customer can tap to view.
+        var matchedProducts = findProductsMentionedInText(result.data.answer);
+
+        addGloBotMessage('bot', answer, matchedProducts);
+
+        // Save to conversation history for follow-up questions
+        gloBotHistory.push({ role: 'user', content: question });
+        gloBotHistory.push({ role: 'assistant', content: result.data.answer });
       } else {
-        // API error — show the friendly message from the server, or a default
         var msg = (result.data && result.data.message) || "I'm not quite sure on that one. Please email <a href=\"mailto:sales@gloscreations316.com\">sales@gloscreations316.com</a> and Glo will help personally. 💛";
         addGloBotMessage('bot', msg);
       }
@@ -8592,6 +8627,39 @@
       console.error('[Glo Bot] AI fallback failed:', err);
       addGloBotMessage('bot', "I'm having trouble thinking right now. Please email <a href=\"mailto:sales@gloscreations316.com\">sales@gloscreations316.com</a> and Glo will help you personally. 💛");
     });
+  }
+
+  // When the AI mentions a product by name in its response, find it in the catalog
+  // and return it so we can show a clickable product card.
+  function findProductsMentionedInText(text) {
+    if (!text || typeof products === 'undefined' || !products.length) return [];
+    var matches = [];
+    var seen = {};
+    var lowerText = text.toLowerCase();
+
+    for (var i = 0; i < products.length; i++) {
+      var p = products[i];
+      if (!p || !p.name) continue;
+      if (seen[p.variantId || p.id]) continue;
+
+      // Match the full product name OR a distinctive portion
+      var nameLower = p.name.toLowerCase();
+      var simpleName = nameLower
+        .replace(/handcrafted polymer clay /gi, '')
+        .replace(/ earrings$/i, '');
+
+      if (lowerText.indexOf(nameLower) !== -1 || (simpleName.length > 5 && lowerText.indexOf(simpleName) !== -1)) {
+        matches.push({
+          index: i,
+          name: p.name,
+          image: p.image,
+          price: p.price
+        });
+        seen[p.variantId || p.id] = true;
+        if (matches.length >= 3) break; // cap suggestions per response
+      }
+    }
+    return matches;
   }
 
   function addGloBotMessage(sender, text, productResults) {
@@ -8714,10 +8782,15 @@
     if (hasProductHint) {
       var matches = searchProducts(lower);
       if (matches.length > 0) {
-        var prefix = matches.length === 1 ? "Here's the piece I found:" : "Here's what I found that matches:";
+        var prefix;
+        if (matches.length === 1) {
+          prefix = "Found one for you! ✨";
+        } else {
+          prefix = "Here's what I think you'll love:";
+        }
         return { text: prefix, products: matches };
       }
-      // No product matches → fall through to FAQ/AI
+      // No product matches → fall through to AI which has the full catalog
     }
 
     // FAQ matching — but ONLY return if the match is overwhelmingly strong.
