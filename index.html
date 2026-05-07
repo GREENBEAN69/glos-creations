@@ -5683,10 +5683,11 @@
     for (var i = 0; i < filtered.length; i++) {
       var p = filtered[i];
       var pIndex = products.indexOf(p);
+      var safeName = escapeHtml(p.name || '');
       html += '<div class="product-card" onclick="openModal(' + pIndex + ')">';
       html += '<div class="product-img-wrap">';
       if (p.image) {
-        html += '<img src="' + p.image + '" alt="' + p.name + '" loading="lazy">';
+        html += '<img src="' + p.image + '" alt="' + safeName + '" loading="lazy">';
       } else {
         html += '<div class="product-placeholder"><div class="product-placeholder-circle"></div></div>';
       }
@@ -5707,8 +5708,8 @@
         html += '<div class="tryon-badge-card">Try On</div>';
       }
       html += '</div>';
-      html += '<p class="product-type">' + p.category + '</p>';
-      html += '<p class="product-name">' + p.name + '</p>';
+      html += '<p class="product-type">' + escapeHtml(p.category || '') + '</p>';
+      html += '<p class="product-name">' + safeName + '</p>';
       html += '<p class="product-price">$' + p.price.toFixed(2) + '</p>';
       html += '</div>';
     }
@@ -5744,17 +5745,18 @@
     for (var i = 0; i < sold.length; i++) {
       var p = sold[i];
       var pIndex = products.indexOf(p);
+      var safeSoldName = escapeHtml(p.name || '');
       html += '<div class="sold-card" onclick="openModal(' + pIndex + ')">';
       html += '<div class="sold-img-wrap">';
       if (p.image) {
-        html += '<img src="' + p.image + '" alt="' + p.name + '" loading="lazy">';
+        html += '<img src="' + p.image + '" alt="' + safeSoldName + '" loading="lazy">';
       }
       html += '<div class="sold-img-overlay"></div>';
       html += '<span class="sold-tag">Sold</span>';
       html += '</div>';
       html += '<div class="sold-card-info">';
-      html += '<p class="sold-card-category">' + p.category + '</p>';
-      html += '<p class="sold-card-name">' + p.name + '</p>';
+      html += '<p class="sold-card-category">' + escapeHtml(p.category || '') + '</p>';
+      html += '<p class="sold-card-name">' + safeSoldName + '</p>';
       html += '<p class="sold-card-price">$' + p.price.toFixed(2) + '</p>';
       html += '<span class="sold-card-stars" id="sold-stars-' + pIndex + '"></span>';
       html += '</div>';
@@ -8192,6 +8194,7 @@
       <!-- Messages get appended here dynamically -->
     </div>
     <div class="glo-bot-quick-prompts" id="glo-bot-quick-prompts">
+      <button class="glo-bot-prompt" onclick="askGloBot('Where is my order?')">📦 Track my order</button>
       <button class="glo-bot-prompt" onclick="askGloBot('Are these waterproof?')">Are these waterproof?</button>
       <button class="glo-bot-prompt" onclick="askGloBot('How long until my order ships?')">Shipping time?</button>
       <button class="glo-bot-prompt" onclick="askGloBot('Do you have green earrings?')">Green earrings?</button>
@@ -8357,6 +8360,20 @@
   var gloBotOpen = false;
   var gloBotConversationStarted = false;
 
+  // Order lookup conversation state
+  // When the bot detects an order question, it walks the customer through:
+  // collecting order number → collecting email → calling the lookup API.
+  var orderLookupState = {
+    active: false,           // whether we're in an order-lookup flow
+    step: null,              // 'awaiting_order' | 'awaiting_email' | 'idle'
+    orderNumber: null,
+    email: null
+  };
+
+  function resetOrderLookup() {
+    orderLookupState = { active: false, step: null, orderNumber: null, email: null };
+  }
+
   function openGloBot() {
     closeHelpMenu();
     var overlay = document.getElementById('glo-bot-overlay');
@@ -8397,6 +8414,13 @@
   function askGloBot(question) {
     addGloBotMessage('user', question);
     if (typeof trackEvent === 'function') trackEvent('glo_bot_question', { question: question.substring(0, 100) });
+
+    // Active order lookup flow takes priority over normal response generation
+    if (orderLookupState.active) {
+      handleOrderLookupStep(question);
+      return;
+    }
+
     showGloBotTyping();
     // Simulate a brief thinking delay for natural feel
     setTimeout(function() {
@@ -8410,6 +8434,102 @@
       }
     }, 600 + Math.random() * 600);
   }
+
+  // Handle each step of the order lookup conversation
+  function handleOrderLookupStep(input) {
+    var trimmed = input.trim();
+
+    // Customer wants to bail out
+    if (/\b(cancel|nevermind|never mind|stop|forget it|exit)\b/i.test(trimmed)) {
+      resetOrderLookup();
+      addGloBotMessage('bot', "No problem! Let me know if you need anything else. 💛");
+      return;
+    }
+
+    if (orderLookupState.step === 'awaiting_order') {
+      // Extract order number — accept formats like "1234", "#1234", "order 1234"
+      var orderMatch = trimmed.match(/\d{3,}/);
+      if (!orderMatch) {
+        addGloBotMessage('bot', "Hmm, that doesn't look like an order number. Order numbers are usually 4–5 digits and you'll find them in your confirmation email (e.g., #1234). Type your order number, or type \"cancel\" to stop.");
+        return;
+      }
+      orderLookupState.orderNumber = orderMatch[0];
+      orderLookupState.step = 'awaiting_email';
+      addGloBotMessage('bot', "Got it! Now I just need the email address you used at checkout (this is for your privacy — I want to make sure I'm only sharing your order info with you).");
+      return;
+    }
+
+    if (orderLookupState.step === 'awaiting_email') {
+      var emailMatch = trimmed.match(/[\w.+-]+@[\w-]+\.[\w.-]+/);
+      if (!emailMatch) {
+        addGloBotMessage('bot', "That doesn't look like a complete email address. Please share the email you used at checkout (or type \"cancel\" to stop).");
+        return;
+      }
+      orderLookupState.email = emailMatch[0];
+      callOrderLookup(orderLookupState.orderNumber, orderLookupState.email);
+      return;
+    }
+  }
+
+  // Call the order lookup API and format the result
+  function callOrderLookup(orderNumber, email) {
+    if (typeof trackEvent === 'function') trackEvent('glo_bot_order_lookup', { order_number_length: String(orderNumber).length });
+    showGloBotTyping();
+    fetch('/api/order-lookup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderNumber: orderNumber, email: email })
+    })
+    .then(function(res) {
+      return res.json().then(function(data) {
+        return { ok: res.ok, data: data };
+      });
+    })
+    .then(function(result) {
+      hideGloBotTyping();
+      if (result.ok && result.data.order) {
+        addGloBotMessage('bot', formatOrderResponse(result.data.order));
+      } else {
+        var msg = (result.data && result.data.message) || "I couldn't look that up. Please email <a href=\"mailto:sales@gloscreations316.com\">sales@gloscreations316.com</a> and Glo will check on it for you.";
+        addGloBotMessage('bot', msg);
+      }
+      resetOrderLookup();
+    })
+    .catch(function(err) {
+      hideGloBotTyping();
+      console.error('[Order Lookup] Failed:', err);
+      addGloBotMessage('bot', "I'm having trouble reaching our order system right now. Please email <a href=\"mailto:sales@gloscreations316.com\">sales@gloscreations316.com</a> with your order number and Glo will help personally.");
+      resetOrderLookup();
+    });
+  }
+
+  // Format the order info into a friendly customer message
+  function formatOrderResponse(order) {
+    var msg = "Here's what I found for order <strong>#" + order.orderNumber + "</strong>:<br><br>";
+    msg += "<strong>Status:</strong> " + order.status + "<br>";
+    if (order.placedDate) msg += "<strong>Placed:</strong> " + order.placedDate + "<br>";
+    if (order.shippedDate) msg += "<strong>Shipped:</strong> " + order.shippedDate + "<br>";
+
+    if (order.tracking) {
+      msg += "<strong>Carrier:</strong> " + (order.carrier || 'USPS') + "<br>";
+      if (order.trackingUrl) {
+        msg += "<strong>Tracking:</strong> <a href=\"" + order.trackingUrl + "\" target=\"_blank\" rel=\"noopener\">" + order.tracking + "</a><br>";
+      } else {
+        msg += "<strong>Tracking:</strong> " + order.tracking + "<br>";
+      }
+    }
+
+    if (order.items && order.items.length > 0) {
+      msg += "<br><strong>Items:</strong><br>";
+      for (var i = 0; i < order.items.length; i++) {
+        msg += "• " + order.items[i] + "<br>";
+      }
+    }
+
+    msg += "<br>Anything else I can help with? If you have questions about this order, email <a href=\"mailto:sales@gloscreations316.com\">sales@gloscreations316.com</a> 💛";
+    return msg;
+  }
+
 
   // Call the AI proxy when the smart matcher couldn't find a confident answer
   function callGloBotAI(question) {
@@ -8506,15 +8626,67 @@
       return { text: "Take care! Come back anytime. ✨", products: null };
     }
 
-    // Product search — only if customer is CLEARLY asking to see products
-    var isClearProductQuery = /\b(show|find|see|browse|looking for|do you have|got any|any\s+\w+\s+earrings|any\s+\w+\s+pieces)\b/i.test(lower);
-    if (isClearProductQuery) {
+    // Order status lookup — detect natural phrasings about order tracking/status
+    var orderQuestionPatterns = [
+      /\b(my|the|this)\s+(order|package|shipment|delivery)\b/i,
+      /\b(order|package|shipment|tracking)\s+(status|number|info)\b/i,
+      /\bwhere\s+(is|are)\s+(my|the|order)\b/i,
+      /\bwhen\s+(will|does|can)\s+(it|my\s+order|my\s+package|the\s+package)\b.*(arrive|ship|come|deliver)/i,
+      /\b(track|tracking)\s+(my|the|number)/i,
+      /\b(check|look\s*up)\s+(my|the|an?)\s+(order|status)/i,
+      /\b(has|is)\s+(my|the)\s+order\s+(shipped|sent|arrived|delivered)/i
+    ];
+    var isOrderQuery = orderQuestionPatterns.some(function(re) { return re.test(lower); });
+    if (isOrderQuery) {
+      // Kick off the order lookup flow
+      orderLookupState.active = true;
+      orderLookupState.step = 'awaiting_order';
+      // Try to extract an order number from the original question if they included one
+      var orderMatch = lower.match(/#?(\d{3,})/);
+      if (orderMatch) {
+        orderLookupState.orderNumber = orderMatch[1];
+        orderLookupState.step = 'awaiting_email';
+        return {
+          text: "Sure thing! I can look up order <strong>#" + orderMatch[1] + "</strong> for you. For privacy, please confirm the email address you used at checkout. (Type \"cancel\" to stop.)",
+          products: null
+        };
+      }
+      return {
+        text: "I can look up your order status! Please share your order number — it's in your confirmation email and usually looks like #1234. (Type \"cancel\" to stop.)",
+        products: null
+      };
+    }
+
+    // Product search — try whenever the question hints at products in any way.
+    // We attempt the search first; if it finds matches, we show them. If not,
+    // we fall through to FAQ/AI. This catches natural phrasings like "what about
+    // flower earrings", "any green ones", "do you have stars", etc.
+    var productHintWords = [
+      // Action verbs
+      'show', 'find', 'see', 'browse', 'have', 'got', 'sell', 'available', 'looking', 'want', 'need',
+      // Product nouns
+      'earring', 'earrings', 'jewelry', 'pair', 'pairs', 'piece', 'pieces', 'product', 'design',
+      // Colors
+      'green', 'blue', 'pink', 'red', 'yellow', 'orange', 'purple', 'black', 'white', 'gold', 'silver', 'cream', 'tan', 'brown',
+      // Common themes/shapes that match real products
+      'flower', 'flowers', 'floral', 'daisy', 'rose', 'bee', 'bees', 'heart', 'hearts', 'star', 'stars', 'cross', 'crosses',
+      'leaf', 'leaves', 'bow', 'bows', 'butterfly', 'butterflies', 'mushroom', 'mushrooms', 'cherry', 'cherries',
+      'strawberry', 'strawberries', 'cappuccino', 'coffee', 'dangle', 'stud', 'studs',
+      // Style descriptors
+      'cute', 'pretty', 'small', 'big', 'large', 'tiny', 'simple', 'fancy', 'bold', 'subtle',
+      // Question phrasings often paired with products
+      'about', 'what'
+    ];
+    var hasProductHint = productHintWords.some(function(kw) {
+      return new RegExp('\\b' + kw + '\\b', 'i').test(lower);
+    });
+    if (hasProductHint) {
       var matches = searchProducts(lower);
       if (matches.length > 0) {
         var prefix = matches.length === 1 ? "Here's the piece I found:" : "Here's what I found that matches:";
         return { text: prefix, products: matches };
       }
-      // No matches → let AI handle it (it can give a thoughtful "we don't currently have that" response)
+      // No product matches → fall through to FAQ/AI
     }
 
     // FAQ matching — but ONLY return if the match is overwhelmingly strong.
@@ -8583,6 +8755,16 @@
     var matches = [];
     var words = lower.split(/[\s,?!.]+/).filter(function(w) { return w.length > 2; });
 
+    // Words that don't help us identify a specific product — skip them when scoring
+    var stopWords = ['have', 'show', 'find', 'want', 'any', 'available', 'sell', 'pair', 'pairs',
+      'piece', 'pieces', 'look', 'looking', 'need', 'one', 'some', 'thing', 'things',
+      'jewelry', 'earring', 'earrings', 'product', 'products', 'design', 'designs',
+      'about', 'what', 'how', 'when', 'where', 'why', 'who', 'which',
+      'cute', 'pretty', 'nice', 'beautiful', 'lovely', 'small', 'big', 'large', 'tiny',
+      'this', 'that', 'these', 'those', 'them', 'they',
+      'do', 'does', 'did', 'can', 'could', 'would', 'should',
+      'and', 'but', 'for', 'with', 'from', 'into', 'just', 'like'];
+
     for (var i = 0; i < products.length; i++) {
       var p = products[i];
       if (!p || !p.name) continue;
@@ -8593,11 +8775,14 @@
 
       for (var w = 0; w < words.length; w++) {
         var word = words[w];
-        // Skip generic words
-        if (['have', 'show', 'find', 'want', 'any', 'available', 'sell', 'pair', 'piece', 'pieces', 'look', 'looking', 'need', 'one', 'some', 'thing', 'things', 'jewelry', 'earrings', 'product', 'products'].indexOf(word) !== -1) continue;
-        if (name.indexOf(word) !== -1) score += 5;
-        if (desc.indexOf(word) !== -1) score += 2;
-        if (cat.indexOf(word) !== -1) score += 1;
+        if (stopWords.indexOf(word) !== -1) continue;
+
+        // Try the word as-is, plus singular form (drop trailing 's')
+        var singular = word.length > 3 && word.charAt(word.length - 1) === 's' ? word.slice(0, -1) : word;
+
+        if (name.indexOf(word) !== -1 || name.indexOf(singular) !== -1) score += 5;
+        if (desc.indexOf(word) !== -1 || desc.indexOf(singular) !== -1) score += 2;
+        if (cat.indexOf(word) !== -1 || cat.indexOf(singular) !== -1) score += 1;
       }
 
       if (score > 0) {
