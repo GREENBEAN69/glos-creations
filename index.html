@@ -2673,12 +2673,23 @@
     overflow-y: auto;
     padding: 16px 24px;
   }
+  /* When the cart is empty AND there are saved-for-later items, the cart-items
+     container should shrink to fit the message instead of pushing the saved
+     section off-screen. This modifier class is added by JS in that case. */
+  .cart-items.is-compact-empty {
+    flex: 0 0 auto;
+  }
   .cart-empty {
     text-align: center;
     padding: 60px 0;
     color: var(--stone-400);
     font-family: var(--font-body);
     font-size: 13px;
+  }
+  /* Compact version of the empty message — used when saved items follow it.
+     Less vertical padding so the saved section is visible above the fold. */
+  .cart-empty.is-compact {
+    padding: 24px 0 20px;
   }
   .cart-item {
     display: flex;
@@ -3972,11 +3983,11 @@
   <div class="cart-items" id="cart-items">
     <div class="cart-empty">Your cart is empty</div>
   </div>
-  <div id="cart-saved" style="display:none;">
-    <div style="padding:0 24px;border-top:1px solid var(--stone-200);">
+  <div id="cart-saved" style="display:none;flex-direction:column;min-height:0;">
+    <div style="padding:0 24px;border-top:1px solid var(--stone-200);flex:0 0 auto;">
       <p style="font-family:var(--font-body);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--stone-400);padding:14px 0 8px;">Saved for Later (<span id="saved-count">0</span>)</p>
     </div>
-    <div id="cart-saved-items" style="padding:0 24px 12px;max-height:200px;overflow-y:auto;"></div>
+    <div id="cart-saved-items" style="padding:0 24px 12px;flex:1 1 auto;overflow-y:auto;min-height:0;"></div>
   </div>
   <div class="cart-footer" id="cart-footer" style="display:none;">
     <div id="shipping-progress" style="margin-bottom:14px;">
@@ -4577,10 +4588,22 @@
     // Items
     var container = document.getElementById('cart-items');
     if (cart.length === 0) {
-      container.innerHTML = '<div class="cart-empty">Your cart is empty</div>';
+      // If the customer has saved-for-later items, render the empty message
+      // compactly so the saved items appear right below it instead of being
+      // pushed off the bottom of the screen.
+      var hasSavedItems = customerToken && wishlist.length > 0;
+      if (hasSavedItems) {
+        container.classList.add('is-compact-empty');
+        container.innerHTML = '<div class="cart-empty is-compact">Your cart is empty</div>';
+      } else {
+        container.classList.remove('is-compact-empty');
+        container.innerHTML = '<div class="cart-empty">Your cart is empty</div>';
+      }
       renderSavedForLater();
       return;
     }
+    // Cart has items — make sure compact class is removed
+    container.classList.remove('is-compact-empty');
 
     var html = '';
     for (var j = 0; j < cart.length; j++) {
@@ -4617,7 +4640,8 @@
       return;
     }
 
-    savedSection.style.display = 'block';
+    // display:flex (not block) so children with flex:1 expand correctly
+    savedSection.style.display = 'flex';
     savedCount.textContent = wishlist.length;
 
     var html = '';
