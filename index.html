@@ -8718,15 +8718,19 @@
   function generateGloBotResponse(question) {
     var lower = question.toLowerCase().trim();
 
-    // Order status lookup — only interception (needs structured input flow, not AI freeform)
+    // Order status lookup — only interception (needs structured input flow, not AI freeform).
+    // Patterns are intentionally broad to catch natural phrasings.
     var orderQuestionPatterns = [
       /\b(my|the|this)\s+(order|package|shipment|delivery)\b/i,
-      /\b(order|package|shipment|tracking)\s+(status|number|info)\b/i,
-      /\bwhere\s+(is|are)\s+(my|the|order)\b/i,
+      /\b(order|package|shipment|tracking)\s+(status|number|info|update)\b/i,
+      /\bwhere(\s+is|\s+are|'?s)\s+(my|the|order|it)\b/i,
       /\bwhen\s+(will|does|can)\s+(it|my\s+order|my\s+package|the\s+package)\b.*(arrive|ship|come|deliver)/i,
-      /\b(track|tracking)\s+(my|the|number)/i,
-      /\b(check|look\s*up)\s+(my|the|an?)\s+(order|status)/i,
-      /\b(has|is)\s+(my|the)\s+order\s+(shipped|sent|arrived|delivered)/i
+      /\b(track|tracking)\b.*(order|package|shipment|number)/i,
+      /\b(check|look\s*up)\s+(my|the|an?)?\s*(order|status)/i,
+      /\b(has|is)\s+(my|the)\s+order\s+(shipped|sent|arrived|delivered)/i,
+      /\border\s+#?\d{3,}/i,                          // "order 1003" or "order #1003"
+      /\bship(ped|ping|ment)\b/i,                     // "shipping status", "has it shipped"
+      /^(track|tracking|order|status|delivery)\b/i    // single-word starting question
     ];
     var isOrderQuery = orderQuestionPatterns.some(function(re) { return re.test(lower); });
     if (isOrderQuery) {
