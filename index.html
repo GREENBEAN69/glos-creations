@@ -8738,6 +8738,53 @@
     white-space: nowrap;
   }
   .glo-bot-prompt:hover { background: var(--stone-200); }
+
+  /* Style Quiz options — tappable buttons inside chat messages */
+  .quiz-progress {
+    display: inline-block;
+    font-family: var(--font-body);
+    font-size: 10px;
+    color: var(--stone-500);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+  .quiz-options {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 12px;
+  }
+  .quiz-option {
+    background: white;
+    color: var(--stone-800);
+    border: 1px solid var(--stone-300);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-family: var(--font-body);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-align: left;
+    line-height: 1.4;
+  }
+  .quiz-option:hover {
+    background: var(--stone-50);
+    border-color: var(--stone-500);
+  }
+  .quiz-option:active { transform: scale(0.98); }
+  .quiz-option.quiz-cancel {
+    color: var(--stone-500);
+    font-size: 11px;
+    padding: 8px 14px;
+    margin-top: 4px;
+    border-color: transparent;
+    background: transparent;
+  }
+  .quiz-option.quiz-cancel:hover {
+    background: var(--stone-50);
+    color: var(--stone-700);
+  }
   .glo-bot-input-row {
     display: flex;
     gap: 8px;
@@ -9015,6 +9062,8 @@
       <!-- Messages get appended here dynamically -->
     </div>
     <div class="glo-bot-quick-prompts" id="glo-bot-quick-prompts">
+      <button class="glo-bot-prompt" onclick="askGloBot('Find my style')">✨ Find my style</button>
+      <button class="glo-bot-prompt" onclick="askGloBot('I want a custom order')">🎨 Custom order</button>
       <button class="glo-bot-prompt" onclick="askGloBot('Where is my order?')">📦 Track my order</button>
       <button class="glo-bot-prompt" onclick="askGloBot('Are these waterproof?')">Are these waterproof?</button>
       <button class="glo-bot-prompt" onclick="askGloBot('How long until my order ships?')">Shipping time?</button>
@@ -9196,6 +9245,601 @@
   }
 
   // ============================================
+  // STYLE QUIZ — Helps customers discover pieces matching their preferences
+  // 5 questions, in-chat tappable buttons, saves results for logged-in customers
+  // ============================================
+  var STYLE_QUIZ_VERSION = 'v1';
+  var styleQuizState = {
+    active: false,
+    step: 0,
+    answers: {} // { occasion, palette, style, type, budget }
+  };
+
+  // Define the quiz questions — each has a key, prompt, and tappable options
+  var STYLE_QUIZ_QUESTIONS = [
+    {
+      key: 'occasion',
+      prompt: "Let's find your perfect piece! ✨ First — what are you shopping for?",
+      options: [
+        { value: 'everyday', label: 'Everyday wear' },
+        { value: 'statement', label: 'Statement pieces' },
+        { value: 'gift', label: 'Gift for someone' },
+        { value: 'all', label: 'A bit of everything' }
+      ]
+    },
+    {
+      key: 'palette',
+      prompt: "What colors call to you most?",
+      options: [
+        { value: 'warm', label: 'Warm — pinks, reds, corals' },
+        { value: 'cool', label: 'Cool — blues, greens, purples' },
+        { value: 'earthy', label: 'Earthy — neutrals, tans, browns' },
+        { value: 'bold', label: 'Bold & bright — vibrant tones' }
+      ]
+    },
+    {
+      key: 'style',
+      prompt: "What style speaks to you?",
+      options: [
+        { value: 'floral', label: 'Florals & nature' },
+        { value: 'geometric', label: 'Abstract & geometric' },
+        { value: 'whimsical', label: 'Whimsical & cute (bees, hearts, etc.)' },
+        { value: 'minimalist', label: 'Simple & minimalist' }
+      ]
+    },
+    {
+      key: 'type',
+      prompt: "What kind of earrings do you typically wear?",
+      options: [
+        { value: 'studs', label: 'Studs (small & subtle)' },
+        { value: 'dangles', label: 'Dangles (statement & flowing)' },
+        { value: 'both', label: 'Both — depends on the day' }
+      ]
+    },
+    {
+      key: 'budget',
+      prompt: "And what's your comfort range price-wise?",
+      options: [
+        { value: 'low', label: 'Under $15' },
+        { value: 'mid', label: '$15-25' },
+        { value: 'high', label: '$25+' },
+        { value: 'any', label: "I'm flexible" }
+      ]
+    }
+  ];
+
+  function getStylePrefsKey() {
+    try {
+      var email = sessionStorage.getItem('gc_email');
+      if (email) return 'gc_style_prefs_' + STYLE_QUIZ_VERSION + '_' + email;
+    } catch(e) {}
+    return null;
+  }
+
+  function saveStylePrefs(prefs) {
+    var key = getStylePrefsKey();
+    if (!key) return;
+    try {
+      localStorage.setItem(key, JSON.stringify({ savedAt: Date.now(), prefs: prefs }));
+    } catch(e) {}
+  }
+
+  function loadStylePrefs() {
+    var key = getStylePrefsKey();
+    if (!key) return null;
+    try {
+      var raw = localStorage.getItem(key);
+      if (!raw) return null;
+      var saved = JSON.parse(raw);
+      return (saved && saved.prefs) ? saved.prefs : null;
+    } catch(e) { return null; }
+  }
+
+  // Detect if customer wants to take/retake the quiz
+  function isStyleQuizRequest(question) {
+    var q = question.toLowerCase();
+    var patterns = [
+      /\bfind\s+my\s+style\b/,
+      /\bstyle\s+quiz\b/,
+      /\bnot\s+sure\s+where\s+to\s+start\b/,
+      /\bhelp\s+me\s+(find|pick|choose)\b/,
+      /\b(find|recommend)\s+(me\s+)?(something|a\s+piece)\b/,
+      /\bwhat\s+(should|would)\s+i\s+(get|buy|pick)\b/,
+      /\btake\s+(the\s+)?quiz\b/,
+      /\bquiz\b/
+    ];
+    return patterns.some(function(re) { return re.test(q); });
+  }
+
+  // Start the quiz — asks the first question
+  function startStyleQuiz() {
+    styleQuizState = { active: true, step: 0, answers: {} };
+    if (typeof trackEvent === 'function') trackEvent('style_quiz_start', {});
+    askStyleQuizQuestion();
+  }
+
+  // Render the current quiz question with tappable option buttons
+  function askStyleQuizQuestion() {
+    if (!styleQuizState.active) return;
+    var q = STYLE_QUIZ_QUESTIONS[styleQuizState.step];
+    if (!q) {
+      // All questions answered — generate recommendations
+      finishStyleQuiz();
+      return;
+    }
+
+    // Show progress (Question X of 5)
+    var progress = '<span class="quiz-progress">Question ' + (styleQuizState.step + 1) + ' of ' + STYLE_QUIZ_QUESTIONS.length + '</span><br>';
+    var html = progress + q.prompt;
+
+    // Add tappable buttons inline
+    html += '<div class="quiz-options">';
+    for (var i = 0; i < q.options.length; i++) {
+      var opt = q.options[i];
+      // Sanitize values for safe inline use — only alphanumeric and underscores allowed
+      var safeKey = q.key.replace(/[^a-z_]/g, '');
+      var safeValue = opt.value.replace(/[^a-z_]/g, '');
+      html += '<button class="quiz-option" onclick="answerStyleQuiz(\'' + safeKey + '\',\'' + safeValue + '\');return false;">' + opt.label + '</button>';
+    }
+    html += '<button class="quiz-option quiz-cancel" onclick="cancelStyleQuiz();return false;">Cancel quiz</button>';
+    html += '</div>';
+
+    addGloBotMessage('bot', html);
+  }
+
+  // Called when customer taps an answer
+  function answerStyleQuiz(key, value) {
+    if (!styleQuizState.active) return;
+    styleQuizState.answers[key] = value;
+    // Echo their selection back as a "user" message so the chat reads naturally
+    var question = STYLE_QUIZ_QUESTIONS[styleQuizState.step];
+    var labelText = value;
+    if (question) {
+      for (var i = 0; i < question.options.length; i++) {
+        if (question.options[i].value === value) {
+          labelText = question.options[i].label;
+          break;
+        }
+      }
+    }
+    addGloBotMessage('user', labelText);
+    styleQuizState.step++;
+    // Brief pause for natural pacing, then ask next
+    setTimeout(function() { askStyleQuizQuestion(); }, 400);
+  }
+
+  function cancelStyleQuiz() {
+    if (!styleQuizState.active) return;
+    styleQuizState = { active: false, step: 0, answers: {} };
+    addGloBotMessage('bot', "No worries — quiz cancelled. Let me know if you'd like to take it later, or just ask me anything! 💛");
+  }
+
+  // After all 5 questions answered — match to products and show recommendations
+  function finishStyleQuiz() {
+    var answers = styleQuizState.answers;
+    if (typeof trackEvent === 'function') trackEvent('style_quiz_complete', answers);
+
+    // Save preferences if logged in (so the bot can use them later)
+    if (typeof customerToken !== 'undefined' && customerToken) {
+      saveStylePrefs(answers);
+    }
+
+    // Score every product against the answers
+    var matches = scoreProductsForQuiz(answers);
+
+    // Reset quiz state — done with it
+    styleQuizState = { active: false, step: 0, answers: {} };
+
+    // Build response message
+    if (matches.length === 0) {
+      addGloBotMessage('bot', "I tried matching your style but couldn't find a perfect fit in our current pieces — Glo only stocks one of each, so the lineup changes often! ✨ Each piece is one-of-a-kind. Want to follow on Instagram <a href=\"https://www.instagram.com/gloscreations31_6/\" target=\"_blank\" rel=\"noopener\">@gloscreations31_6</a> for new arrivals, or email Glo about a custom piece in your style?");
+      return;
+    }
+
+    var topMatches = matches.slice(0, 3);
+    var msg = "Based on your style, here's what I think you'll love ✨";
+    if (topMatches.length === 1) {
+      msg += "<br><br>This one feels right for you:";
+    } else {
+      msg += "<br><br>Top " + topMatches.length + " picks based on your answers:";
+    }
+    msg += "<br><br><em>Tap any piece to see full details. And remember — each is one of a kind, so once they're gone, they're gone!</em>";
+
+    // Format products for the message attachment
+    var productCards = topMatches.map(function(m) {
+      return {
+        index: m.index,
+        name: m.product.name,
+        image: m.product.image,
+        price: m.product.price
+      };
+    });
+
+    addGloBotMessage('bot', msg, productCards);
+  }
+
+  // Score every product against the customer's quiz answers, return ranked matches
+  function scoreProductsForQuiz(answers) {
+    if (typeof products === 'undefined' || !products.length) return [];
+    var matches = [];
+
+    // Color keyword groups for each palette
+    var paletteKeywords = {
+      warm: ['pink', 'red', 'coral', 'rose', 'cherry', 'orange', 'peach', 'salmon', 'magenta'],
+      cool: ['blue', 'green', 'purple', 'teal', 'mint', 'violet', 'navy', 'turquoise', 'aqua'],
+      earthy: ['tan', 'brown', 'beige', 'cream', 'gold', 'bronze', 'sand', 'mocha', 'taupe', 'neutral'],
+      bold: ['bright', 'vibrant', 'neon', 'electric', 'bold']
+    };
+
+    // Style keyword groups
+    var styleKeywords = {
+      floral: ['flower', 'floral', 'rose', 'daisy', 'leaf', 'leaves', 'bloom', 'petal', 'garden', 'botanical'],
+      geometric: ['abstract', 'geometric', 'triangle', 'circle', 'pattern', 'modern', 'shape'],
+      whimsical: ['bee', 'butterfly', 'heart', 'star', 'mushroom', 'cute', 'cherry', 'fruit', 'animal'],
+      minimalist: ['simple', 'minimal', 'classic', 'clean', 'subtle', 'tiny', 'small', 'understated']
+    };
+
+    for (var i = 0; i < products.length; i++) {
+      var p = products[i];
+      if (!p || !p.name) continue;
+      // Skip sold-out items — no point recommending what they can't buy
+      if (!p.available || p.stock <= 0) continue;
+
+      var score = 0;
+      var searchText = ((p.name || '') + ' ' + (p.description || '') + ' ' + (p.category || '')).toLowerCase();
+
+      // Palette matching
+      if (answers.palette && paletteKeywords[answers.palette]) {
+        for (var pk = 0; pk < paletteKeywords[answers.palette].length; pk++) {
+          if (searchText.indexOf(paletteKeywords[answers.palette][pk]) !== -1) {
+            score += 3;
+            break;
+          }
+        }
+      }
+
+      // Style matching
+      if (answers.style && styleKeywords[answers.style]) {
+        for (var sk = 0; sk < styleKeywords[answers.style].length; sk++) {
+          if (searchText.indexOf(styleKeywords[answers.style][sk]) !== -1) {
+            score += 4;
+            break;
+          }
+        }
+      }
+
+      // Type matching (studs vs dangles)
+      if (answers.type === 'studs' && /\bstud\b/i.test(searchText)) score += 3;
+      else if (answers.type === 'dangles' && /\b(dangle|drop|hoop)\b/i.test(searchText)) score += 3;
+      else if (answers.type === 'both') score += 1; // small bonus to anything
+
+      // Budget matching
+      if (answers.budget && p.price) {
+        var price = parseFloat(p.price);
+        if (answers.budget === 'low' && price < 15) score += 2;
+        else if (answers.budget === 'mid' && price >= 15 && price <= 25) score += 2;
+        else if (answers.budget === 'high' && price > 25) score += 2;
+        else if (answers.budget === 'any') score += 1;
+        // Penalize if WAY out of budget
+        if (answers.budget === 'low' && price > 25) score -= 2;
+        if (answers.budget === 'high' && price < 10) score -= 1;
+      }
+
+      // Occasion is hardest to keyword-match, give a small base score so all items qualify
+      if (answers.occasion === 'everyday' && /\bstud\b/i.test(searchText)) score += 1;
+      if (answers.occasion === 'statement' && /\b(dangle|drop|hoop|large|big|bold)\b/i.test(searchText)) score += 1;
+
+      if (score > 0) {
+        matches.push({ product: p, index: i, score: score });
+      }
+    }
+
+    // Sort by score, highest first
+    matches.sort(function(a, b) { return b.score - a.score; });
+
+    // If we have very few matches, also include some random in-stock pieces as fallback
+    if (matches.length < 3) {
+      var matchedIndices = {};
+      for (var mi = 0; mi < matches.length; mi++) matchedIndices[matches[mi].index] = true;
+      for (var pi = 0; pi < products.length && matches.length < 3; pi++) {
+        if (matchedIndices[pi]) continue;
+        var prod = products[pi];
+        if (prod && prod.available && prod.stock > 0) {
+          matches.push({ product: prod, index: pi, score: 0 });
+        }
+      }
+    }
+
+    return matches;
+  }
+
+  // ============================================
+  // CUSTOM ORDER INTAKE — Multi-step conversation flow
+  // Collects requirements for a custom piece, submits to /api/custom-order
+  // which emails Glo (with admin BCC) and sends the customer a confirmation.
+  // ============================================
+  var customOrderState = {
+    active: false,
+    step: 0,
+    answers: {} // { style, palette, earringType, occasion, budget, timeline, references, customerName, customerEmail }
+  };
+
+  // Define the steps. Some have tappable buttons (for fast UX), others are free text.
+  var CUSTOM_ORDER_STEPS = [
+    {
+      key: 'style',
+      type: 'text',
+      prompt: "I'd love to help bring your custom piece to life! ✨ Let's start — describe the style or theme you're imagining. (For example: \"sunflowers in warm yellows\" or \"abstract geometric studs in earthy tones\")"
+    },
+    {
+      key: 'palette',
+      type: 'buttons',
+      prompt: "What color palette feels right?",
+      options: [
+        { value: 'Warm tones (pinks, reds, corals)', label: 'Warm tones' },
+        { value: 'Cool tones (blues, greens, purples)', label: 'Cool tones' },
+        { value: 'Earthy neutrals (tans, browns, creams)', label: 'Earthy neutrals' },
+        { value: 'Bold and bright', label: 'Bold & bright' },
+        { value: 'Black and white / monochrome', label: 'Black & white' },
+        { value: "I'll describe it in the notes", label: "Custom — I'll explain" }
+      ]
+    },
+    {
+      key: 'earringType',
+      type: 'buttons',
+      prompt: "What kind of earrings would you like?",
+      options: [
+        { value: 'Studs (small, sit close to ear)', label: 'Studs' },
+        { value: 'Dangles (drop / dangle from ear)', label: 'Dangles' },
+        { value: 'Hoops or huggies', label: 'Hoops' },
+        { value: 'Glo can decide what fits the design', label: "I'll trust Glo's judgment" }
+      ]
+    },
+    {
+      key: 'occasion',
+      type: 'text',
+      prompt: "Is this for a special occasion or someone in particular? (Optional — feel free to skip with \"none\")"
+    },
+    {
+      key: 'budget',
+      type: 'buttons',
+      prompt: "What's your budget range?",
+      options: [
+        { value: 'Under $20', label: 'Under $20' },
+        { value: '$20-35', label: '$20-35' },
+        { value: '$35-50', label: '$35-50' },
+        { value: '$50+', label: '$50+' },
+        { value: 'Open / flexible', label: "Flexible" }
+      ]
+    },
+    {
+      key: 'timeline',
+      type: 'buttons',
+      prompt: "When do you need it by?",
+      options: [
+        { value: 'No rush', label: 'No rush' },
+        { value: 'Within 2-3 weeks', label: '2-3 weeks' },
+        { value: 'Within 1 month', label: '1 month' },
+        { value: 'Specific date — will mention in notes', label: 'Specific date' }
+      ]
+    },
+    {
+      key: 'references',
+      type: 'text',
+      prompt: "Anything else? Reference photos (paste a link), specific colors, sizes, or any other details. Type \"none\" to skip."
+    },
+    {
+      key: 'customerName',
+      type: 'text',
+      prompt: "Almost done! What's your name?",
+      autofill: 'name'
+    },
+    {
+      key: 'customerEmail',
+      type: 'text',
+      prompt: "And what email should Glo reply to?",
+      autofill: 'email',
+      validate: 'email'
+    }
+  ];
+
+  // Detect when customer is asking for a custom order
+  function isCustomOrderRequest(question) {
+    var q = question.toLowerCase();
+    var patterns = [
+      /\bcustom\s+(order|piece|earring|design|request|made)/,
+      /\b(make|create)\s+(me|us)\s+(something|a)/,
+      /\bcan\s+(glo|you|she)\s+(make|create|design)/,
+      /\bi\s+(want|need|would\s+like)\s+(a\s+)?custom/,
+      /\bspecific\s+design\b/,
+      /\b(personalized|bespoke|made\s+to\s+order)/,
+      /\bcommission\b/,
+      /^custom$/i,
+      /\bdo\s+(you|y'all)\s+do\s+custom/
+    ];
+    return patterns.some(function(re) { return re.test(q); });
+  }
+
+  function startCustomOrder() {
+    customOrderState = { active: true, step: 0, answers: {} };
+    if (typeof trackEvent === 'function') trackEvent('custom_order_start', {});
+    askCustomOrderQuestion();
+  }
+
+  function cancelCustomOrder() {
+    customOrderState = { active: false, step: 0, answers: {} };
+    addGloBotMessage('bot', "No problem — request cancelled. If you change your mind, just say \"custom order\" anytime. 💛");
+  }
+
+  function askCustomOrderQuestion() {
+    if (!customOrderState.active) return;
+    var step = CUSTOM_ORDER_STEPS[customOrderState.step];
+    if (!step) {
+      // All questions answered — show the confirmation step
+      showCustomOrderConfirmation();
+      return;
+    }
+
+    // For autofill steps, try to pre-fill from session and skip the question
+    if (step.autofill && customerToken) {
+      try {
+        var prefilledValue = '';
+        if (step.autofill === 'name') prefilledValue = sessionStorage.getItem('gc_name') || '';
+        else if (step.autofill === 'email') prefilledValue = sessionStorage.getItem('gc_email') || '';
+        if (prefilledValue && prefilledValue !== 'there') {
+          customOrderState.answers[step.key] = prefilledValue;
+          customOrderState.step++;
+          // Brief pause then continue
+          setTimeout(function() { askCustomOrderQuestion(); }, 100);
+          return;
+        }
+      } catch(e) {}
+    }
+
+    var totalSteps = CUSTOM_ORDER_STEPS.length;
+    var progress = '<span class="quiz-progress">Step ' + (customOrderState.step + 1) + ' of ' + totalSteps + '</span><br>';
+    var html = progress + step.prompt;
+
+    if (step.type === 'buttons') {
+      html += '<div class="quiz-options">';
+      for (var i = 0; i < step.options.length; i++) {
+        var opt = step.options[i];
+        // Encode for safe inline use in onclick — use index, not value
+        html += '<button class="quiz-option" onclick="answerCustomOrderButton(' + i + ');return false;">' + opt.label + '</button>';
+      }
+      html += '<button class="quiz-option quiz-cancel" onclick="cancelCustomOrder();return false;">Cancel request</button>';
+      html += '</div>';
+    } else {
+      // Free-text step — they just type their answer in the normal input field.
+      // Add a subtle cancel option below the prompt.
+      html += '<div class="quiz-options"><button class="quiz-option quiz-cancel" onclick="cancelCustomOrder();return false;">Cancel request</button></div>';
+    }
+
+    addGloBotMessage('bot', html);
+  }
+
+  // Called when customer taps a button option
+  function answerCustomOrderButton(optionIdx) {
+    if (!customOrderState.active) return;
+    var step = CUSTOM_ORDER_STEPS[customOrderState.step];
+    if (!step || step.type !== 'buttons') return;
+    var opt = step.options[optionIdx];
+    if (!opt) return;
+    customOrderState.answers[step.key] = opt.value;
+    addGloBotMessage('user', opt.label);
+    customOrderState.step++;
+    setTimeout(function() { askCustomOrderQuestion(); }, 400);
+  }
+
+  // Called when customer types text during a text-input step
+  function answerCustomOrderText(input) {
+    if (!customOrderState.active) return;
+    var step = CUSTOM_ORDER_STEPS[customOrderState.step];
+    if (!step || step.type !== 'text') return;
+
+    var trimmed = input.trim();
+
+    // Email validation
+    if (step.validate === 'email') {
+      if (!/^[\w.+-]+@[\w-]+\.[\w.-]+$/.test(trimmed)) {
+        addGloBotMessage('bot', "That doesn't look like a valid email — could you double-check? Glo needs this to send your quote.");
+        return;
+      }
+    }
+
+    // Min length validation for style description
+    if (step.key === 'style' && trimmed.length < 3) {
+      addGloBotMessage('bot', "Could you give me a little more detail? Even just a few words about the theme or vibe helps Glo design something perfect.");
+      return;
+    }
+
+    // Treat "none" or "skip" as empty for optional fields
+    var lowerTrimmed = trimmed.toLowerCase();
+    var optionalFields = ['occasion', 'references'];
+    if (optionalFields.indexOf(step.key) !== -1 && (lowerTrimmed === 'none' || lowerTrimmed === 'skip' || lowerTrimmed === 'n/a' || lowerTrimmed === 'no')) {
+      customOrderState.answers[step.key] = '';
+    } else {
+      customOrderState.answers[step.key] = trimmed.substring(0, 1500);
+    }
+
+    customOrderState.step++;
+    setTimeout(function() { askCustomOrderQuestion(); }, 400);
+  }
+
+  // Show a summary of everything collected and let customer confirm before sending
+  function showCustomOrderConfirmation() {
+    var a = customOrderState.answers;
+    var summary = '<strong>Here\'s your custom order request:</strong><br><br>';
+    var rows = [
+      { label: 'Style', value: a.style },
+      { label: 'Palette', value: a.palette },
+      { label: 'Type', value: a.earringType },
+      { label: 'Occasion', value: a.occasion },
+      { label: 'Budget', value: a.budget },
+      { label: 'Timeline', value: a.timeline },
+      { label: 'Notes', value: a.references },
+      { label: 'Name', value: a.customerName },
+      { label: 'Email', value: a.customerEmail }
+    ];
+    for (var i = 0; i < rows.length; i++) {
+      if (!rows[i].value) continue;
+      // Escape any HTML the customer typed before showing it back
+      var safeVal = String(rows[i].value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      summary += '<strong>' + rows[i].label + ':</strong> ' + safeVal + '<br>';
+    }
+    summary += '<br>Send this to Glo? She\'ll personally review and reply within 24-48 hours with a quote. ✨';
+    summary += '<div class="quiz-options">';
+    summary += '<button class="quiz-option" onclick="submitCustomOrder();return false;" style="background:#1c1917;color:white;border-color:#1c1917;">Yes, send it!</button>';
+    summary += '<button class="quiz-option quiz-cancel" onclick="cancelCustomOrder();return false;">Cancel</button>';
+    summary += '</div>';
+    addGloBotMessage('bot', summary);
+  }
+
+  // Submit to /api/custom-order
+  function submitCustomOrder() {
+    if (!customOrderState.active) return;
+    var data = customOrderState.answers;
+
+    addGloBotMessage('bot', '<em>Sending your request to Glo...</em>');
+
+    fetch('/api/custom-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customerName: data.customerName || '',
+        customerEmail: data.customerEmail || '',
+        style: data.style || '',
+        palette: data.palette || '',
+        earringType: data.earringType || '',
+        occasion: data.occasion || '',
+        budget: data.budget || '',
+        timeline: data.timeline || '',
+        references: data.references || '',
+        botName: '' // honeypot — must stay empty
+      })
+    })
+    .then(function(res) {
+      return res.json().then(function(d) { return { ok: res.ok, status: res.status, data: d }; });
+    })
+    .then(function(result) {
+      if (result.ok) {
+        if (typeof trackEvent === 'function') trackEvent('custom_order_submit', { email: data.customerEmail });
+        addGloBotMessage('bot', "Got it! ✨ Your custom order request has been sent to Glo. You should receive a confirmation email at <strong>" + data.customerEmail.replace(/</g, '&lt;') + "</strong> shortly.<br><br>Glo will personally review your request and get back to you within 24-48 hours with a quote and timeline. Thank you for choosing handmade — I can't wait to bring your vision to life! 💛");
+        customOrderState = { active: false, step: 0, answers: {} };
+      } else {
+        var msg = (result.data && result.data.message) || "Something went wrong. Please email <a href=\"mailto:sales@gloscreations316.com\">sales@gloscreations316.com</a> directly so we don't lose your details!";
+        addGloBotMessage('bot', msg);
+        // Don't reset state — let them retry
+      }
+    })
+    .catch(function(err) {
+      console.error('[Custom Order] Submit failed:', err);
+      addGloBotMessage('bot', "I couldn't connect to send your request. Please email <a href=\"mailto:sales@gloscreations316.com\">sales@gloscreations316.com</a> directly with your details so we don't lose them!");
+    });
+  }
+
+
+  // ============================================
   // BOT CHAT HISTORY PERSISTENCE
   // Only active for logged-in customers — anonymous users start fresh each session.
   // Stored in browser localStorage, scoped to the customer's email.
@@ -9342,9 +9986,56 @@
     addGloBotMessage('user', question);
     if (typeof trackEvent === 'function') trackEvent('glo_bot_question', { question: question.substring(0, 100) });
 
-    // Active order lookup flow takes priority over normal response generation
+    // Active order lookup flow takes priority
     if (orderLookupState.active) {
       handleOrderLookupStep(question);
+      return;
+    }
+
+    // If custom order flow is active, route the typed input there
+    if (customOrderState.active) {
+      // Allow cancellation by typing
+      if (/\b(cancel|stop|nevermind|never mind|exit|quit)\b/i.test(question.trim())) {
+        cancelCustomOrder();
+        return;
+      }
+      var currentStep = CUSTOM_ORDER_STEPS[customOrderState.step];
+      // Only accept text input on text-type steps. On button-type steps, ignore typing
+      // (force them to tap a button or cancel) — keeps the data structured.
+      if (currentStep && currentStep.type === 'text') {
+        answerCustomOrderText(question);
+      } else {
+        addGloBotMessage('bot', "Please tap one of the options above, or type \"cancel\" to stop.");
+      }
+      return;
+    }
+
+    // If style quiz is active, the customer typed instead of tapping — they probably
+    // want to quit. Cancel gracefully and let them ask whatever they typed.
+    if (styleQuizState.active) {
+      // Allow them to bail mid-quiz by typing "cancel" or similar
+      if (/\b(cancel|stop|nevermind|never mind|exit|quit)\b/i.test(question)) {
+        cancelStyleQuiz();
+        return;
+      }
+      // They typed something else mid-quiz — pause the quiz, answer their question,
+      // and give them an option to continue. Less confusing than ignoring.
+      styleQuizState = { active: false, step: 0, answers: {} };
+      addGloBotMessage('bot', "Pausing the quiz — let me answer that for you first. You can always type \"find my style\" to start over.");
+      // Then fall through to normal response generation
+    }
+
+    // Detect explicit quiz requests
+    if (isStyleQuizRequest(question)) {
+      hideGloBotTyping();
+      startStyleQuiz();
+      return;
+    }
+
+    // Detect custom order requests
+    if (isCustomOrderRequest(question)) {
+      hideGloBotTyping();
+      startCustomOrder();
       return;
     }
 
