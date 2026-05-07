@@ -9661,13 +9661,48 @@
   }
 
   function startCustomOrder() {
-    customOrderState = { active: true, step: 0, answers: {} };
+    customOrderState = { active: true, step: 0, answers: {}, awaitingCancelConfirm: false };
     if (typeof trackEvent === 'function') trackEvent('custom_order_start', {});
     askCustomOrderQuestion();
   }
 
+  // Ask for cancel confirmation instead of cancelling immediately —
+  // protects against accidental taps that destroy collected answers.
+  function requestCancelCustomOrder() {
+    if (!customOrderState.active) return;
+    // If there are no answers yet (first step), just cancel — nothing to lose
+    var hasAnswers = false;
+    for (var k in customOrderState.answers) {
+      if (customOrderState.answers.hasOwnProperty(k) && customOrderState.answers[k]) {
+        hasAnswers = true; break;
+      }
+    }
+    if (!hasAnswers) {
+      cancelCustomOrder();
+      return;
+    }
+    customOrderState.awaitingCancelConfirm = true;
+    var html = "<strong>Are you sure you want to cancel?</strong><br>You've already filled in some answers — they'll be lost if you cancel now.";
+    html += '<div class="quiz-options">';
+    html += '<button class="quiz-option" onclick="confirmCancelCustomOrder();return false;" style="border-color:#dc2626;color:#dc2626;">Yes, cancel</button>';
+    html += '<button class="quiz-option" onclick="dismissCancelCustomOrder();return false;" style="background:#1c1917;color:white;border-color:#1c1917;">No, keep going</button>';
+    html += '</div>';
+    addGloBotMessage('bot', html);
+  }
+
+  function confirmCancelCustomOrder() {
+    cancelCustomOrder();
+  }
+
+  function dismissCancelCustomOrder() {
+    if (!customOrderState.active) return;
+    customOrderState.awaitingCancelConfirm = false;
+    addGloBotMessage('bot', "No problem — let's keep going! ✨");
+    setTimeout(function() { askCustomOrderQuestion(); }, 400);
+  }
+
   function cancelCustomOrder() {
-    customOrderState = { active: false, step: 0, answers: {} };
+    customOrderState = { active: false, step: 0, answers: {}, awaitingCancelConfirm: false };
     addGloBotMessage('bot', "No problem — request cancelled. If you change your mind, just say \"custom order\" anytime. 💛");
   }
 
@@ -9707,12 +9742,12 @@
         // Encode for safe inline use in onclick — use index, not value
         html += '<button class="quiz-option" onclick="answerCustomOrderButton(' + i + ');return false;">' + opt.label + '</button>';
       }
-      html += '<button class="quiz-option quiz-cancel" onclick="cancelCustomOrder();return false;">Cancel request</button>';
+      html += '<button class="quiz-option quiz-cancel" onclick="requestCancelCustomOrder();return false;">Cancel request</button>';
       html += '</div>';
     } else {
       // Free-text step — they just type their answer in the normal input field.
       // Add a subtle cancel option below the prompt.
-      html += '<div class="quiz-options"><button class="quiz-option quiz-cancel" onclick="cancelCustomOrder();return false;">Cancel request</button></div>';
+      html += '<div class="quiz-options"><button class="quiz-option quiz-cancel" onclick="requestCancelCustomOrder();return false;">Cancel request</button></div>';
     }
 
     addGloBotMessage('bot', html);
@@ -9790,7 +9825,7 @@
     summary += '<br>Send this to Glo? She\'ll personally review and reply within 24-48 hours with a quote. ✨';
     summary += '<div class="quiz-options">';
     summary += '<button class="quiz-option" onclick="submitCustomOrder();return false;" style="background:#1c1917;color:white;border-color:#1c1917;">Yes, send it!</button>';
-    summary += '<button class="quiz-option quiz-cancel" onclick="cancelCustomOrder();return false;">Cancel</button>';
+    summary += '<button class="quiz-option quiz-cancel" onclick="requestCancelCustomOrder();return false;">Cancel</button>';
     summary += '</div>';
     addGloBotMessage('bot', summary);
   }
@@ -9994,11 +10029,32 @@
 
     // If custom order flow is active, route the typed input there
     if (customOrderState.active) {
-      // Allow cancellation by typing
-      if (/\b(cancel|stop|nevermind|never mind|exit|quit)\b/i.test(question.trim())) {
-        cancelCustomOrder();
+      var trimmedInput = question.trim();
+
+      // If we're waiting for cancel confirmation, treat typed input as the answer to that
+      if (customOrderState.awaitingCancelConfirm) {
+        if (/\b(yes|yeah|yep|ok|sure|cancel|confirm)\b/i.test(trimmedInput)) {
+          confirmCancelCustomOrder();
+        } else {
+          dismissCancelCustomOrder();
+        }
         return;
       }
+
+      // Allow cancellation by typing — uses confirm flow if answers exist
+      if (/\b(cancel|stop|nevermind|never mind|exit|quit)\b/i.test(trimmedInput)) {
+        requestCancelCustomOrder();
+        return;
+      }
+
+      // If the customer typed a phrase that LOOKS like a different action they want
+      // to switch to (style quiz, track order, etc.), warn them instead of
+      // accepting it as their answer.
+      if (isStyleQuizRequest(trimmedInput) || isCustomOrderRequest(trimmedInput) || /\bmy\s+order\b|\btrack(ing)?\b/i.test(trimmedInput)) {
+        addGloBotMessage('bot', "It looks like you might want to do something else — but you're in the middle of a custom order. Would you like to <strong>cancel this</strong> and switch, or keep going?<div class=\"quiz-options\"><button class=\"quiz-option\" onclick=\"requestCancelCustomOrder();return false;\">Cancel custom order</button><button class=\"quiz-option\" onclick=\"dismissCancelCustomOrder();return false;\" style=\"background:#1c1917;color:white;border-color:#1c1917;\">Keep going</button></div>");
+        return;
+      }
+
       var currentStep = CUSTOM_ORDER_STEPS[customOrderState.step];
       // Only accept text input on text-type steps. On button-type steps, ignore typing
       // (force them to tap a button or cancel) — keeps the data structured.
@@ -10010,16 +10066,21 @@
       return;
     }
 
-    // If style quiz is active, the customer typed instead of tapping — they probably
-    // want to quit. Cancel gracefully and let them ask whatever they typed.
+    // If style quiz is active, the customer typed instead of tapping
     if (styleQuizState.active) {
+      var trimmedQ = question.trim();
       // Allow them to bail mid-quiz by typing "cancel" or similar
-      if (/\b(cancel|stop|nevermind|never mind|exit|quit)\b/i.test(question)) {
+      if (/\b(cancel|stop|nevermind|never mind|exit|quit)\b/i.test(trimmedQ)) {
         cancelStyleQuiz();
         return;
       }
-      // They typed something else mid-quiz — pause the quiz, answer their question,
-      // and give them an option to continue. Less confusing than ignoring.
+      // If they typed a phrase that looks like a different action they want to do,
+      // warn them rather than just abandoning the quiz silently.
+      if (isCustomOrderRequest(trimmedQ) || /\bmy\s+order\b|\btrack(ing)?\b/i.test(trimmedQ)) {
+        addGloBotMessage('bot', "Looks like you want to do something else — but you're in the middle of the style quiz. Cancel the quiz and switch, or keep going?<div class=\"quiz-options\"><button class=\"quiz-option\" onclick=\"cancelStyleQuiz();return false;\">Cancel quiz</button><button class=\"quiz-option\" onclick=\"askStyleQuizQuestion();return false;\" style=\"background:#1c1917;color:white;border-color:#1c1917;\">Keep going</button></div>");
+        return;
+      }
+      // They typed something else mid-quiz — pause the quiz, answer their question
       styleQuizState = { active: false, step: 0, answers: {} };
       addGloBotMessage('bot', "Pausing the quiz — let me answer that for you first. You can always type \"find my style\" to start over.");
       // Then fall through to normal response generation
