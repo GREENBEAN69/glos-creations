@@ -5881,9 +5881,18 @@
   }
 
   function logoutCustomer() {
+    // Clear bot chat history first while we still have access to the customer's email key
+    if (typeof clearBotChatHistory === 'function') clearBotChatHistory();
+
     customerToken = null;
     customerName = '';
     wishlist = [];
+    // Also clear in-memory bot state so the next visitor starts fresh
+    gloBotConversationStarted = false;
+    gloBotHistory = [];
+    var msgContainer = document.getElementById('glo-bot-messages');
+    if (msgContainer) msgContainer.innerHTML = '';
+
     try {
       sessionStorage.removeItem('gc_token');
       sessionStorage.removeItem('gc_name');
@@ -9186,6 +9195,94 @@
     orderLookupState = { active: false, step: null, orderNumber: null, email: null };
   }
 
+  // ============================================
+  // BOT CHAT HISTORY PERSISTENCE
+  // Only active for logged-in customers — anonymous users start fresh each session.
+  // Stored in browser localStorage, scoped to the customer's email.
+  // Keeps last 30 messages (15 exchanges) max to avoid bloat.
+  // Cleared on logout to respect privacy on shared devices.
+  // ============================================
+  var BOT_HISTORY_VERSION = 'v1';
+  var BOT_HISTORY_MAX_MESSAGES = 30;
+
+  function getBotHistoryKey() {
+    try {
+      var email = sessionStorage.getItem('gc_email');
+      if (email) return 'gc_bot_history_' + BOT_HISTORY_VERSION + '_' + email;
+    } catch(e) {}
+    return null;
+  }
+
+  // Save the current visible chat history. Each entry: { sender, text }
+  // Called after every message is added to the chat.
+  function saveBotChatHistory() {
+    var key = getBotHistoryKey();
+    if (!key) return; // not logged in, skip
+    var container = document.getElementById('glo-bot-messages');
+    if (!container) return;
+    var nodes = container.querySelectorAll('.glo-bot-msg');
+    var history = [];
+    // Walk the DOM in order; cap at recent messages so localStorage stays small
+    var startIdx = Math.max(0, nodes.length - BOT_HISTORY_MAX_MESSAGES);
+    for (var i = startIdx; i < nodes.length; i++) {
+      var n = nodes[i];
+      var sender = n.classList.contains('user') ? 'user' : 'bot';
+      // Save the innerHTML so links and formatting are preserved.
+      // Strip the embedded product cards — those need fresh product references.
+      var clone = n.cloneNode(true);
+      var products = clone.querySelector('.glo-bot-msg-products');
+      if (products) products.remove();
+      history.push({ sender: sender, text: clone.innerHTML });
+    }
+    try {
+      localStorage.setItem(key, JSON.stringify({
+        savedAt: Date.now(),
+        messages: history
+      }));
+    } catch(e) {
+      console.warn('[Bot] Could not save chat history:', e);
+    }
+  }
+
+  // Restore previously saved chat history. Returns true if anything was restored.
+  function loadBotChatHistory() {
+    var key = getBotHistoryKey();
+    if (!key) return false;
+    try {
+      var raw = localStorage.getItem(key);
+      if (!raw) return false;
+      var saved = JSON.parse(raw);
+      if (!saved || !Array.isArray(saved.messages) || saved.messages.length === 0) return false;
+
+      // Don't restore very old conversations (older than 30 days)
+      var THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+      if (saved.savedAt && (Date.now() - saved.savedAt) > THIRTY_DAYS) return false;
+
+      var container = document.getElementById('glo-bot-messages');
+      if (!container) return false;
+      for (var i = 0; i < saved.messages.length; i++) {
+        var m = saved.messages[i];
+        if (!m || !m.text) continue;
+        var msgEl = document.createElement('div');
+        msgEl.className = 'glo-bot-msg ' + (m.sender === 'user' ? 'user' : 'bot');
+        msgEl.innerHTML = m.text;
+        container.appendChild(msgEl);
+      }
+      container.scrollTop = container.scrollHeight;
+      return true;
+    } catch(e) {
+      console.warn('[Bot] Could not load chat history:', e);
+      return false;
+    }
+  }
+
+  // Clear saved history for current customer — called on logout
+  function clearBotChatHistory() {
+    var key = getBotHistoryKey();
+    if (!key) return;
+    try { localStorage.removeItem(key); } catch(e) {}
+  }
+
   function openGloBot() {
     closeHelpMenu();
     var overlay = document.getElementById('glo-bot-overlay');
@@ -9194,11 +9291,29 @@
     gloBotOpen = true;
     if (typeof trackEvent === 'function') trackEvent('glo_bot_open', {});
     if (!gloBotConversationStarted) {
-      // Greet the user the first time
-      setTimeout(function() {
-        addGloBotMessage('bot', "Hi! I'm Glo's Assistant ✨ I can help you find products, answer questions about shipping, materials, the app, and more. What can I help you with today?");
-        gloBotConversationStarted = true;
-      }, 300);
+      // For logged-in customers, try to restore prior conversation first
+      var restored = false;
+      if (typeof customerToken !== 'undefined' && customerToken) {
+        restored = loadBotChatHistory();
+      }
+      if (restored) {
+        // Show a subtle "welcome back" line so the customer knows we picked up where they left off
+        setTimeout(function() {
+          var custName = '';
+          try { custName = sessionStorage.getItem('gc_name') || ''; } catch(e) {}
+          var greeting = custName && custName !== 'there' ?
+            "Welcome back, " + custName + "! ✨ Picking up where we left off — what can I help with?" :
+            "Welcome back! ✨ Picking up where we left off — what can I help with?";
+          addGloBotMessage('bot', greeting);
+          gloBotConversationStarted = true;
+        }, 300);
+      } else {
+        // Fresh greeting
+        setTimeout(function() {
+          addGloBotMessage('bot', "Hi! I'm Glo's Assistant ✨ I can help you find products, answer questions about shipping, materials, the app, and more. What can I help you with today?");
+          gloBotConversationStarted = true;
+        }, 300);
+      }
     }
     // Focus the input shortly after open animation
     setTimeout(function() {
@@ -9693,6 +9808,10 @@
     }
     container.appendChild(msg);
     container.scrollTop = container.scrollHeight;
+    // Persist conversation for logged-in customers so they can pick up where they left off
+    if (typeof customerToken !== 'undefined' && customerToken) {
+      saveBotChatHistory();
+    }
   }
 
   function showGloBotTyping() {
