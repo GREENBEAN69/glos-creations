@@ -2583,7 +2583,10 @@
     right: -420px;
     width: 400px;
     max-width: 90vw;
+    /* Use dvh (dynamic viewport height) so iOS Safari's collapsing toolbar
+       doesn't push the cart footer below the visible area. Falls back to vh on older browsers. */
     height: 100vh;
+    height: 100dvh;
     background: var(--stone-50);
     z-index: 201;
     display: flex;
@@ -2697,7 +2700,11 @@
   .cart-item-remove:hover { color: var(--stone-900); }
   .cart-footer {
     padding: 20px 24px;
+    /* Add iOS safe-area inset so the checkout button isn't covered by the home indicator */
+    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
     border-top: 1px solid var(--stone-200);
+    background: var(--stone-50);
+    flex-shrink: 0;
   }
   .cart-subtotal {
     display: flex;
