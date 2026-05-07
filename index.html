@@ -2586,6 +2586,7 @@
     /* Use dvh (dynamic viewport height) so iOS Safari's collapsing toolbar
        doesn't push the cart footer below the visible area. Falls back to vh on older browsers. */
     height: 100vh;
+    height: 100dvh;
     background: var(--stone-50);
     z-index: 201;
     display: flex;
@@ -4088,10 +4089,11 @@
     localStorage.setItem('gc_ig_popup', 'followed');
     trackEvent('ig_popup_clicked', {});
     document.getElementById('ig-popup').classList.remove('show');
-    var igUrl = 'https://www.instagram.com/gloscreations31_6/';
-    var newWindow = window.open(igUrl, '_blank', 'noopener,noreferrer');
-    if (!newWindow) {
-      window.location.href = igUrl;
+    var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      window.location.href = 'https://www.instagram.com/gloscreations31_6/';
+    } else {
+      window.open('https://www.instagram.com/gloscreations31_6/', '_blank');
     }
   }
 
@@ -4262,10 +4264,11 @@
     var post = igPosts[currentPostIndex];
     if (!post) return;
     trackEvent('story_view_on_ig', { post_index: currentPostIndex, post_label: post.label || '' });
-    // Open in external app/tab so the PWA stays put without iOS showing its address bar
-    var newWindow = window.open(post.url, '_blank', 'noopener,noreferrer');
-    if (!newWindow) {
+    var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
       window.location.href = post.url;
+    } else {
+      window.open(post.url, '_blank');
     }
   }
 
@@ -6538,15 +6541,11 @@
 
   function openInstagram() {
     trackEvent('instagram_click', {});
-    // Always open Instagram externally so the PWA (or browser tab) stays put.
-    // Using window.open with _blank pops the Instagram app on mobile when
-    // installed, or a new tab in Safari/Chrome — without showing the URL bar
-    // overlay that window.location.href triggers in PWA mode.
-    var igUrl = 'https://www.instagram.com/gloscreations31_6/';
-    var newWindow = window.open(igUrl, '_blank', 'noopener,noreferrer');
-    // Fallback: if the browser blocked the popup (rare), use direct navigation
-    if (!newWindow) {
-      window.location.href = igUrl;
+    var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      window.location.href = 'https://www.instagram.com/gloscreations31_6/';
+    } else {
+      window.open('https://www.instagram.com/gloscreations31_6/', '_blank');
     }
   }
 
