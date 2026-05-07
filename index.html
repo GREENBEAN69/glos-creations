@@ -4317,7 +4317,29 @@
   function toggleCart() {
     document.getElementById('cart-drawer').classList.toggle('open');
     document.getElementById('cart-overlay').classList.toggle('open');
+    // Reset the checkout button when the cart is opened — covers the case where
+    // the user clicked checkout, went to Shopify, hit back, and the button is
+    // still stuck in the "Creating checkout..." state.
+    resetCheckoutButton();
   }
+
+  function resetCheckoutButton() {
+    var btn = document.getElementById('cart-checkout-btn');
+    if (btn) {
+      btn.textContent = 'Proceed to Checkout';
+      btn.disabled = false;
+    }
+  }
+
+  // Handle the iOS Safari "back-forward cache" (bfcache) — when a user clicks
+  // checkout, gets sent to Shopify, then taps back, iOS often restores the page
+  // from cache instead of reloading. The button state was frozen mid-action.
+  // The 'pageshow' event with 'persisted=true' tells us this happened.
+  window.addEventListener('pageshow', function(e) {
+    if (e.persisted) {
+      resetCheckoutButton();
+    }
+  });
 
   function addToCart(product) {
     // Check stock
@@ -4398,6 +4420,10 @@
   }
 
   function updateCartUI() {
+    // Whenever cart contents change, reset the checkout button so a stuck
+    // "Creating checkout..." state from a previous attempt clears immediately.
+    resetCheckoutButton();
+
     var totalItems = 0;
     var subtotal = 0;
     for (var i = 0; i < cart.length; i++) {
