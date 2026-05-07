@@ -9071,9 +9071,9 @@
       <button class="glo-bot-prompt" onclick="askGloBot('How do I install the app?')">Install the app</button>
       <button class="glo-bot-prompt" onclick="askGloBot('What is your return policy?')">Return policy</button>
     </div>
-    <form class="glo-bot-input-row" onsubmit="submitGloBotInput(event);return false;">
-      <input type="text" class="glo-bot-input" id="glo-bot-input" placeholder="Type your question..." autocomplete="off">
-      <button type="submit" class="glo-bot-send" aria-label="Send">
+    <form class="glo-bot-input-row" onsubmit="submitGloBotInput(event);return false;" id="glo-bot-form">
+      <input type="text" class="glo-bot-input" id="glo-bot-input" placeholder="Type your question..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();submitGloBotInput(event);return false;}">
+      <button type="button" class="glo-bot-send" aria-label="Send" onclick="submitGloBotInput(event);return false;">
         <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
       </button>
     </form>
