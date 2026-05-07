@@ -3339,6 +3339,58 @@
   </div>
 </nav>
 
+<script>
+  // Mobile hamburger menu — auto-close behaviors
+  // Without these, the menu would stay open while the customer scrolls or taps elsewhere,
+  // which feels broken on mobile. We close on:
+  //   1. Scroll past a small threshold (gives a tiny scroll grace before closing)
+  //   2. Tap anywhere outside the menu and the hamburger button
+  //   3. Browser resize past mobile breakpoint (e.g., tablet rotated to landscape)
+  (function() {
+    function getMobileNav() { return document.getElementById('mobile-nav'); }
+    function closeMobileNav() {
+      var nav = getMobileNav();
+      if (nav) nav.classList.remove('show');
+    }
+    function isMobileNavOpen() {
+      var nav = getMobileNav();
+      return nav && nav.classList.contains('show');
+    }
+
+    // 1) Close on scroll — but only after a tiny threshold so a fingertip nudge doesn't close it
+    var lastScrollY = window.scrollY;
+    var scrollThreshold = 25; // pixels
+    window.addEventListener('scroll', function() {
+      if (!isMobileNavOpen()) return;
+      if (Math.abs(window.scrollY - lastScrollY) > scrollThreshold) {
+        closeMobileNav();
+      }
+    }, { passive: true });
+    // Reset baseline whenever menu opens
+    document.addEventListener('click', function() {
+      if (isMobileNavOpen()) lastScrollY = window.scrollY;
+    }, true);
+
+    // 2) Close on tap outside — but ignore taps on the hamburger button itself
+    // (otherwise opening would immediately re-close the menu)
+    document.addEventListener('click', function(e) {
+      if (!isMobileNavOpen()) return;
+      var nav = getMobileNav();
+      var hamburger = document.querySelector('.mobile-menu-btn');
+      if (nav.contains(e.target)) return;        // tap was inside menu — let the link handle it
+      if (hamburger && hamburger.contains(e.target)) return; // tap was the hamburger toggle itself
+      closeMobileNav();
+    });
+
+    // 3) Close if window resizes past mobile breakpoint (e.g., device rotation)
+    window.addEventListener('resize', function() {
+      if (window.innerWidth > 768 && isMobileNavOpen()) {
+        closeMobileNav();
+      }
+    });
+  })();
+</script>
+
 <section class="hero">
   <div>
     <img src="https://raw.githubusercontent.com/GREENBEAN69/glos-creations/main/logo.png" alt="Glo's Creations - Deuteronomy 31:6" style="max-width:400px;width:100%;margin-bottom:0;" class="fade-in d1">
