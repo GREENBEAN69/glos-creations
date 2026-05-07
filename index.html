@@ -7968,10 +7968,15 @@
     border-radius: 18px;
     padding: 10px 14px;
     font-family: var(--font-body);
-    font-size: 13px;
+    /* 16px on mobile prevents iOS Safari from auto-zooming when the input is focused */
+    font-size: 16px;
     color: var(--stone-900);
     outline: none;
     transition: border-color 0.15s;
+  }
+  @media (min-width: 601px) {
+    /* Desktop can use a tighter font size since auto-zoom isn't an issue */
+    .glo-bot-input { font-size: 13px; }
   }
   .glo-bot-input:focus { border-color: var(--stone-700); }
   .glo-bot-send {
@@ -8712,20 +8717,8 @@
   // rather than guessing. Better silent than wrong.
   function generateGloBotResponse(question) {
     var lower = question.toLowerCase().trim();
-    var words = lower.split(/[\s,?!.]+/).filter(function(w) { return w.length > 1; });
 
-    // Quick greetings — these are obvious enough to handle locally
-    if (/^(hi|hello|hey|yo|sup|hola)\b\s*\.?$/i.test(lower)) {
-      return { text: "Hi there! 👋 Ask me anything about Glo's Creations — products, shipping, materials, our app, or anything else.", products: null };
-    }
-    if (/^(thanks|thank you|thx|ty)\b\s*[.!]?$/i.test(lower)) {
-      return { text: "You're welcome! Anything else I can help with? 💛", products: null };
-    }
-    if (/^(bye|goodbye|see ya|later)\b\s*[.!]?$/i.test(lower)) {
-      return { text: "Take care! Come back anytime. ✨", products: null };
-    }
-
-    // Order status lookup — detect natural phrasings about order tracking/status
+    // Order status lookup — only interception (needs structured input flow, not AI freeform)
     var orderQuestionPatterns = [
       /\b(my|the|this)\s+(order|package|shipment|delivery)\b/i,
       /\b(order|package|shipment|tracking)\s+(status|number|info)\b/i,
@@ -8737,10 +8730,8 @@
     ];
     var isOrderQuery = orderQuestionPatterns.some(function(re) { return re.test(lower); });
     if (isOrderQuery) {
-      // Kick off the order lookup flow
       orderLookupState.active = true;
       orderLookupState.step = 'awaiting_order';
-      // Try to extract an order number from the original question if they included one
       var orderMatch = lower.match(/#?(\d{3,})/);
       if (orderMatch) {
         orderLookupState.orderNumber = orderMatch[1];
@@ -8756,51 +8747,9 @@
       };
     }
 
-    // Product search — try whenever the question hints at products in any way.
-    // We attempt the search first; if it finds matches, we show them. If not,
-    // we fall through to FAQ/AI. This catches natural phrasings like "what about
-    // flower earrings", "any green ones", "do you have stars", etc.
-    var productHintWords = [
-      // Action verbs
-      'show', 'find', 'see', 'browse', 'have', 'got', 'sell', 'available', 'looking', 'want', 'need',
-      // Product nouns
-      'earring', 'earrings', 'jewelry', 'pair', 'pairs', 'piece', 'pieces', 'product', 'design',
-      // Colors
-      'green', 'blue', 'pink', 'red', 'yellow', 'orange', 'purple', 'black', 'white', 'gold', 'silver', 'cream', 'tan', 'brown',
-      // Common themes/shapes that match real products
-      'flower', 'flowers', 'floral', 'daisy', 'rose', 'bee', 'bees', 'heart', 'hearts', 'star', 'stars', 'cross', 'crosses',
-      'leaf', 'leaves', 'bow', 'bows', 'butterfly', 'butterflies', 'mushroom', 'mushrooms', 'cherry', 'cherries',
-      'strawberry', 'strawberries', 'cappuccino', 'coffee', 'dangle', 'stud', 'studs',
-      // Style descriptors
-      'cute', 'pretty', 'small', 'big', 'large', 'tiny', 'simple', 'fancy', 'bold', 'subtle',
-      // Question phrasings often paired with products
-      'about', 'what'
-    ];
-    var hasProductHint = productHintWords.some(function(kw) {
-      return new RegExp('\\b' + kw + '\\b', 'i').test(lower);
-    });
-    if (hasProductHint) {
-      var matches = searchProducts(lower);
-      if (matches.length > 0) {
-        var prefix;
-        if (matches.length === 1) {
-          prefix = "Found one for you! ✨";
-        } else {
-          prefix = "Here's what I think you'll love:";
-        }
-        return { text: prefix, products: matches };
-      }
-      // No product matches → fall through to AI which has the full catalog
-    }
-
-    // FAQ matching — but ONLY return if the match is overwhelmingly strong.
-    // The threshold is intentionally high so the bot stays silent when uncertain.
-    var faqMatch = findBestFaqMatch(lower, words);
-    if (faqMatch && faqMatch.score >= 10) {
-      return { text: faqMatch.faq.a, products: null };
-    }
-
-    // Anything else → fall back to real AI. No guessing, no fluff.
+    // Everything else goes to AI — no canned responses, no template matching.
+    // The AI has the full product catalog and conversation history, so it can
+    // recommend by name, answer FAQ-style questions, and feel like a real person.
     return { text: "", products: null, fallback: true };
   }
 
