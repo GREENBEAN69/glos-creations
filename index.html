@@ -1646,6 +1646,93 @@
   }
   .order-status.fulfilled { background: #ecfdf5; color: #166534; }
   .order-status.unfulfilled { background: #fef9c3; color: #854d0e; }
+  .order-status.cancelled { background: #fee2e2; color: #991b1b; }
+
+  /* Tracking section — most prominent info after status */
+  .order-tracking {
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: var(--stone-50);
+    border-radius: 8px;
+    border: 1px solid var(--stone-200);
+  }
+  .order-tracking-label {
+    font-family: var(--font-body);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--stone-500);
+    margin-bottom: 6px;
+  }
+  .order-tracking-item {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--stone-700);
+    margin-bottom: 4px;
+  }
+  .order-tracking-item:last-child { margin-bottom: 0; }
+  .order-tracking-carrier {
+    font-weight: 500;
+    color: var(--stone-900);
+  }
+  .order-tracking-link {
+    color: var(--stone-700);
+    text-decoration: underline;
+    font-family: monospace;
+    font-size: 11px;
+  }
+  .order-tracking-link:hover { color: var(--stone-900); }
+  .order-tracking-number {
+    font-family: monospace;
+    font-size: 11px;
+    color: var(--stone-600);
+  }
+
+  /* Shipping address — collapsed by default */
+  .order-address-details {
+    margin-top: 10px;
+  }
+  .order-address-summary {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--stone-500);
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+    padding: 4px 0;
+  }
+  .order-address-summary::-webkit-details-marker { display: none; }
+  .order-address-summary::before {
+    content: '▸';
+    display: inline-block;
+    margin-right: 6px;
+    transition: transform 0.18s ease;
+    font-size: 9px;
+  }
+  .order-address-details[open] .order-address-summary::before {
+    transform: rotate(90deg);
+  }
+  .order-address-summary:hover { color: var(--stone-700); }
+  .order-address-text {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--stone-600);
+    padding: 6px 0 0 14px;
+    line-height: 1.5;
+  }
+
+  /* Cancelled note */
+  .order-cancelled-note {
+    margin-top: 10px;
+    padding: 8px 10px;
+    background: #fef2f2;
+    border-radius: 6px;
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: #991b1b;
+  }
+  .order-cancelled-note a { color: #991b1b; text-decoration: underline; }
+
   .order-date {
     font-family: var(--font-body);
     font-size: 11px;
@@ -4999,7 +5086,19 @@
     var ordersList = document.getElementById('orders-list');
     ordersList.innerHTML = '<div class="orders-loading">Loading your orders...</div>';
 
-    var query = '{ customer(customerAccessToken: "' + customerToken + '") { orders(first: 20, sortKey: PROCESSED_AT, reverse: true) { edges { node { id orderNumber name processedAt fulfillmentStatus currentTotalPrice { amount currencyCode } lineItems(first: 10) { edges { node { title quantity variant { image { url } } } } } } } } } }';
+    // Expanded query: includes tracking info, financial status, and shipping address.
+    // Each piece is one-of-a-kind so we don't need detailed variant data.
+    var query = '{ customer(customerAccessToken: "' + customerToken + '") { ' +
+      'orders(first: 20, sortKey: PROCESSED_AT, reverse: true) { edges { node { ' +
+        'id orderNumber name processedAt cancelReason canceledAt ' +
+        'financialStatus fulfillmentStatus ' +
+        'currentTotalPrice { amount currencyCode } ' +
+        'totalShippingPrice { amount currencyCode } ' +
+        'shippingAddress { address1 address2 city province zip country } ' +
+        'successfulFulfillments(first: 5) { trackingInfo(first: 3) { number url company } } ' +
+        'lineItems(first: 10) { edges { node { title quantity variant { image { url } } } } } ' +
+      '} } } ' +
+    '} }';
     var data = await shopifyFetch(query);
 
     if (data && data.data && data.data.customer && data.data.customer.orders) {
@@ -5014,11 +5113,46 @@
         var order = orders[i].node;
         var date = new Date(order.processedAt);
         var dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-        var status = order.fulfillmentStatus || 'UNFULFILLED';
-        var statusClass = status === 'FULFILLED' ? 'fulfilled' : 'unfulfilled';
-        var statusText = status === 'FULFILLED' ? 'Shipped' : 'Processing';
 
-        html += '<div class="order-card">';
+        // Determine status — combines fulfillment + financial + cancellation
+        var statusText = 'Processing';
+        var statusClass = 'unfulfilled';
+        if (order.canceledAt) {
+          statusText = 'Cancelled';
+          statusClass = 'cancelled';
+        } else if (order.fulfillmentStatus === 'FULFILLED') {
+          statusText = 'Shipped';
+          statusClass = 'fulfilled';
+        } else if (order.financialStatus === 'PAID') {
+          statusText = 'Paid — Preparing';
+          statusClass = 'unfulfilled';
+        } else if (order.financialStatus === 'PENDING') {
+          statusText = 'Payment Pending';
+          statusClass = 'unfulfilled';
+        }
+
+        // Collect tracking info from successful fulfillments
+        var trackingItems = [];
+        if (order.successfulFulfillments && order.successfulFulfillments.length) {
+          for (var f = 0; f < order.successfulFulfillments.length; f++) {
+            var ful = order.successfulFulfillments[f];
+            if (ful.trackingInfo && ful.trackingInfo.length) {
+              for (var t = 0; t < ful.trackingInfo.length; t++) {
+                var tr = ful.trackingInfo[t];
+                if (tr.number) {
+                  trackingItems.push({
+                    number: tr.number,
+                    company: tr.company || 'USPS',
+                    url: tr.url || ''
+                  });
+                }
+              }
+            }
+          }
+        }
+
+        // Build the order card with click-to-expand details
+        html += '<div class="order-card" data-order-idx="' + i + '">';
         html += '<div class="order-header">';
         html += '<span class="order-number">Order ' + order.name + '</span>';
         html += '<span class="order-status ' + statusClass + '">' + statusText + '</span>';
@@ -5029,10 +5163,10 @@
         html += '<div class="order-items">';
         var items = order.lineItems.edges;
         for (var j = 0; j < items.length && j < 4; j++) {
-          var item = items[j].node;
+          var lineItem = items[j].node;
           html += '<div class="order-item-thumb">';
-          if (item.variant && item.variant.image) {
-            html += '<img src="' + item.variant.image.url + '" alt="' + item.title + '">';
+          if (lineItem.variant && lineItem.variant.image) {
+            html += '<img src="' + lineItem.variant.image.url + '" alt="' + escapeHtml(lineItem.title) + '">';
           }
           html += '</div>';
         }
@@ -5041,12 +5175,62 @@
         }
         html += '</div>';
 
-        // Item names
+        // Item names with quantities
         for (var k = 0; k < items.length; k++) {
-          html += '<p style="font-family:var(--font-body);font-size:11px;color:var(--stone-600);margin-bottom:2px;">' + items[k].node.title + ' × ' + items[k].node.quantity + '</p>';
+          html += '<p style="font-family:var(--font-body);font-size:11px;color:var(--stone-600);margin-bottom:2px;">' + escapeHtml(items[k].node.title) + ' × ' + items[k].node.quantity + '</p>';
         }
 
-        html += '<div class="order-total" style="margin-top:10px;"><span>Total</span><span>$' + parseFloat(order.currentTotalPrice.amount).toFixed(2) + '</span></div>';
+        // Tracking section — most-valuable info, prominent display
+        if (trackingItems.length > 0) {
+          html += '<div class="order-tracking">';
+          html += '<p class="order-tracking-label">📦 Tracking</p>';
+          for (var ti = 0; ti < trackingItems.length; ti++) {
+            var trk = trackingItems[ti];
+            var trkUrl = trk.url || buildTrackingUrl(trk.company, trk.number);
+            html += '<div class="order-tracking-item">';
+            html += '<span class="order-tracking-carrier">' + escapeHtml(trk.company) + '</span> ';
+            if (trkUrl) {
+              html += '<a href="' + trkUrl + '" target="_blank" rel="noopener" class="order-tracking-link">' + escapeHtml(trk.number) + ' →</a>';
+            } else {
+              html += '<span class="order-tracking-number">' + escapeHtml(trk.number) + '</span>';
+            }
+            html += '</div>';
+          }
+          html += '</div>';
+        }
+
+        // Shipping address (collapsed by default — tap to expand)
+        if (order.shippingAddress) {
+          var addr = order.shippingAddress;
+          var addrParts = [];
+          if (addr.address1) addrParts.push(addr.address1);
+          if (addr.address2) addrParts.push(addr.address2);
+          var locParts = [];
+          if (addr.city) locParts.push(addr.city);
+          if (addr.province) locParts.push(addr.province);
+          if (addr.zip) locParts.push(addr.zip);
+          if (locParts.length) addrParts.push(locParts.join(', '));
+          if (addr.country) addrParts.push(addr.country);
+          if (addrParts.length > 0) {
+            html += '<details class="order-address-details">';
+            html += '<summary class="order-address-summary">Shipping address</summary>';
+            html += '<p class="order-address-text">' + escapeHtml(addrParts.join('\n')).replace(/\n/g, '<br>') + '</p>';
+            html += '</details>';
+          }
+        }
+
+        // Total breakdown
+        var shipping = order.totalShippingPrice ? parseFloat(order.totalShippingPrice.amount) : 0;
+        if (shipping > 0) {
+          html += '<div class="order-total" style="margin-top:10px;font-size:11px;color:var(--stone-500);"><span>Shipping</span><span>$' + shipping.toFixed(2) + '</span></div>';
+        }
+        html += '<div class="order-total" style="margin-top:6px;"><span>Total</span><span>$' + parseFloat(order.currentTotalPrice.amount).toFixed(2) + '</span></div>';
+
+        // Cancellation note
+        if (order.canceledAt) {
+          html += '<p class="order-cancelled-note">This order was cancelled. For questions, email <a href="mailto:sales@gloscreations316.com">sales@gloscreations316.com</a></p>';
+        }
+
         html += '</div>';
       }
       ordersList.innerHTML = html;
@@ -5054,6 +5238,19 @@
       ordersList.innerHTML = '<div class="orders-empty">Could not load orders. Please try again.</div>';
     }
   }
+
+  // Build a tracking URL based on the carrier name
+  function buildTrackingUrl(carrier, number) {
+    if (!number) return '';
+    var c = String(carrier || '').toLowerCase();
+    var num = encodeURIComponent(number);
+    if (c.indexOf('usps') !== -1) return 'https://tools.usps.com/go/TrackConfirmAction?qtc_tLabels1=' + num;
+    if (c.indexOf('ups') !== -1) return 'https://www.ups.com/track?tracknum=' + num;
+    if (c.indexOf('fedex') !== -1) return 'https://www.fedex.com/fedextrack/?trknbr=' + num;
+    if (c.indexOf('dhl') !== -1) return 'https://www.dhl.com/us-en/home/tracking/tracking-express.html?tracking-id=' + num;
+    return 'https://www.google.com/search?q=' + encodeURIComponent((carrier || '') + ' ' + number);
+  }
+
 
   // ============================================
   // WISHLIST (saved per customer in localStorage)
