@@ -1688,6 +1688,17 @@
     color: var(--stone-600);
   }
 
+  /* Link to Shopify-hosted order status page (always available) */
+  .order-status-link {
+    display: inline-block;
+    margin-top: 10px;
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--stone-700);
+    text-decoration: underline;
+  }
+  .order-status-link:hover { color: var(--stone-900); }
+
   /* Shipping address — collapsed by default */
   .order-address-details {
     margin-top: 10px;
@@ -1732,6 +1743,225 @@
     color: #991b1b;
   }
   .order-cancelled-note a { color: #991b1b; text-decoration: underline; }
+
+  /* "View details" button on each order card */
+  .order-view-details-btn {
+    display: block;
+    width: 100%;
+    margin-top: 12px;
+    padding: 10px 16px;
+    background: var(--stone-900);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .order-view-details-btn:hover { background: var(--stone-700); }
+
+  /* Order Detail Modal — shows full order info in a branded layout */
+  .order-detail-modal {
+    grid-template-columns: 1fr !important;
+    max-width: 600px !important;
+    width: 92vw;
+  }
+  .order-detail-body {
+    padding: 36px 28px 28px;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+  .order-detail-header {
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--stone-200);
+  }
+  .order-detail-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .order-detail-num {
+    font-family: var(--font-display);
+    font-size: 24px;
+    color: var(--stone-900);
+    line-height: 1;
+  }
+  .order-detail-date {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--stone-500);
+    margin-top: 6px;
+  }
+  .order-detail-section {
+    margin-bottom: 24px;
+  }
+  .order-detail-section-label {
+    font-family: var(--font-body);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--stone-500);
+    margin-bottom: 10px;
+  }
+
+  /* Tracking section in modal — bigger, more prominent */
+  .order-detail-tracking {
+    padding: 16px;
+    background: var(--stone-50);
+    border-radius: 10px;
+    border: 1px solid var(--stone-200);
+  }
+  .order-detail-tracking-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--stone-200);
+  }
+  .order-detail-tracking-row:last-child { border-bottom: none; }
+  .order-detail-tracking-row:first-child { padding-top: 0; }
+  .order-detail-tracking-row a {
+    color: var(--stone-900);
+    text-decoration: underline;
+    font-family: monospace;
+    font-size: 12px;
+  }
+
+  /* Item list in modal — full size, with images */
+  .order-detail-items {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .order-detail-item {
+    display: flex;
+    gap: 14px;
+    padding: 12px;
+    background: var(--stone-50);
+    border-radius: 8px;
+  }
+  .order-detail-item-img {
+    width: 64px;
+    height: 64px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--stone-100);
+    flex-shrink: 0;
+  }
+  .order-detail-item-img img { width: 100%; height: 100%; object-fit: cover; }
+  .order-detail-item-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .order-detail-item-name {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--stone-900);
+    margin-bottom: 4px;
+    line-height: 1.4;
+  }
+  .order-detail-item-qty {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--stone-500);
+  }
+
+  /* Address block in modal */
+  .order-detail-address {
+    padding: 14px 16px;
+    background: var(--stone-50);
+    border-radius: 8px;
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--stone-700);
+    line-height: 1.6;
+  }
+
+  /* Totals breakdown */
+  .order-detail-totals {
+    background: var(--stone-50);
+    padding: 14px 16px;
+    border-radius: 8px;
+  }
+  .order-detail-total-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--stone-600);
+  }
+  .order-detail-total-row.grand {
+    border-top: 1px solid var(--stone-200);
+    margin-top: 6px;
+    padding-top: 10px;
+    font-size: 14px;
+    color: var(--stone-900);
+    font-weight: 500;
+  }
+
+  /* Action buttons in modal */
+  .order-detail-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--stone-200);
+  }
+  .order-detail-action-btn {
+    display: block;
+    text-align: center;
+    padding: 12px 18px;
+    border-radius: 8px;
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+  }
+  .order-detail-action-btn.primary {
+    background: var(--stone-900);
+    color: white;
+  }
+  .order-detail-action-btn.primary:hover { background: var(--stone-700); }
+  .order-detail-action-btn.secondary {
+    background: white;
+    color: var(--stone-700);
+    border: 1px solid var(--stone-300);
+  }
+  .order-detail-action-btn.secondary:hover {
+    background: var(--stone-50);
+    color: var(--stone-900);
+  }
+  .order-detail-shopify-link {
+    text-align: center;
+    margin-top: 14px;
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--stone-500);
+  }
+  .order-detail-shopify-link a {
+    color: var(--stone-600);
+    text-decoration: underline;
+  }
+
+  @media (max-width: 600px) {
+    .order-detail-body { padding: 28px 20px 20px; }
+    .order-detail-num { font-size: 20px; }
+  }
 
   .order-date {
     font-family: var(--font-body);
@@ -4056,6 +4286,18 @@
   </div>
 </div>
 
+<!-- Order Details Modal — shown when customer clicks "View details" on an order card -->
+<div class="modal-overlay" id="order-detail-overlay" onclick="if(event.target===this)closeOrderDetail()">
+  <div class="modal order-detail-modal">
+    <button class="modal-close" onclick="closeOrderDetail()" aria-label="Close">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="order-detail-body" id="order-detail-body">
+      <!-- Populated by showOrderDetail() -->
+    </div>
+  </div>
+</div>
+
 <!-- Cart Overlay -->
 <div class="cart-overlay" id="cart-overlay" onclick="toggleCart()"></div>
 
@@ -4497,6 +4739,7 @@
   // ============================================
   async function shopifyFetch(query) {
     var versions = workingApiVersion ? [workingApiVersion] : API_VERSIONS;
+    var lastErrors = null;
     for (var v = 0; v < versions.length; v++) {
       try {
         var response = await fetch('https://' + SHOPIFY_STORE + '/api/' + versions[v] + '/graphql.json', {
@@ -4506,11 +4749,20 @@
         });
         if (response.status === 401) continue;
         var data = await response.json();
-        if (data.errors) continue;
+        if (data.errors) {
+          // Log GraphQL errors so we can see what fields are unsupported
+          console.warn('[Shopify] API errors on version', versions[v], data.errors);
+          lastErrors = data.errors;
+          continue;
+        }
         workingApiVersion = versions[v];
         return data;
-      } catch (e) { continue; }
+      } catch (e) {
+        console.warn('[Shopify] Network error on version', versions[v], e);
+        continue;
+      }
     }
+    if (lastErrors) console.error('[Shopify] All API versions failed. Last errors:', lastErrors);
     return null;
   }
 
@@ -5086,157 +5338,351 @@
     var ordersList = document.getElementById('orders-list');
     ordersList.innerHTML = '<div class="orders-loading">Loading your orders...</div>';
 
-    // Expanded query: includes tracking info, financial status, and shipping address.
-    // Each piece is one-of-a-kind so we don't need detailed variant data.
+    // Storefront API order query — uses fields confirmed available in 2024-10+:
+    //   - canceledAt (DateTime, null if not cancelled)
+    //   - financialStatus, fulfillmentStatus
+    //   - currentTotalPrice, totalShippingPrice (MoneyV2)
+    //   - shippingAddress (MailingAddress)
+    //   - successfulFulfillments → trackingCompany + trackingInfo[].number/url
+    //   - statusUrl (Shopify-hosted order status page)
     var query = '{ customer(customerAccessToken: "' + customerToken + '") { ' +
       'orders(first: 20, sortKey: PROCESSED_AT, reverse: true) { edges { node { ' +
-        'id orderNumber name processedAt cancelReason canceledAt ' +
-        'financialStatus fulfillmentStatus ' +
+        'id orderNumber name processedAt canceledAt ' +
+        'financialStatus fulfillmentStatus statusUrl ' +
         'currentTotalPrice { amount currencyCode } ' +
         'totalShippingPrice { amount currencyCode } ' +
         'shippingAddress { address1 address2 city province zip country } ' +
-        'successfulFulfillments(first: 5) { trackingInfo(first: 3) { number url company } } ' +
+        'successfulFulfillments(first: 5) { trackingCompany trackingInfo(first: 3) { number url } } ' +
         'lineItems(first: 10) { edges { node { title quantity variant { image { url } } } } } ' +
       '} } } ' +
     '} }';
     var data = await shopifyFetch(query);
 
-    if (data && data.data && data.data.customer && data.data.customer.orders) {
-      var orders = data.data.customer.orders.edges;
-      if (orders.length === 0) {
-        ordersList.innerHTML = '<div class="orders-empty">No orders yet. Start shopping!</div>';
-        return;
+    // Log result for debugging — visible in browser console
+    console.log('[Orders] API response:', data);
+
+    if (!data || !data.data || !data.data.customer) {
+      ordersList.innerHTML = '<div class="orders-empty">Could not load orders. Please try again, or email <a href="mailto:sales@gloscreations316.com">sales@gloscreations316.com</a>.</div>';
+      return;
+    }
+
+    if (!data.data.customer.orders) {
+      ordersList.innerHTML = '<div class="orders-empty">No orders yet. Start shopping!</div>';
+      return;
+    }
+
+    var orders = data.data.customer.orders.edges;
+    if (orders.length === 0) {
+      ordersList.innerHTML = '<div class="orders-empty">No orders yet. Start shopping!</div>';
+      return;
+    }
+
+    // Cache orders globally so the detail modal can pull from this list
+    window._cachedOrders = orders;
+
+    var html = '';
+    for (var i = 0; i < orders.length; i++) {
+      var order = orders[i].node;
+      var date = new Date(order.processedAt);
+      var dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+      // Determine status — combines fulfillment + financial + cancellation
+      var statusText = 'Processing';
+      var statusClass = 'unfulfilled';
+      if (order.canceledAt) {
+        statusText = 'Cancelled';
+        statusClass = 'cancelled';
+      } else if (order.fulfillmentStatus === 'FULFILLED') {
+        statusText = 'Shipped';
+        statusClass = 'fulfilled';
+      } else if (order.financialStatus === 'PAID') {
+        statusText = 'Paid — Preparing';
+        statusClass = 'unfulfilled';
+      } else if (order.financialStatus === 'PENDING') {
+        statusText = 'Payment Pending';
+        statusClass = 'unfulfilled';
       }
 
-      var html = '';
-      for (var i = 0; i < orders.length; i++) {
-        var order = orders[i].node;
-        var date = new Date(order.processedAt);
-        var dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-
-        // Determine status — combines fulfillment + financial + cancellation
-        var statusText = 'Processing';
-        var statusClass = 'unfulfilled';
-        if (order.canceledAt) {
-          statusText = 'Cancelled';
-          statusClass = 'cancelled';
-        } else if (order.fulfillmentStatus === 'FULFILLED') {
-          statusText = 'Shipped';
-          statusClass = 'fulfilled';
-        } else if (order.financialStatus === 'PAID') {
-          statusText = 'Paid — Preparing';
-          statusClass = 'unfulfilled';
-        } else if (order.financialStatus === 'PENDING') {
-          statusText = 'Payment Pending';
-          statusClass = 'unfulfilled';
-        }
-
-        // Collect tracking info from successful fulfillments
-        var trackingItems = [];
-        if (order.successfulFulfillments && order.successfulFulfillments.length) {
-          for (var f = 0; f < order.successfulFulfillments.length; f++) {
-            var ful = order.successfulFulfillments[f];
-            if (ful.trackingInfo && ful.trackingInfo.length) {
-              for (var t = 0; t < ful.trackingInfo.length; t++) {
-                var tr = ful.trackingInfo[t];
-                if (tr.number) {
-                  trackingItems.push({
-                    number: tr.number,
-                    company: tr.company || 'USPS',
-                    url: tr.url || ''
-                  });
-                }
+      // Collect tracking info from successful fulfillments.
+      // Note: trackingCompany is on the Fulfillment (not per tracking item).
+      var trackingItems = [];
+      if (order.successfulFulfillments && order.successfulFulfillments.length) {
+        for (var f = 0; f < order.successfulFulfillments.length; f++) {
+          var ful = order.successfulFulfillments[f];
+          var company = ful.trackingCompany || 'USPS';
+          if (ful.trackingInfo && ful.trackingInfo.length) {
+            for (var t = 0; t < ful.trackingInfo.length; t++) {
+              var tr = ful.trackingInfo[t];
+              if (tr.number) {
+                trackingItems.push({
+                  number: tr.number,
+                  company: company,
+                  url: tr.url || ''
+                });
               }
             }
           }
         }
+      }
 
-        // Build the order card with click-to-expand details
-        html += '<div class="order-card" data-order-idx="' + i + '">';
-        html += '<div class="order-header">';
-        html += '<span class="order-number">Order ' + order.name + '</span>';
-        html += '<span class="order-status ' + statusClass + '">' + statusText + '</span>';
-        html += '</div>';
-        html += '<p class="order-date">' + dateStr + '</p>';
+      // Build the order card
+      html += '<div class="order-card" data-order-idx="' + i + '">';
+      html += '<div class="order-header">';
+      html += '<span class="order-number">Order ' + escapeHtml(order.name) + '</span>';
+      html += '<span class="order-status ' + statusClass + '">' + statusText + '</span>';
+      html += '</div>';
+      html += '<p class="order-date">' + dateStr + '</p>';
 
-        // Item thumbnails
-        html += '<div class="order-items">';
-        var items = order.lineItems.edges;
-        for (var j = 0; j < items.length && j < 4; j++) {
-          var lineItem = items[j].node;
-          html += '<div class="order-item-thumb">';
-          if (lineItem.variant && lineItem.variant.image) {
-            html += '<img src="' + lineItem.variant.image.url + '" alt="' + escapeHtml(lineItem.title) + '">';
-          }
-          html += '</div>';
+      // Item thumbnails
+      html += '<div class="order-items">';
+      var items = order.lineItems.edges;
+      for (var j = 0; j < items.length && j < 4; j++) {
+        var lineItem = items[j].node;
+        html += '<div class="order-item-thumb">';
+        if (lineItem.variant && lineItem.variant.image) {
+          html += '<img src="' + lineItem.variant.image.url + '" alt="' + escapeHtml(lineItem.title) + '">';
         }
-        if (items.length > 4) {
-          html += '<div class="order-item-thumb" style="display:flex;align-items:center;justify-content:center;font-family:var(--font-body);font-size:11px;color:var(--stone-500);">+' + (items.length - 4) + '</div>';
-        }
-        html += '</div>';
-
-        // Item names with quantities
-        for (var k = 0; k < items.length; k++) {
-          html += '<p style="font-family:var(--font-body);font-size:11px;color:var(--stone-600);margin-bottom:2px;">' + escapeHtml(items[k].node.title) + ' × ' + items[k].node.quantity + '</p>';
-        }
-
-        // Tracking section — most-valuable info, prominent display
-        if (trackingItems.length > 0) {
-          html += '<div class="order-tracking">';
-          html += '<p class="order-tracking-label">📦 Tracking</p>';
-          for (var ti = 0; ti < trackingItems.length; ti++) {
-            var trk = trackingItems[ti];
-            var trkUrl = trk.url || buildTrackingUrl(trk.company, trk.number);
-            html += '<div class="order-tracking-item">';
-            html += '<span class="order-tracking-carrier">' + escapeHtml(trk.company) + '</span> ';
-            if (trkUrl) {
-              html += '<a href="' + trkUrl + '" target="_blank" rel="noopener" class="order-tracking-link">' + escapeHtml(trk.number) + ' →</a>';
-            } else {
-              html += '<span class="order-tracking-number">' + escapeHtml(trk.number) + '</span>';
-            }
-            html += '</div>';
-          }
-          html += '</div>';
-        }
-
-        // Shipping address (collapsed by default — tap to expand)
-        if (order.shippingAddress) {
-          var addr = order.shippingAddress;
-          var addrParts = [];
-          if (addr.address1) addrParts.push(addr.address1);
-          if (addr.address2) addrParts.push(addr.address2);
-          var locParts = [];
-          if (addr.city) locParts.push(addr.city);
-          if (addr.province) locParts.push(addr.province);
-          if (addr.zip) locParts.push(addr.zip);
-          if (locParts.length) addrParts.push(locParts.join(', '));
-          if (addr.country) addrParts.push(addr.country);
-          if (addrParts.length > 0) {
-            html += '<details class="order-address-details">';
-            html += '<summary class="order-address-summary">Shipping address</summary>';
-            html += '<p class="order-address-text">' + escapeHtml(addrParts.join('\n')).replace(/\n/g, '<br>') + '</p>';
-            html += '</details>';
-          }
-        }
-
-        // Total breakdown
-        var shipping = order.totalShippingPrice ? parseFloat(order.totalShippingPrice.amount) : 0;
-        if (shipping > 0) {
-          html += '<div class="order-total" style="margin-top:10px;font-size:11px;color:var(--stone-500);"><span>Shipping</span><span>$' + shipping.toFixed(2) + '</span></div>';
-        }
-        html += '<div class="order-total" style="margin-top:6px;"><span>Total</span><span>$' + parseFloat(order.currentTotalPrice.amount).toFixed(2) + '</span></div>';
-
-        // Cancellation note
-        if (order.canceledAt) {
-          html += '<p class="order-cancelled-note">This order was cancelled. For questions, email <a href="mailto:sales@gloscreations316.com">sales@gloscreations316.com</a></p>';
-        }
-
         html += '</div>';
       }
-      ordersList.innerHTML = html;
-    } else {
-      ordersList.innerHTML = '<div class="orders-empty">Could not load orders. Please try again.</div>';
+      if (items.length > 4) {
+        html += '<div class="order-item-thumb" style="display:flex;align-items:center;justify-content:center;font-family:var(--font-body);font-size:11px;color:var(--stone-500);">+' + (items.length - 4) + '</div>';
+      }
+      html += '</div>';
+
+      // Item names with quantities
+      for (var k = 0; k < items.length; k++) {
+        html += '<p style="font-family:var(--font-body);font-size:11px;color:var(--stone-600);margin-bottom:2px;">' + escapeHtml(items[k].node.title) + ' × ' + items[k].node.quantity + '</p>';
+      }
+
+      // Tracking section — most-valuable info, prominent display
+      if (trackingItems.length > 0) {
+        html += '<div class="order-tracking">';
+        html += '<p class="order-tracking-label">📦 Tracking</p>';
+        for (var ti = 0; ti < trackingItems.length; ti++) {
+          var trk = trackingItems[ti];
+          var trkUrl = trk.url || buildTrackingUrl(trk.company, trk.number);
+          html += '<div class="order-tracking-item">';
+          html += '<span class="order-tracking-carrier">' + escapeHtml(trk.company) + '</span> ';
+          if (trkUrl) {
+            html += '<a href="' + trkUrl + '" target="_blank" rel="noopener" class="order-tracking-link">' + escapeHtml(trk.number) + ' →</a>';
+          } else {
+            html += '<span class="order-tracking-number">' + escapeHtml(trk.number) + '</span>';
+          }
+          html += '</div>';
+        }
+        html += '</div>';
+      }
+
+      // Shipping address (collapsed by default — tap to expand)
+      if (order.shippingAddress) {
+        var addr = order.shippingAddress;
+        var addrParts = [];
+        if (addr.address1) addrParts.push(addr.address1);
+        if (addr.address2) addrParts.push(addr.address2);
+        var locParts = [];
+        if (addr.city) locParts.push(addr.city);
+        if (addr.province) locParts.push(addr.province);
+        if (addr.zip) locParts.push(addr.zip);
+        if (locParts.length) addrParts.push(locParts.join(', '));
+        if (addr.country) addrParts.push(addr.country);
+        if (addrParts.length > 0) {
+          html += '<details class="order-address-details">';
+          html += '<summary class="order-address-summary">Shipping address</summary>';
+          html += '<p class="order-address-text">' + escapeHtml(addrParts.join('\n')).replace(/\n/g, '<br>') + '</p>';
+          html += '</details>';
+        }
+      }
+
+      // Total breakdown
+      var shipping = order.totalShippingPrice ? parseFloat(order.totalShippingPrice.amount) : 0;
+      if (shipping > 0) {
+        html += '<div class="order-total" style="margin-top:10px;font-size:11px;color:var(--stone-500);"><span>Shipping</span><span>$' + shipping.toFixed(2) + '</span></div>';
+      }
+      html += '<div class="order-total" style="margin-top:6px;"><span>Total</span><span>$' + parseFloat(order.currentTotalPrice.amount).toFixed(2) + '</span></div>';
+
+      // Cancellation note
+      if (order.canceledAt) {
+        html += '<p class="order-cancelled-note">This order was cancelled. For questions, email <a href="mailto:sales@gloscreations316.com">sales@gloscreations316.com</a></p>';
+      }
+
+      // View details button — opens our branded modal with full order info
+      html += '<button class="order-view-details-btn" onclick="showOrderDetail(' + i + ')">View Details</button>';
+
+      html += '</div>';
     }
+    ordersList.innerHTML = html;
+  }
+
+  // Show the order detail modal for the order at the given index in the cached list
+  function showOrderDetail(orderIdx) {
+    if (!window._cachedOrders || !window._cachedOrders[orderIdx]) {
+      console.warn('[Order Detail] Order not found at index', orderIdx);
+      return;
+    }
+    var order = window._cachedOrders[orderIdx].node;
+    var body = document.getElementById('order-detail-body');
+    if (!body) return;
+
+    if (typeof trackEvent === 'function') trackEvent('order_detail_view', { order_name: order.name });
+
+    var date = new Date(order.processedAt);
+    var dateStr = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+    // Status determination (same logic as the card)
+    var statusText = 'Processing';
+    var statusClass = 'unfulfilled';
+    if (order.canceledAt) {
+      statusText = 'Cancelled';
+      statusClass = 'cancelled';
+    } else if (order.fulfillmentStatus === 'FULFILLED') {
+      statusText = 'Shipped';
+      statusClass = 'fulfilled';
+    } else if (order.financialStatus === 'PAID') {
+      statusText = 'Paid — Preparing';
+      statusClass = 'unfulfilled';
+    } else if (order.financialStatus === 'PENDING') {
+      statusText = 'Payment Pending';
+      statusClass = 'unfulfilled';
+    }
+
+    // Collect tracking
+    var trackingItems = [];
+    if (order.successfulFulfillments && order.successfulFulfillments.length) {
+      for (var f = 0; f < order.successfulFulfillments.length; f++) {
+        var ful = order.successfulFulfillments[f];
+        var company = ful.trackingCompany || 'USPS';
+        if (ful.trackingInfo && ful.trackingInfo.length) {
+          for (var t = 0; t < ful.trackingInfo.length; t++) {
+            var tr = ful.trackingInfo[t];
+            if (tr.number) {
+              trackingItems.push({
+                number: tr.number,
+                company: company,
+                url: tr.url || ''
+              });
+            }
+          }
+        }
+      }
+    }
+
+    var html = '';
+
+    // Header — order number, status badge, date
+    html += '<div class="order-detail-header">';
+    html += '<div class="order-detail-header-top">';
+    html += '<h2 class="order-detail-num">Order ' + escapeHtml(order.name) + '</h2>';
+    html += '<span class="order-status ' + statusClass + '">' + statusText + '</span>';
+    html += '</div>';
+    html += '<p class="order-detail-date">Placed on ' + dateStr + '</p>';
+    if (order.canceledAt) {
+      var cDate = new Date(order.canceledAt);
+      html += '<p class="order-detail-date" style="color:#991b1b;">Cancelled on ' + cDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) + '</p>';
+    }
+    html += '</div>';
+
+    // Tracking section (only if shipped)
+    if (trackingItems.length > 0) {
+      html += '<div class="order-detail-section">';
+      html += '<p class="order-detail-section-label">📦 Tracking</p>';
+      html += '<div class="order-detail-tracking">';
+      for (var ti = 0; ti < trackingItems.length; ti++) {
+        var trk = trackingItems[ti];
+        var trkUrl = trk.url || buildTrackingUrl(trk.company, trk.number);
+        html += '<div class="order-detail-tracking-row">';
+        html += '<div><strong>' + escapeHtml(trk.company) + '</strong></div>';
+        if (trkUrl) {
+          html += '<a href="' + trkUrl + '" target="_blank" rel="noopener">' + escapeHtml(trk.number) + ' →</a>';
+        } else {
+          html += '<span style="font-family:monospace;font-size:12px;">' + escapeHtml(trk.number) + '</span>';
+        }
+        html += '</div>';
+      }
+      html += '</div></div>';
+    }
+
+    // Items section
+    var items = (order.lineItems && order.lineItems.edges) || [];
+    if (items.length > 0) {
+      html += '<div class="order-detail-section">';
+      html += '<p class="order-detail-section-label">Items (' + items.length + ')</p>';
+      html += '<div class="order-detail-items">';
+      for (var i = 0; i < items.length; i++) {
+        var it = items[i].node;
+        html += '<div class="order-detail-item">';
+        html += '<div class="order-detail-item-img">';
+        if (it.variant && it.variant.image) {
+          html += '<img src="' + it.variant.image.url + '" alt="' + escapeHtml(it.title) + '">';
+        }
+        html += '</div>';
+        html += '<div class="order-detail-item-info">';
+        html += '<p class="order-detail-item-name">' + escapeHtml(it.title) + '</p>';
+        html += '<p class="order-detail-item-qty">Quantity: ' + it.quantity + '</p>';
+        html += '</div>';
+        html += '</div>';
+      }
+      html += '</div></div>';
+    }
+
+    // Shipping address
+    if (order.shippingAddress) {
+      var addr = order.shippingAddress;
+      var lines = [];
+      if (addr.address1) lines.push(escapeHtml(addr.address1));
+      if (addr.address2) lines.push(escapeHtml(addr.address2));
+      var locParts = [];
+      if (addr.city) locParts.push(escapeHtml(addr.city));
+      if (addr.province) locParts.push(escapeHtml(addr.province));
+      if (addr.zip) locParts.push(escapeHtml(addr.zip));
+      if (locParts.length) lines.push(locParts.join(', '));
+      if (addr.country) lines.push(escapeHtml(addr.country));
+      if (lines.length > 0) {
+        html += '<div class="order-detail-section">';
+        html += '<p class="order-detail-section-label">Shipping To</p>';
+        html += '<div class="order-detail-address">' + lines.join('<br>') + '</div>';
+        html += '</div>';
+      }
+    }
+
+    // Totals breakdown
+    var shipping = order.totalShippingPrice ? parseFloat(order.totalShippingPrice.amount) : 0;
+    var total = order.currentTotalPrice ? parseFloat(order.currentTotalPrice.amount) : 0;
+    var subtotal = total - shipping; // approximation since we don't query subtotal directly
+    html += '<div class="order-detail-section">';
+    html += '<p class="order-detail-section-label">Order Summary</p>';
+    html += '<div class="order-detail-totals">';
+    if (shipping > 0) {
+      html += '<div class="order-detail-total-row"><span>Subtotal</span><span>$' + subtotal.toFixed(2) + '</span></div>';
+      html += '<div class="order-detail-total-row"><span>Shipping</span><span>$' + shipping.toFixed(2) + '</span></div>';
+    }
+    html += '<div class="order-detail-total-row grand"><span>Total</span><span>$' + total.toFixed(2) + '</span></div>';
+    html += '</div></div>';
+
+    // Action buttons
+    html += '<div class="order-detail-actions">';
+    var emailSubject = encodeURIComponent('Question about order ' + order.name);
+    var emailBody = encodeURIComponent('Hi Glo,\n\nI have a question about my order ' + order.name + '.\n\n');
+    html += '<a href="mailto:sales@gloscreations316.com?subject=' + emailSubject + '&body=' + emailBody + '" class="order-detail-action-btn primary">Email about this order</a>';
+    if (!order.canceledAt && order.fulfillmentStatus !== 'FULFILLED') {
+      var cancelSubject = encodeURIComponent('Cancel order ' + order.name);
+      var cancelBody = encodeURIComponent('Hi Glo,\n\nI would like to cancel order ' + order.name + '.\n\nReason:\n');
+      html += '<a href="mailto:sales@gloscreations316.com?subject=' + cancelSubject + '&body=' + cancelBody + '" class="order-detail-action-btn secondary">Request cancellation</a>';
+    }
+    html += '</div>';
+
+    // Small fallback link to Shopify's full status page
+    if (order.statusUrl) {
+      html += '<p class="order-detail-shopify-link">Need more options? <a href="' + order.statusUrl + '" target="_blank" rel="noopener">View on Shopify →</a></p>';
+    }
+
+    body.innerHTML = html;
+    document.getElementById('order-detail-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeOrderDetail() {
+    document.getElementById('order-detail-overlay').classList.remove('open');
+    document.body.style.overflow = '';
   }
 
   // Build a tracking URL based on the carrier name
@@ -8791,6 +9237,14 @@
     // Simulate a brief thinking delay for natural feel
     setTimeout(function() {
       var response = generateGloBotResponse(question);
+
+      // Special path: customer is logged in and asked about their order(s).
+      // Skip the verification dance — just look up their orders directly.
+      if (response.loggedInOrderLookup) {
+        handleLoggedInOrderLookup(response.requestedOrderNumber);
+        return;
+      }
+
       // If our smart matcher returned a "not sure" fallback, try real AI instead
       if (response.fallback === true) {
         callGloBotAI(question);
@@ -8799,6 +9253,125 @@
         addGloBotMessage('bot', response.text, response.products);
       }
     }, 600 + Math.random() * 600);
+  }
+
+  // Look up orders for the logged-in customer using their authenticated session.
+  // No order # or email needed — they're already verified by their login.
+  // If a specific order # was mentioned in their question, find that one.
+  // Otherwise show their most recent order, with quick links to others.
+  async function handleLoggedInOrderLookup(specificOrderNum) {
+    if (typeof trackEvent === 'function') trackEvent('glo_bot_order_lookup_loggedin', {});
+
+    // If we don't have orders cached yet, fetch them
+    if (!window._cachedOrders || !window._cachedOrders.length) {
+      try {
+        await fetchOrders();
+      } catch(e) { console.warn('[Bot] Failed to fetch orders:', e); }
+    }
+
+    hideGloBotTyping();
+
+    var orders = window._cachedOrders || [];
+    if (orders.length === 0) {
+      addGloBotMessage('bot', "You don't have any orders on file yet — looks like your first one is yet to come! ✨ When you do place one, I'll be able to track it for you instantly. In the meantime, browse the shop or ask me about any pieces you're curious about.");
+      return;
+    }
+
+    // If the customer asked about a specific order #, find it
+    if (specificOrderNum) {
+      var matched = null;
+      for (var i = 0; i < orders.length; i++) {
+        var o = orders[i].node;
+        // Order names are like "#1003", numbers are like "1003"
+        if (o.orderNumber == specificOrderNum || o.name === '#' + specificOrderNum) {
+          matched = o;
+          break;
+        }
+      }
+      if (matched) {
+        addGloBotMessage('bot', formatLoggedInOrderResponse(matched, false));
+        return;
+      } else {
+        addGloBotMessage('bot', "I couldn't find an order #" + specificOrderNum + " on your account. The orders I have for you are: " + orders.map(function(e) { return e.node.name; }).slice(0, 5).join(', ') + ". Want me to tell you about one of those?");
+        return;
+      }
+    }
+
+    // No specific order requested — show the most recent one
+    var mostRecent = orders[0].node;
+    var msg = '';
+    if (orders.length > 1) {
+      msg = "Here's your most recent order — you have " + orders.length + " total on your account:<br><br>";
+    }
+    msg += formatLoggedInOrderResponse(mostRecent, orders.length > 1);
+    addGloBotMessage('bot', msg);
+  }
+
+  // Format an order response for the chat — concise but helpful
+  function formatLoggedInOrderResponse(order, suggestViewAll) {
+    var date = new Date(order.processedAt);
+    var dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+    // Status
+    var statusText = 'Processing';
+    if (order.canceledAt) statusText = 'Cancelled';
+    else if (order.fulfillmentStatus === 'FULFILLED') statusText = 'Shipped';
+    else if (order.financialStatus === 'PAID') statusText = 'Paid — Preparing for shipment';
+    else if (order.financialStatus === 'PENDING') statusText = 'Payment pending';
+
+    var msg = "<strong>Order " + order.name + "</strong> (placed " + dateStr + ")<br>";
+    msg += "Status: <strong>" + statusText + "</strong><br>";
+
+    // Tracking
+    var trackingFound = false;
+    if (order.successfulFulfillments && order.successfulFulfillments.length) {
+      for (var f = 0; f < order.successfulFulfillments.length; f++) {
+        var ful = order.successfulFulfillments[f];
+        var company = ful.trackingCompany || 'USPS';
+        if (ful.trackingInfo && ful.trackingInfo.length) {
+          for (var t = 0; t < ful.trackingInfo.length; t++) {
+            var tr = ful.trackingInfo[t];
+            if (tr.number) {
+              trackingFound = true;
+              var trkUrl = tr.url || buildTrackingUrl(company, tr.number);
+              msg += "📦 " + company + ": <a href=\"" + trkUrl + "\" target=\"_blank\" rel=\"noopener\">" + tr.number + " →</a><br>";
+            }
+          }
+        }
+      }
+    }
+
+    // Items summary
+    if (order.lineItems && order.lineItems.edges && order.lineItems.edges.length) {
+      var items = order.lineItems.edges;
+      msg += "<br>";
+      var itemNames = items.slice(0, 3).map(function(e) { return e.node.title; });
+      if (items.length === 1) {
+        msg += "Item: " + itemNames[0];
+      } else if (items.length <= 3) {
+        msg += "Items: " + itemNames.join(', ');
+      } else {
+        msg += "Items: " + itemNames.join(', ') + ", and " + (items.length - 3) + " more";
+      }
+      msg += "<br>";
+    }
+
+    // Total
+    if (order.currentTotalPrice) {
+      msg += "Total: <strong>$" + parseFloat(order.currentTotalPrice.amount).toFixed(2) + "</strong>";
+    }
+
+    if (suggestViewAll) {
+      msg += "<br><br>Want to see your other orders? Just open your account (👤 icon) and go to the Orders tab — you'll see all of them with full details.";
+    } else {
+      msg += "<br><br>For full details, open your account (👤 icon) → Orders tab.";
+    }
+
+    if (order.canceledAt) {
+      msg += "<br><br>If you have questions about this cancellation, email <a href=\"mailto:sales@gloscreations316.com\">sales@gloscreations316.com</a>.";
+    }
+
+    return msg;
   }
 
   // Handle each step of the order lookup conversation
@@ -8902,7 +9475,7 @@
   var gloBotHistory = [];
   var GLO_BOT_HISTORY_MAX = 6; // last 6 exchanges (3 turns each direction)
 
-  function callGloBotAI(question) {
+  async function callGloBotAI(question) {
     if (typeof trackEvent === 'function') trackEvent('glo_bot_ai_fallback', { question: question.substring(0, 100) });
 
     // Build a compact product catalog for the AI — name, price, category, availability,
@@ -8923,13 +9496,31 @@
       }
     }
 
+    // Detect if this question is about the customer's account (orders, wishlist, etc.)
+    // and they're logged in. If so, include their account summary as context.
+    // Only included when relevant to save tokens and respect privacy.
+    var customerContext = null;
+    if (typeof customerToken !== 'undefined' && customerToken && isAccountQuestion(question)) {
+      // Make sure we have the customer's orders cached before building context.
+      // If we don't, fetch them first (silently — typing indicator is already showing).
+      if (!window._cachedOrders || window._cachedOrders.length === 0) {
+        try {
+          await fetchOrders();
+        } catch(e) {
+          console.warn('[Bot] Could not fetch orders for context:', e);
+        }
+      }
+      customerContext = buildCustomerContext();
+    }
+
     fetch('/api/glo-bot', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         question: question,
         catalog: catalog,
-        history: gloBotHistory.slice(-GLO_BOT_HISTORY_MAX)
+        history: gloBotHistory.slice(-GLO_BOT_HISTORY_MAX),
+        customerContext: customerContext
       })
     })
     .then(function(res) {
@@ -8961,6 +9552,85 @@
       console.error('[Glo Bot] AI fallback failed:', err);
       addGloBotMessage('bot', "I'm having trouble thinking right now. Please email <a href=\"mailto:sales@gloscreations316.com\">sales@gloscreations316.com</a> and Glo will help you personally. 💛");
     });
+  }
+
+  // Detect if the question is about the customer's account data so we know whether
+  // to include their context in the AI request. Casts a wide net intentionally —
+  // false positives just send a tiny bit more data, false negatives miss valid asks.
+  function isAccountQuestion(question) {
+    var q = question.toLowerCase();
+    var accountPatterns = [
+      /\b(my|i)\s+(buy|bought|ordered|order|orders|purchase|purchased|purchases|spent|saved|wishlist)\b/,
+      /\bwhat\s+(did|have)\s+i\b/,
+      /\bdid\s+i\s+(buy|order|get|purchase)\b/,
+      /\bhave\s+i\s+(bought|ordered|purchased|spent)\b/,
+      /\bin\s+my\s+(wishlist|cart|account|orders)\b/,
+      /\b(my|i)\s+(account|history|spending)\b/,
+      /\bhow\s+much\s+(have\s+)?i\s+(spent|paid)\b/,
+      /\b(my)\s+(last|recent|previous|past)\s+(order|purchase)/,
+      /\bwhat'?s?\s+(in|on)\s+my\b/,
+      /\b(show|list|tell)\s+me\s+my\b/,
+      /\bsaved\s+for\s+later\b/,
+      /\bfavorit/
+    ];
+    return accountPatterns.some(function(re) { return re.test(q); });
+  }
+
+  // Build a compact summary of the customer's account data to send to AI.
+  // Includes: first name, recent orders (item names + dates + totals + status),
+  // and wishlist items. Excludes: addresses, tracking numbers, payment info.
+  function buildCustomerContext() {
+    var ctx = {};
+
+    // Customer name (try sessionStorage where login flow stores it)
+    try {
+      var name = sessionStorage.getItem('gc_name') || '';
+      if (name && name !== 'there') ctx.firstName = name;
+    } catch(e) {}
+
+    // Orders summary (last 5)
+    var orders = window._cachedOrders || [];
+    if (orders.length > 0) {
+      ctx.orderCount = orders.length;
+      ctx.orders = [];
+      var totalSpent = 0;
+      var ordersToInclude = Math.min(orders.length, 5);
+      for (var i = 0; i < ordersToInclude; i++) {
+        var o = orders[i].node;
+        if (!o) continue;
+        var items = (o.lineItems && o.lineItems.edges) || [];
+        var status = 'Processing';
+        if (o.canceledAt) status = 'Cancelled';
+        else if (o.fulfillmentStatus === 'FULFILLED') status = 'Shipped';
+        else if (o.financialStatus === 'PAID') status = 'Paid (preparing)';
+        else if (o.financialStatus === 'PENDING') status = 'Payment pending';
+
+        var orderTotal = o.currentTotalPrice ? parseFloat(o.currentTotalPrice.amount) : 0;
+        if (!o.canceledAt) totalSpent += orderTotal;
+
+        ctx.orders.push({
+          name: o.name,
+          date: o.processedAt ? new Date(o.processedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '',
+          status: status,
+          total: orderTotal,
+          items: items.map(function(e) {
+            return { title: e.node.title, quantity: e.node.quantity };
+          })
+        });
+      }
+      ctx.lifetimeSpend = totalSpent;
+    } else {
+      ctx.orderCount = 0;
+    }
+
+    // Wishlist
+    if (typeof wishlist !== 'undefined' && wishlist.length > 0) {
+      ctx.wishlist = wishlist.slice(0, 10).map(function(w) {
+        return { name: w.name, price: w.price };
+      });
+    }
+
+    return ctx;
   }
 
   // When the AI mentions a product by name in its response, find it in the catalog
@@ -9063,6 +9733,21 @@
     ];
     var isOrderQuery = orderQuestionPatterns.some(function(re) { return re.test(lower); });
     if (isOrderQuery) {
+      // Fast path: if the customer is logged in, we already have authenticated access
+      // to their orders. Skip the order # + email verification flow entirely.
+      // Returns a special signal so askGloBot can handle it asynchronously
+      // (since order data may need to be fetched).
+      if (typeof customerToken !== 'undefined' && customerToken) {
+        var orderMatchLoggedIn = lower.match(/#?(\d{3,})/);
+        return {
+          text: '',
+          products: null,
+          loggedInOrderLookup: true,
+          requestedOrderNumber: orderMatchLoggedIn ? orderMatchLoggedIn[1] : null
+        };
+      }
+
+      // Anonymous path: original flow — ask for order # + email for privacy
       orderLookupState.active = true;
       orderLookupState.step = 'awaiting_order';
       var orderMatch = lower.match(/#?(\d{3,})/);
