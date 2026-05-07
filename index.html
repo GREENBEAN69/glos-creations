@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<!-- Prevent iOS Safari from auto-detecting and linking emails, phone numbers, and addresses in page text. Without this, plain-text emails in product descriptions become tappable links that can intercept clicks meant for product cards. -->
+<meta name="format-detection" content="telephone=no, email=no, address=no, date=no">
+<meta name="x-apple-disable-message-reformatting" content="yes">
 
 <!-- ===== SEO Meta Tags ===== -->
 <title>Glo's Creations 3:16 · Handcrafted Polymer Clay Jewelry & Earrings</title>
@@ -586,7 +589,20 @@
   }
   .style-btn:hover { border-color: var(--stone-500); color: var(--stone-700); }
   .style-btn.active { background: var(--stone-900); color: white; border-color: var(--stone-900); }
-  .product-card { cursor: pointer; transition: transform 0.2s; }
+  .product-card { cursor: pointer; transition: transform 0.2s; -webkit-touch-callout: none; }
+  /* Disable iOS Safari's automatic email/phone/address detection inside cards */
+  .product-card, .product-card *, .sold-card, .sold-card *,
+  .product-name, .product-type, .sold-card-name, .sold-card-category {
+    -webkit-touch-callout: none !important;
+  }
+  /* Also disable the visual styling iOS adds to detected emails/phones */
+  .product-card a[x-apple-data-detectors],
+  .product-card *[x-apple-data-detectors],
+  .sold-card *[x-apple-data-detectors] {
+    color: inherit !important;
+    text-decoration: none !important;
+    pointer-events: none !important;
+  }
   .product-card:hover { transform: translateY(-2px); }
   .product-card:hover .product-overlay { transform: translateY(0); }
   .product-card:hover .product-wish { opacity: 1; }
