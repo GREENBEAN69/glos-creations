@@ -438,7 +438,7 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: center 15%;
+    object-position: center 80%;
   }
   .carousel-slide::after {
     content: '';
@@ -5953,7 +5953,7 @@
     var track = document.getElementById('carousel-track');
     track.innerHTML = '<div class="carousel-loading">Loading new arrivals...</div>';
 
-    var query = '{ collection(handle: "new-arrivals") { products(first: 10) { edges { node { id title handle productType description priceRange { minVariantPrice { amount } } images(first: 6) { edges { node { url altText } } } variants(first: 1) { edges { node { id availableForSale quantityAvailable } } } } } } } }';
+    var query = '{ collection(handle: "carousel") { products(first: 10) { edges { node { id title handle productType description priceRange { minVariantPrice { amount } } images(first: 6) { edges { node { url altText } } } variants(first: 1) { edges { node { id availableForSale quantityAvailable } } } } } } } }';
     var data = await shopifyFetch(query);
 
     if (data && data.data && data.data.collection && data.data.collection.products.edges.length > 0) {
@@ -5982,7 +5982,7 @@
       renderCarousel();
       startCarouselTimer();
     } else {
-      track.innerHTML = '<div class="carousel-loading">Add products to your "New Arrivals" collection in Shopify</div>';
+      track.innerHTML = '<div class="carousel-loading">Add products to your "Carousel" collection in Shopify</div>';
     }
   }
 
@@ -6041,7 +6041,23 @@
 
   function carouselNext() {
     if (carouselItems.length === 0) return;
-    goToSlide((carouselIndex + 1) % carouselItems.length);
+    var next = carouselIndex + 1;
+    if (next >= carouselItems.length) {
+      // Jump to first slide instantly (no transition), then resume
+      var track = document.getElementById('carousel-track');
+      track.style.transition = 'none';
+      track.style.transform = 'translateX(0)';
+      carouselIndex = 0;
+      // Force reflow so the jump renders before re-enabling transition
+      track.offsetHeight;
+      track.style.transition = 'transform 0.5s ease';
+      var allDots = document.querySelectorAll('.carousel-dot');
+      for (var i = 0; i < allDots.length; i++) allDots[i].classList.remove('active');
+      if (allDots[0]) allDots[0].classList.add('active');
+      resetCarouselTimer();
+    } else {
+      goToSlide(next);
+    }
   }
 
   function carouselPrev() {
@@ -6070,8 +6086,8 @@
       collections = data.data.collections.edges.map(function(edge) {
         return { title: edge.node.title, handle: edge.node.handle };
       }).filter(function(c) {
-        // Exclude "New Arrivals" since that's the carousel, and any default Shopify collections
-        var skip = ['new-arrivals', 'frontpage', 'all'];
+        // Exclude "New Arrivals" and "Carousel" since those aren't browsable, and any default Shopify collections
+        var skip = ['new-arrivals', 'carousel', 'frontpage', 'all'];
         return skip.indexOf(c.handle) === -1;
       });
       buildFilters();
@@ -6094,7 +6110,7 @@
         var prodCollections = [];
         if (node.collections && node.collections.edges) {
           prodCollections = node.collections.edges.map(function(c) { return c.node.title; }).filter(function(t) {
-            return t !== 'New Arrivals' && t !== 'Home page';
+            return t !== 'New Arrivals' && t !== 'Carousel' && t !== 'Home page';
           });
         }
         // Parse Judge.me rating metafields if present
